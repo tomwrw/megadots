@@ -1,0 +1,38 @@
+# .sops.yaml
+keys:
+  # Personal age key for user tomwrw (derived from SSH key via ssh-to-age).
+  - &tomwrw age180zs35et9c5zljx9k86rusv7dvsft5znghd5fjf42n8umgjsjatq6f2d8m
+
+  # Host age public keys (derived from SSH key via ssh-to-age).
+  - &endgame age12ulugkgk3n4d6u2dx483434584p66eqvsegt4sf3kfyryer7cajq68mhcf
+  - &flatmate age1wqmwzgukud9f3v6t3vgpam2jydqw7lz4r0nv0m5299znfysvr5wqt599jz
+  - &spectre age1nv4zadh7dqnl9v5qgfzp2344cd6knz9k93fp8gvy2p8d46jakd3skecr0s
+
+creation_rules:
+  # Per-host secrets — encrypted to tomwrw and specific host.
+  - path_regex: ^secrets/endgame\.yaml$
+    key_groups:
+      - age:
+          - *tomwrw
+          - *endgame
+
+  - path_regex: ^secrets/flatmate\.yaml$
+    key_groups:
+      - age:
+          - *tomwrw
+          - *flatmate
+
+  - path_regex: ^secrets/spectre\.yaml$
+    key_groups:
+      - age:
+          - *tomwrw
+          - *spectre
+
+  # Shared secrets — encrypted to tomwrw and all hosts.
+  - path_regex: ^secrets/shared\.yaml$
+    key_groups:
+      - age:
+          - *tomwrw
+          - *endgame
+          - *flatmate
+          - *spectre
