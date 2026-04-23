@@ -1,7 +1,8 @@
 let
   diskId = "/dev/vda";
-in {
-  flake.modules.nixos.spectre = {
+in
+{
+  configurations.nixos.spectre.module = {
     disko.devices = {
       disk = {
         main = {
@@ -17,7 +18,7 @@ in {
                   type = "filesystem";
                   format = "vfat";
                   mountpoint = "/boot";
-                  mountOptions = ["umask=0077"];
+                  mountOptions = [ "umask=0077" ];
                 };
               };
               luks = {

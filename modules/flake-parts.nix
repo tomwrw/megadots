@@ -1,4 +1,5 @@
-{inputs, ...}: {
+{ inputs, ... }:
+{
   flake-file.inputs = {
     flake-parts.url = "github:hercules-ci/flake-parts";
     flake-file.url = "github:vic/flake-file";
@@ -12,9 +13,11 @@
 
   flake-file.description = "megadots - a Dendritic NixOS and Home Manager configuration by tomwrw.";
 
-  flake-file.outputs = ''
-    inputs: inputs.flake-parts.lib.mkFlake { inherit inputs; } (inputs.import-tree ./modules)
-  '';
+  flake-file.outputs = "dendritic";
+
+  flake-file.nixConfig = {
+    abort-on-warn = true;
+  };
 
   systems = [
     "x86_64-linux"

@@ -1,20 +1,10 @@
-{inputs, ...}: {
+{
   flake-file.inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
     nixpkgs-stable.url = "github:nixos/nixpkgs/nixos-25.11";
   };
 
-  flake.modules.nixos.base = {pkgs, ...}: {
-    nixpkgs.overlays = [
-      (final: _prev: {
-        stable = import inputs.nixpkgs-stable {
-          inherit (final) config;
-          system = pkgs.stdenv.hostPlatform.system;
-        };
-      })
-    ];
-    nixpkgs.config.allowUnfree = true;
-
+  flake.modules.nixos.base = {
     nix.gc = {
       automatic = true;
       dates = "weekly";
@@ -34,9 +24,14 @@
         "nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs="
       ];
 
-      experimental-features = ["nix-command" "flakes"];
+      experimental-features = [
+        "nix-command"
+        "flakes"
+      ];
 
       download-buffer-size = 1024 * 1024 * 1024;
+
+      abort-on-warn = true;
     };
 
     nix.extraOptions = ''

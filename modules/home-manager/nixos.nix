@@ -2,9 +2,11 @@
   config,
   inputs,
   ...
-}: let
+}:
+let
   owner = config.flake.meta.owner;
-in {
+in
+{
   flake-file.inputs = {
     home-manager = {
       url = "github:nix-community/home-manager/master";
@@ -14,19 +16,18 @@ in {
 
   flake.modules.nixos = {
     base = {
-      imports = [inputs.home-manager.nixosModules.home-manager];
+      imports = [ inputs.home-manager.nixosModules.home-manager ];
 
       home-manager = {
         verbose = true;
         useGlobalPkgs = true;
         useUserPackages = true;
         backupFileExtension = "backup";
-        backupCommand = "rm";
-        overwriteBackup = true;
 
         users.${owner.username}.imports = [
           (
-            {osConfig, ...}: {
+            { osConfig, ... }:
+            {
               home.stateVersion = osConfig.system.stateVersion;
             }
           )

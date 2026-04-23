@@ -1,3 +1,3 @@
 {
-  flake.modules.nixos.spectre.system.stateVersion = "25.11";
+  configurations.nixos.spectre.module.system.stateVersion = "25.11";
 }

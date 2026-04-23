@@ -1,4 +1,5 @@
-{inputs, ...}: {
+{ inputs, ... }:
+{
   flake-file.inputs = {
     disko = {
       url = "github:nix-community/disko/latest";
@@ -7,6 +8,6 @@
   };
 
   flake.modules.nixos.base = {
-    imports = [inputs.disko.nixosModules.disko];
+    imports = [ inputs.disko.nixosModules.disko ];
   };
 }

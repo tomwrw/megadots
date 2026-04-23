@@ -1,7 +1,8 @@
 let
   diskId = "/dev/disk/by-id/nvme-Sabrent_SB-RKT5-2TB_48836385600606";
-in {
-  flake.modules.nixos.endgame = {
+in
+{
+  configurations.nixos.endgame.module = {
     disko.devices = {
       disk = {
         main = {
@@ -17,7 +18,7 @@ in {
                   type = "filesystem";
                   format = "vfat";
                   mountpoint = "/boot";
-                  mountOptions = ["umask=0077"];
+                  mountOptions = [ "umask=0077" ];
                 };
               };
               luks = {

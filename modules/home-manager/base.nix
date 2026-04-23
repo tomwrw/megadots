@@ -1,6 +1,8 @@
-{config, ...}: let
+{ config, ... }:
+let
   owner = config.flake.meta.owner;
-in {
+in
+{
   flake.modules.homeManager.base = {
     home.username = owner.username;
     home.homeDirectory = "/home/${owner.username}";

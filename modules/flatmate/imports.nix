@@ -1,5 +1,6 @@
-{config, ...}: {
-  flake.modules.nixos.flatmate.imports = with config.flake.modules.nixos; [
+{ config, ... }:
+{
+  configurations.nixos.flatmate.module.imports = with config.flake.modules.nixos; [
     pc
     systemd-boot
   ];

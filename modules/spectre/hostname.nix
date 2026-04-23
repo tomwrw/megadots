@@ -1,5 +1,5 @@
 {
-  flake.modules.nixos.spectre = {
+  configurations.nixos.spectre.module = {
     networking.hostName = "spectre";
     networking.domain = "home.arpa";
   };

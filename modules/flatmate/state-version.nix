@@ -1,3 +1,3 @@
 {
-  flake.modules.nixos.flatmate.system.stateVersion = "25.11";
+  configurations.nixos.flatmate.module.system.stateVersion = "25.11";
 }

@@ -1,5 +1,6 @@
-{config, ...}: {
-  flake.modules.nixos.spectre.imports = with config.flake.modules.nixos; [
+{ config, ... }:
+{
+  configurations.nixos.spectre.module.imports = with config.flake.modules.nixos; [
     gaming
     lanzaboote
   ];

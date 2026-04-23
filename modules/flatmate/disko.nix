@@ -1,7 +1,8 @@
 let
   diskId = "/dev/disk/by-id/nvme-KBG40ZPZ512G_TOSHIBA_MEMORY_89R201INNLAP";
-in {
-  flake.modules.nixos.flatmate = {
+in
+{
+  configurations.nixos.flatmate.module = {
     disko.devices = {
       disk = {
         main = {
@@ -17,7 +18,7 @@ in {
                   type = "filesystem";
                   format = "vfat";
                   mountpoint = "/boot";
-                  mountOptions = ["umask=0077"];
+                  mountOptions = [ "umask=0077" ];
                 };
               };
               luks = {
