@@ -53,18 +53,10 @@
       };
     };
 
-  flake.modules.homeManager.gaming =
-    { pkgs, ... }:
-    {
-      programs = {
-        lutris = {
-          enable = true;
-          protonPackages = [ pkgs.proton-ge-bin ];
-        };
-        mangohud = {
-          enable = true;
-          enableSessionWide = false;
-        };
-      };
+  flake.modules.homeManager.gaming = {
+    programs.mangohud = {
+      enable = true;
+      enableSessionWide = false;
     };
+  };
 }
