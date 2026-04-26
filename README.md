@@ -1,5 +1,6 @@
-[![NixOS](https://img.shields.io/badge/NixOS-unstable-blue?style=for-the-badge&logo=NixOS)](https://nixos.org/)
-[![Home Manager](https://img.shields.io/badge/Home--Manager-unstable-blue?style=for-the-badge&logo=Home-Assistant)](https://github.com/nix-community/home-manager)
+<p align="center">
+  <img src="./assets/megadots.png" width="400" />
+</p>
 
 # Introduction
 
