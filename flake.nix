@@ -1,5 +1,7 @@
 # DO-NOT-EDIT. This file was auto-generated using github:vic/flake-file.
 # Use `nix run .#write-flake` to regenerate it.
+#
+# For those who come after...
 {
   description = "megadots - a Dendritic NixOS and Home Manager configuration by tomwrw.";
 
