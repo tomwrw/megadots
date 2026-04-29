@@ -11,13 +11,13 @@
               jnoortheen.nix-ide
               yzhang.markdown-all-in-one
             ];
-            userSettings = {
-              "git.confirmSync" = false;
-              "git.enableSmartCommit" = true;
-              "git.autofetch" = true;
-              "explorer.confirmDragAndDrop" = false;
-              "explorer.confirmDelete" = false;
-            };
+            #userSettings = {
+            #  "git.confirmSync" = false;
+            #  "git.enableSmartCommit" = true;
+            #  "git.autofetch" = true;
+            #  "explorer.confirmDragAndDrop" = false;
+            #  "explorer.confirmDelete" = false;
+            #};
           };
         };
       };
