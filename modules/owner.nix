@@ -26,7 +26,7 @@ in
         isNormalUser = true;
         hashedPasswordFile = config.sops.secrets."password-${owner.username}".path;
         shell = pkgs.fish;
-        extraGroups = [ "wheel" ];
+        extraGroups = [ "wheel" "libvirtd" "network" "kvm" ];
         openssh.authorizedKeys.keys = [ owner.sshKey ];
       };
 
