@@ -10,27 +10,31 @@ My NixOS configuration, built on the [dendritic](https://github.com/mightyiam/de
 
 ## About
 
-This is the second iteration of my NixOS configuration. The first was a more traditional modular flake structure influenced by [Misterio77's nix-config](https://github.com/Misterio77/nix-config). This version follows the dendritic pattern - each file is a single feature, flake-parts composes them, and `import-tree` picks them up automatically. No manual import lists, no inheritance chains. Adding a new feature is one file. Adding a new host is one directory.
+This is the second iteration of my NixOS configuration. The first was a more traditional modular flake structure influenced by [Misterio77's nix-config](https://github.com/Misterio77/nix-config). You can find that version [archived here](https://github.com/tomwrw/nix-config).
+
+This version follows the dendritic pattern - each file is a single feature, flake-parts composes them, and `import-tree` picks them up automatically. No manual import lists, no inheritance chains. Adding a new feature is one file. Adding a new host is one directory.
+
+The inspiration and structural wiring for this config was from [mightyiam's infra](https://github.com/Misterio77/nix-config) config. I learned a ton from their work, and the roots of my config can be directly traced back there.
 
 I'm not a developer. I'm a tinkerer with a consultancy job in a technical field who got curious about declarative system management and fell down the NixOS rabbit hole. This project has genuinely brought some fun back in to computing for me.
 
 ## Features
 
-- **Dendritic pattern** flat modules, self-contained inputs, no inheritance chains.
-- **Typed host namespace** hosts live in `configurations.nixos.<host>.module`, separate from reusable `flake.modules.nixos.*` tags.
-- **`flake.checks` per host** `nix flake check` builds every host closure, so a broken refactor fails fast.
-- **Strict unfree policy** no blanket `allowUnfree`, every unfree package is enumerated in `nixpkgs.config.allowUnfreePackages` next to the feature that pulls it in.
-- **Explicit `pkgs-stable`** a second nixpkgs instance pinned to nixos-25.11, injected via `_module.args` for anything that wants a stable rather than unstable package.
-- **NixOS** system configuration across multiple hosts.
-- **Home Manager** as a NixOS module for user configuration.
-- **sops-nix** for secrets management with age encryption.
-- **Impermanence** with LUKS encrypted btrfs rollback to a blank root snapshot on every boot.
-- **Secure Boot** via lanzaboote with automatic key generation and enrollment.
-- **Disko** for declarative disk partitioning.
-- **CachyOS kernel** via nix-cachyos-kernel.
-- **Stylix** for consistent theming across the desktop (Home Manager scoped, theme follows the user).
-- **nixos-anywhere** for bare metal remote deployment.
-- **treefmt + nixfmt** `nix fmt` formats the whole tree; `check-flake-file` guards against hand-edits to the auto-generated `flake.nix`.
+- 🌳 **Dendritic pattern** flat modules, self-contained inputs, no inheritance chains.
+- 🏷️ **Typed host namespace** hosts live in `configurations.nixos.<host>.module`, separate from reusable `flake.modules.nixos.*` tags.
+- ✅ **`flake.checks` per host** `nix flake check` builds every host closure, so a broken refactor fails fast.
+- 🚫 **Strict unfree policy** no blanket `allowUnfree`, every unfree package is enumerated in `nixpkgs.config.allowUnfreePackages` next to the feature that pulls it in.
+- 📌 **Explicit `pkgs-stable`** a second nixpkgs instance pinned to nixos-25.11, injected via `_module.args` for anything that wants a stable rather than unstable package.
+- ❄️ **NixOS** system configuration across multiple hosts.
+- 🏠 **Home Manager** as a NixOS module for user configuration.
+- 🔐 **sops-nix** for secrets management with age encryption.
+- ♻️ **Impermanence** with LUKS encrypted btrfs rollback to a blank root snapshot on every boot.
+- 🛡️ **Secure Boot** via limine with automatic key generation and enrollment.
+- 💾 **Disko** for declarative disk partitioning.
+- ⚡ **CachyOS kernel** via nix-cachyos-kernel.
+- 🎨 **Stylix** for consistent theming across the desktop (Home Manager scoped, theme follows the user).
+- 🚀 **nixos-anywhere** for bare metal remote deployment.
+- ✨ **treefmt + nixfmt** `nix fmt` formats the whole tree; `check-flake-file` guards against hand-edits to the auto-generated `flake.nix`.
 
 ## Hosts
 
@@ -148,8 +152,8 @@ For this to work, you need:
 
 None of this would be possible without the people who share their work freely. Some shout outs:
 
+- [mightyiam](https://github.com/mightyiam/) for the [dendritic pattern](https://github.com/mightyiam/dendritic) itself and the [infra repo](https://github.com/mightyiam/infra) as the canonical reference - most of the structural decisions in this config are traceable back there.
 - [ryan4yin](https://github.com/ryan4yin/) for their [NixOS & Flakes Book](https://nixos-and-flakes.thiscute.world/) - the best starting point I found.
 - [Misterio77](https://github.com/Misterio77/) for [nix-starter-configs](https://github.com/Misterio77/nix-starter-configs) and their [personal config](https://github.com/Misterio77/nix-config) which heavily influenced my first iteration.
 - [vic](https://github.com/vic/) for [import-tree](https://github.com/vic/import-tree) and [flake-file](https://github.com/vic/flake-file) - the foundation of the dendritic pattern.
-- [mightyiam](https://github.com/mightyiam/) for the [dendritic pattern](https://github.com/mightyiam/dendritic) itself and the [infra repo](https://github.com/mightyiam/infra) as the canonical reference - most of the structural decisions in this config are traceable back there.
 - [doc-steve](https://github.com/doc-steve/) for their [dendritic guide](https://github.com/doc-steve/nix-config-guide) which taught me how to structure this config.
