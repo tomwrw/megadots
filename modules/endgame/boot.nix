@@ -2,21 +2,14 @@
   configurations.nixos.endgame.module = {
     boot.loader = {
       timeout = 15;
-      systemd-boot = {
-        configurationLimit = 10;
-        # To find the Windows boot drive, set edk2-uefi-shell.enable = true,
-        # boot into it, run `map -c` for drive aliases, then `FSn:` and `ls EFI`
-        # to identify which alias holds the Windows EFI partition.
-        windows."windows" = {
-          title = "Windows";
-          efiDeviceHandle = "FS2";
-          sortKey = "y_windows";
-        };
-        edk2-uefi-shell = {
-          enable = false;
-          sortKey = "z_edk2";
-        };
-      };
+      # Chainload Windows from its EFI System Partition on nvme0n1p3.
+      # The PARTUUID is the GPT partition entry UUID — find via
+      # `lsblk -o NAME,PARTLABEL,PARTUUID` if the disk is ever replaced.
+      limine.extraEntries = ''
+        /Windows
+            protocol: efi_chainload
+            image_path: uuid(c67f6b36-94ea-46a9-8be3-6a4af0fe4a4e):/EFI/Microsoft/Boot/bootmgfw.efi
+      '';
     };
   };
 }

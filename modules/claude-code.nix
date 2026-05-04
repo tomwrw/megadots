@@ -7,7 +7,7 @@
   flake.modules.homeManager.pc =
     { pkgs, ... }:
     {
-      home.packages = [ 
+      home.packages = [
         pkgs.claude-code
         pkgs.claude-monitor
       ];
