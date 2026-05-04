@@ -17,6 +17,8 @@
               "git.autofetch" = true;
               "explorer.confirmDragAndDrop" = false;
               "explorer.confirmDelete" = false;
+              "claudeCode.preferredLocation" = "panel";
+              "claudeCode.claudeProcessWrapper" = "/etc/profiles/per-user/tomwrw/bin/claude";
             };
           };
         };

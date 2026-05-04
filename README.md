@@ -75,7 +75,7 @@ Feature files sit flat under `modules/`. Each one declares its own `flake-file.i
 - `nixpkgs.nix` - `allowUnfree` predicate, `pkgs-stable` instance.
 - `nix-settings.nix` - substituters, GC, experimental features, `abort-on-warn`.
 - `impermanence.nix` - impermanence module + initrd rollback service.
-- `disko.nix` / `lanzaboote.nix` / `systemd-boot.nix` / `sops.nix` - ecosystem modules.
+- `disko.nix` / `secure-boot.nix` / `systemd-boot.nix` / `sops.nix` - ecosystem modules.
 - `pc.nix` / `gaming.nix` - tag inheritance (e.g. `gaming` imports `pc` which imports `base`).
 - `firefox.nix`, `ghostty.nix`, `fish.nix`, `gnome.nix`, `steam.nix`, ... - one feature per file.
 - `treefmt.nix` - formatter wiring.
