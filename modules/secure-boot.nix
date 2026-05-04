@@ -1,19 +1,17 @@
+{ config, ... }:
+let
+  limineModule = config.flake.modules.nixos.limine;
+in
 {
   flake.modules.nixos.secure-boot =
     { config, pkgs, ... }:
     {
-      boot.loader = {
-        systemd-boot.enable = false;
-        efi.canTouchEfiVariables = true;
-        limine = {
-          enable = true;
-          maxGenerations = 10;
-          secureBoot = {
-            enable = true;
-            autoGenerateKeys = true;
-            autoEnrollKeys.enable = true;
-          };
-        };
+      imports = [ limineModule ];
+
+      boot.loader.limine.secureBoot = {
+        enable = true;
+        autoGenerateKeys = true;
+        autoEnrollKeys.enable = true;
       };
 
       environment.persistence."/persist" = {
@@ -23,11 +21,10 @@
       # The limine installer runs before activation scripts and its auto-generate
       # path only fires when /var/lib/sbctl is absent — but impermanence already
       # bind-mounted the (empty) directory by then, so no keys are created and
-      # the installer leaves an unsigned BOOTX64.EFI on the ESP. Bootstrap keys
-      # here when missing, then re-invoke installBootLoader so it signs against
-      # the keys that now exist. --firmware-builtin is omitted because OVMF in
-      # Setup Mode has no dbDefault variable to import from; revisit if/when
-      # this module gets used on hardware that ships vendor-builtin keys.
+      # the installer leaves an unsigned BOOTX64.EFI on the ESP. This is a temp
+      # workaround. I raised an issue with limine to have this fixed. Waiting
+      # on it being merged then I can rip this out.
+      # https://github.com/NixOS/nixpkgs/issues/514756
       system.activationScripts.sbctl-bootstrap = {
         text = ''
           if [ ! -f /var/lib/sbctl/keys/PK/PK.pem ]; then
