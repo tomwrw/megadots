@@ -42,6 +42,7 @@
       "Videos"
       ".local/bin"
       ".local/share/nix"
+      ".ssh"
     ];
   };
 }

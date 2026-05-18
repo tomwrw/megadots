@@ -60,8 +60,8 @@ in
       # Syncthing folder definitions go here.
       folders = {
         # Sync - my primary sync folder on all hosts.
-        "Sync" = {
-          path = "${config.home.homeDirectory}/Sync";
+        "Syncthing" = {
+          path = "${config.home.homeDirectory}/Documents/Syncthing";
           # Use the list of all keys from the hostIdentifiers map.
           devices = allHosts;
           # File versioning to keep deleted/modified file history.
@@ -78,10 +78,9 @@ in
       };
     };
   };
-
   home.persistence."/persist" = {
     directories = [
-      "Sync"
+      ".local/state/syncthing"
     ];
   };
 }

@@ -40,11 +40,16 @@ bootstrap HOST:
       exit 1
     fi
     sops updatekeys -y secrets/secrets.yaml
-    ssh tomwrw@{{ HOST }} 'mkdir -p ~/.config/sops/age ~/.ssh && chmod 700 ~/.config/sops/age ~/.ssh'
-    scp ~/.config/sops/age/keys.txt tomwrw@{{ HOST }}:~/.config/sops/age/keys.txt
-    scp ~/.ssh/id_ed25519           tomwrw@{{ HOST }}:~/.ssh/id_ed25519
-    scp ~/.ssh/id_ed25519.pub       tomwrw@{{ HOST }}:~/.ssh/id_ed25519.pub
-    ssh tomwrw@{{ HOST }} 'chmod 600 ~/.config/sops/age/keys.txt ~/.ssh/id_ed25519 && chmod 644 ~/.ssh/id_ed25519.pub'
+    # Write secrets to /persist so they survive root rollback and aren't
+    # masked by impermanence bindmounts. Pre-create the persist dirs with
+    # sudo because they may not exist yet on first bootstrap (the
+    # impermanence module creates them on next activation, which is too
+    # late for the scp below).
+    ssh tomwrw@{{ HOST }} 'sudo install -d -o tomwrw -g users -m 700 /persist/home/tomwrw/.config/sops/age /persist/home/tomwrw/.ssh'
+    scp ~/.config/sops/age/keys.txt tomwrw@{{ HOST }}:/persist/home/tomwrw/.config/sops/age/keys.txt
+    scp ~/.ssh/id_ed25519           tomwrw@{{ HOST }}:/persist/home/tomwrw/.ssh/id_ed25519
+    scp ~/.ssh/id_ed25519.pub       tomwrw@{{ HOST }}:/persist/home/tomwrw/.ssh/id_ed25519.pub
+    ssh tomwrw@{{ HOST }} 'chmod 600 /persist/home/tomwrw/.config/sops/age/keys.txt /persist/home/tomwrw/.ssh/id_ed25519 && chmod 644 /persist/home/tomwrw/.ssh/id_ed25519.pub'
     nixos-rebuild switch --flake .#{{ HOST }} --target-host tomwrw@{{ HOST }} --sudo {{ cachyos-cache }}
 
 # Build a host's config locally (no activation).

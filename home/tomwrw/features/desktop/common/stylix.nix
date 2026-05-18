@@ -22,6 +22,9 @@
         firefoxGnomeTheme.enable = true;
         profileNames = [ "default" ];
       };
+      qt.enable = false;
     };
   };
+  # Disable gtk4 theme as it interferes with stylix config.
+  gtk.gtk4.theme = null;
 }

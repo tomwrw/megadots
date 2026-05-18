@@ -22,39 +22,13 @@
   home = {
     stateVersion = lib.mkDefault "25.11";
   };
-  gtk.gtk4.theme = null;
   # Set up theming for this user on this host using stylix.
   # This is important as I refer to stylix lib and colors
   # throughout many modules within this configuration.
   stylix = {
     # Set up the initial stylix config.
-    base16Scheme = "${pkgs.base16-schemes}/share/themes/everforest.yaml";
-    image = ../../assets/wallpaper/hanged-man-tree.png;
+    base16Scheme = "${pkgs.base16-schemes}/share/themes/rose-pine-moon.yaml";
+    image = ../../assets/wallpaper/snake.png;
     polarity = "dark";
-    # Set my cursor preferences.
-    cursor = {
-      package = pkgs.bibata-cursors;
-      name = "Bibata-Modern-Classic";
-      size = 20;
-    };
-    # Set my font preferences for the user on this host.
-    fonts = {
-      emoji = {
-        package = pkgs.noto-fonts-color-emoji;
-        name = "Noto Color Emoji";
-      };
-      monospace = {
-        package = pkgs.nerd-fonts.dejavu-sans-mono;
-        name = "CaskaydiaMono Nerd Font";
-      };
-      sansSerif = {
-        package = pkgs.source-han-sans;
-        name = "Source Han Sans SC";
-      };
-      serif = {
-        package = pkgs.source-han-serif;
-        name = "Source Han Serif SC";
-      };
-    };
   };
 }
