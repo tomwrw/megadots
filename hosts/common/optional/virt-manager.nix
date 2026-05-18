@@ -15,8 +15,6 @@
     spice-vdagentd.enable = true;
   };
 
-  networking.firewall.trustedInterfaces = [ "br0" ];
-
   programs.virt-manager = {
     enable = true;
     package = pkgs.virt-manager;

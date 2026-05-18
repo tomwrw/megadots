@@ -1,7 +1,7 @@
 {
-  # Enable adb and dconf for the host.
+  # Enable dconf for the host.
   programs = {
-    adb.enable = true;
+    adb.enable = false;
     dconf.enable = true;
   };
 }
