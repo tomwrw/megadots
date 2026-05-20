@@ -1,5 +1,4 @@
 {
-  config,
   pkgs,
   ...
 }:
@@ -34,9 +33,6 @@
       edge-tiling = true;
       dynamic-workspaces = true;
     };
-    "org/gnome/desktop/wm/preferences" = {
-      resize-with-right-button = true;
-    };
     "org/gnome/desktop/interface" = {
       enable-hot-corners = true;
     };
@@ -52,38 +48,6 @@
         appindicator.extensionUuid
         user-themes.extensionUuid
       ];
-      favorite-apps = [
-        "org.gnome.Nautilus.desktop"
-        "com.mitchellh.ghostty.desktop"
-        "firefox.desktop"
-        "codium.desktop"
-        "obsidian.desktop"
-        "syncthing-ui.desktop"
-        "virt-manager.desktop"
-        "spotify.desktop"
-        "element-desktop.desktop"
-        "vesktop.desktop"
-        "com.github.xeco23.WasIstLos.desktop"
-        "signal.desktop"
-      ];
-      last-selected-power-profile = "performance";
-    };
-    "org/gnome/desktop/applications/terminal" = {
-      exec = "ghostty";
-      exec-arg = "";
-    };
-    "org/gnome/desktop/wm/keybindings" = {
-      close = [ "<Super>q" ];
-    };
-    "org/gnome/settings-daemon/plugins/media-keys" = {
-      custom-keybindings = [
-        "/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom0/"
-      ];
-    };
-    "org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom0" = {
-      name = "Terminal";
-      command = "ghostty";
-      binding = "<Super>Return";
     };
   };
   # Set XDG config for things like known directories and custom dirs.
@@ -92,29 +56,5 @@
     enable = true;
     mime.enable = true;
     mimeApps.enable = true;
-    # Nautilus sidebar bookmarks.
-    configFile."gtk-3.0/bookmarks".text = ''
-      file://${config.xdg.userDirs.download} Downloads
-      file://${config.xdg.userDirs.documents} Documents
-      file://${config.xdg.userDirs.pictures} Pictures
-      file://${config.xdg.userDirs.videos} Videos
-      file://${config.xdg.userDirs.music} Music
-      file://${config.home.homeDirectory}/Sync Sync
-      file://${config.home.homeDirectory}/Development Development
-    '';
-    userDirs = {
-      enable = true;
-      createDirectories = true;
-      music = "${config.home.homeDirectory}/Music";
-      videos = "${config.home.homeDirectory}/Videos";
-      pictures = "${config.home.homeDirectory}/Pictures";
-      templates = "${config.home.homeDirectory}/Documents/Templates";
-      download = "${config.home.homeDirectory}/Downloads";
-      documents = "${config.home.homeDirectory}/Documents";
-      desktop = "${config.home.homeDirectory}/Desktop";
-      # I don't need the public share.
-      publicShare = null;
-      setSessionVariables = false;
-    };
   };
 }
