@@ -14,7 +14,7 @@
   # it from /persist before the bind mounts are set up.
   sops = {
     defaultSopsFile = ../../../secrets/secrets.yaml;
-    age.sshKeyPaths = lib.mkDefault [ "/etc/ssh/ssh_host_ed25519_key" ];
+    age.sshKeyPaths = lib.mkDefault [ "/persist/etc/ssh/ssh_host_ed25519_key" ];
     age.generateKey = false;
   };
 }

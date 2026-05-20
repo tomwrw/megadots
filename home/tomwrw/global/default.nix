@@ -27,22 +27,4 @@
     homeDirectory = lib.mkDefault "/home/${config.home.username}";
     sessionPath = [ "$HOME/.local/bin" ];
   };
-
-  # Global persists for anything that could be global
-  # or optional for Home Manager configs, like Steam.
-  home.persistence."/persist" = {
-    hideMounts = true;
-    directories = [
-      "Development"
-      "Documents"
-      "Downloads"
-      "Music"
-      "Pictures"
-      "Vaults"
-      "Videos"
-      ".local/bin"
-      ".local/share/nix"
-      ".ssh"
-    ];
-  };
 }

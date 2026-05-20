@@ -32,13 +32,4 @@
       };
     };
   };
-
-  home.persistence."/persist" = {
-    directories = [
-      ".config/Code"
-      ".config/VSCodium"
-      ".vscode"
-      ".vscode-oss"
-    ];
-  };
 }

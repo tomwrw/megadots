@@ -15,7 +15,7 @@ keys:
   # Host age public keys — replaced by `just bootstrap HOST`.
   - &endgame age180zs35et9c5zljx9k86rusv7dvsft5znghd5fjf42n8umgjsjatq6f2d8m
   - &flatmate age180zs35et9c5zljx9k86rusv7dvsft5znghd5fjf42n8umgjsjatq6f2d8m
-  - &spectre age1p55868ms2xgemy8syvzyf0sr0k9eqjhte66twlst6kuzpqy26fns4r8up9
+  - &spectre age1lc2klf0xh05pl5wjyzr3yc4w73y8h58qyve5930qu0h0gxt85dlqqy7vun
 
 creation_rules:
   - path_regex: ^secrets/secrets\.yaml$

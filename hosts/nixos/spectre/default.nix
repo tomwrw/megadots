@@ -28,28 +28,14 @@ _: {
     # config becomes global, and needs to apply to all my hosts,
     # it gets moved to global.
     ../../common/optional/cachyos-kernel.nix
-    ../../common/optional/ephemeral-btrfs.nix
-    ../../common/optional/graphics.nix
-    ../../common/optional/lanzaboote.nix
-    ../../common/optional/pipewire.nix
+    #../../common/optional/ephemeral-btrfs.nix
     ../../common/optional/gaming.nix
+    ../../common/optional/graphics.nix
+    ../../common/optional/pipewire.nix
+    ../../common/optional/secure-boot.nix
     # Import my user configs.
     ../../common/users/tomwrw
     # Import my desktop.
     ../../common/optional/wm/gnome/gnome.nix
   ];
-  # Boot loader settings are usually unique to my hosts
-  # since some systems will dual boot with Windows. For
-  # that reason, I keep the boot loader settings in the
-  # configuration.nix for each host.
-  boot = {
-    loader = {
-      efi.canTouchEfiVariables = true;
-      timeout = 15;
-      systemd-boot = {
-        enable = true;
-        configurationLimit = 10;
-      };
-    };
-  };
 }

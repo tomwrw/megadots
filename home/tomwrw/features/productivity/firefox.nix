@@ -9,11 +9,15 @@
     enable = true;
     configPath = "${config.xdg.configHome}/mozilla/firefox";
     policies = {
+      AppAutoUpdate = false;
+      BackgroundAppUpdate = false;
       DontCheckDefaultBrowser = true;
       DisableTelemetry = true;
       DisableFirefoxStudies = true;
       DisablePocket = true;
       DisableFirefoxScreenshots = true;
+      DisableForgetButton = true;
+      DisableMasterPasswordCreation = true;
       DisplayBookmarksToolbar = "never";
       DisplayMenuBar = "never";
       PasswordManagerEnabled = false;
@@ -76,6 +80,7 @@
         "widget.use-xdg-desktop-portal.file-picker" = 1; # Use new gtk file picker instead of legacy one
         "signon.management.page.breach-alerts.enabled" = false;
         "extensions.formautofill.creditCards.enabled" = false;
+        "privacy.resistFingerprinting" = true;
       };
 
       # Configure extension behavior (toolbar pinning, etc.).
@@ -131,11 +136,5 @@
     "x-scheme-handler/https" = [ "firefox.desktop" ];
     "text/html" = [ "firefox.desktop" ];
     "application/pdf" = [ "firefox.desktop" ];
-  };
-
-  home.persistence."/persist" = {
-    directories = [
-      ".mozilla"
-    ];
   };
 }

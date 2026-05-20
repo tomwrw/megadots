@@ -37,6 +37,7 @@ in
       "podman"
       "openrazer"
       "video"
+      "input"
       "vboxusers"
       "wheel"
       "kvm"

@@ -30,7 +30,6 @@
     # it gets moved to global.
     ../../common/optional/bluetooth.nix
     ../../common/optional/cachyos-kernel.nix
-    ../../common/optional/ephemeral-btrfs.nix
     ../../common/optional/graphics.nix
     ../../common/optional/pipewire.nix
     ../../common/optional/virt-manager.nix
@@ -39,10 +38,7 @@
     # Import my desktop.
     ../../common/optional/wm/gnome/gnome.nix
   ];
-  # Boot loader settings are usually unique to my hosts
-  # since some systems will dual boot with Windows. For
-  # that reason, I keep the boot loader settings in the
-  # configuration.nix for each host.
+
   boot = {
     loader = {
       efi.canTouchEfiVariables = true;
@@ -52,8 +48,8 @@
         configurationLimit = 10;
       };
     };
-    kernelParams = [ ];
   };
+
   # Host specific apps go here. These will only be
   # installed on this host.
   environment.systemPackages = with pkgs; [

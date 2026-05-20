@@ -9,7 +9,7 @@
     ./network.nix
     ./nix.nix
     ./packages.nix
-    ./persists.nix
+    ./preservation.nix
     ./security.nix
     ./sops.nix
     ./ssh.nix

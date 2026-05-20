@@ -27,10 +27,4 @@ in
       historyInSidebar
     ];
   };
-
-  home.persistence."/persist" = {
-    directories = [
-      ".config/spotify"
-    ];
-  };
 }
