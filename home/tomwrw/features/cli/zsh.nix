@@ -22,9 +22,6 @@
         nsp = "nix search nixpkgs";
       };
       history = {
-        # Fix https://github.com/nix-community/impermanence/issues/233
-        # Persisting the history file in default location
-        # was failing so using this workaround.
         path = "$HOME/.local/share/zsh/.zsh_history";
         size = 8000;
       };

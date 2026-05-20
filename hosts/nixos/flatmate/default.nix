@@ -1,4 +1,3 @@
-{ pkgs, ... }:
 {
   # Set the host-specific hostname here.
   networking = {
@@ -36,7 +35,7 @@
     # Import my user configs.
     ../../common/users/tomwrw
     # Import my desktop.
-    ../../common/optional/wm/gnome/gnome.nix
+    ../../common/optional/desktop/gnome
   ];
 
   boot = {
@@ -49,11 +48,4 @@
       };
     };
   };
-
-  # Host specific apps go here. These will only be
-  # installed on this host.
-  environment.systemPackages = with pkgs; [
-    hello
-    unetbootin
-  ];
 }

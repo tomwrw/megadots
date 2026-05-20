@@ -1,6 +1,3 @@
-# Disk configuration for spectre, using a tmpfs root for impermanence.
-# /home and /persist live on btrfs subvolumes so they survive the
-# wiped-on-boot root; /nix is also a subvolume so the store persists.
 { inputs, ... }:
 let
   diskId = "/dev/vda";

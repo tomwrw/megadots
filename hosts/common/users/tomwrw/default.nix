@@ -1,10 +1,8 @@
 {
   config,
-  lib,
   pkgs,
   ...
 }:
-with lib;
 let
   # Configure user settings for NixOS.
   username = "tomwrw";

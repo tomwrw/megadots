@@ -1,4 +1,3 @@
-{ pkgs, ... }:
 {
   # Set the host-specific hostname here.
   networking = {
@@ -38,16 +37,6 @@
     # Import my user configs.
     ../../common/users/tomwrw
     # Import my desktop.
-    ../../common/optional/wm/gnome/gnome.nix
-  ];
-
-  # Host specific apps go here. These will only be
-  # installed on this host.
-  environment.systemPackages = with pkgs; [
-    age
-    azure-cli
-    hello
-    npins
-    unetbootin
+    ../../common/optional/desktop/gnome
   ];
 }
