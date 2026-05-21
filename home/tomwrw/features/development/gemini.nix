@@ -1,6 +1,6 @@
 { pkgs, ... }:
 {
-  home.packages = with pkgs; [
-    gemini-cli
+  home.packages = [
+    pkgs.gemini-cli
   ];
 }

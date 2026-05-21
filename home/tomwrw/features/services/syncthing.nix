@@ -46,8 +46,13 @@ in
       # designed to avoid.
       overrideDevices = true;
       overrideFolders = true;
-      # Generate the devices block from the hostIdentifiers.
-      devices = lib.mapAttrs (_: id: { inherit id; }) hostIdentifiers;
+      # Dial peers directly by FQDN. Local announce can't reach across
+      # L2 boundaries (e.g. libvirt bridge ↔ LAN), and global discovery
+      # and relays are disabled below.
+      devices = lib.mapAttrs (host: id: {
+        inherit id;
+        addresses = [ "tcp://${host}.home.arpa:22000" ];
+      }) hostIdentifiers;
       # Specify additional options for Syncthing here.
       options = {
         # Keep traffic local and disable external relay/discovery.

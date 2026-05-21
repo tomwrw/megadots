@@ -2,31 +2,13 @@
 {
   programs.steam = {
     enable = true;
-    extraCompatPackages = with pkgs; [ proton-ge-bin ];
+    extraCompatPackages = [ pkgs.proton-ge-bin ];
   };
 
   programs.gamemode.enable = true;
 
   services.udev.packages = [ pkgs.sunshine ];
-  networking.firewall = {
-    enable = true;
-    allowedTCPPorts = [
-      47984
-      47989
-      47990
-      48010
-    ];
-    allowedUDPPortRanges = [
-      {
-        from = 47998;
-        to = 48000;
-      }
-      {
-        from = 8000;
-        to = 8010;
-      }
-    ];
-  };
+
   # CAP_SYS_ADMIN is a very powerful capability that can
   # be used to escape containers and perform many privileged
   # operations. Currently this is needed for Wayland capture.
@@ -45,7 +27,7 @@
 
   hardware.steam-hardware.enable = true;
 
-  environment.systemPackages = with pkgs; [
-    game-devices-udev-rules
+  environment.systemPackages = [
+    pkgs.game-devices-udev-rules
   ];
 }

@@ -36,14 +36,13 @@
       # Add the root user and wheel group as trusted.
       trusted-users = [
         "root"
-        "@wheel"
       ];
       # Deduplicate and optimise nix store.
       auto-optimise-store = true;
       # Stop telling me there are uncommited changes!
       warn-dirty = false;
       # Allow importing derivations from derivations.
-      allow-import-from-derivation = true;
+      allow-import-from-derivation = false;
       # Enable experimental features.
       experimental-features = [
         "nix-command"

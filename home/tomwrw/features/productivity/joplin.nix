@@ -1,7 +1,7 @@
 { pkgs, ... }:
 {
-  home.packages = with pkgs; [
-    joplin
-    joplin-desktop
+  home.packages = [
+    pkgs.joplin
+    pkgs.joplin-desktop
   ];
 }

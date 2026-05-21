@@ -9,5 +9,5 @@
   # Set the user default shell to zsh.
   users.defaultUserShell = pkgs.zsh;
   # Include the zsh shell package.
-  environment.shells = with pkgs; [ zsh ];
+  environment.shells = [ pkgs.zsh ];
 }

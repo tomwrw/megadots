@@ -8,9 +8,9 @@
   ];
 
   home = {
-    packages = with pkgs; [
-      gnomeExtensions.appindicator
-      gnomeExtensions.user-themes
+    packages = [
+      pkgs.gnomeExtensions.appindicator
+      pkgs.gnomeExtensions.user-themes
     ];
   };
   dconf.settings = {
@@ -44,9 +44,9 @@
     # Extension config.
     "org/gnome/shell" = {
       disable-user-extensions = false;
-      enabled-extensions = with pkgs.gnomeExtensions; [
-        appindicator.extensionUuid
-        user-themes.extensionUuid
+      enabled-extensions = [
+        pkgs.gnomeExtensions.appindicator.extensionUuid
+        pkgs.gnomeExtensions.user-themes.extensionUuid
       ];
     };
   };

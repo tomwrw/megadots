@@ -3,11 +3,6 @@
   security = {
     rtkit.enable = true;
     polkit.enable = true;
-    # Passwordless sudo for wheel members. SSH access is already
-    # restricted to pubkey auth, so the practical guard against
-    # privilege escalation is "do you have my SSH key", not
-    # "do you also know a separate sudo password."
-    sudo.wheelNeedsPassword = false;
   };
   # Enable PAM security settings for all hosts.
   security.pam = {
@@ -19,13 +14,13 @@
         domain = "@wheel";
         item = "nofile";
         type = "soft";
-        value = "524288";
+        value = "65536";
       }
       {
         domain = "@wheel";
         item = "nofile";
         type = "hard";
-        value = "1048576";
+        value = "131072";
       }
     ];
   };

@@ -1,6 +1,6 @@
 { pkgs, ... }:
 {
-  home.packages = with pkgs; [
-    signal-desktop
+  home.packages = [
+    pkgs.signal-desktop
   ];
 }

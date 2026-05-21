@@ -1,7 +1,7 @@
 { pkgs, ... }:
 {
-  home.packages = with pkgs; [
-    claude-code
-    claude-monitor
+  home.packages = [
+    pkgs.claude-code
+    pkgs.claude-monitor
   ];
 }

@@ -1,6 +1,6 @@
 { pkgs, ... }:
 {
-  home.packages = with pkgs; [
-    element-desktop
+  home.packages = [
+    pkgs.element-desktop
   ];
 }

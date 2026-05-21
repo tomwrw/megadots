@@ -17,6 +17,11 @@ in
     neededForUsers = true;
   };
 
+  # Trust this user with the local nix daemon so cross-host
+  # `nixos-rebuild --target-host` can push locally-built closures
+  # without per-path signatures.
+  nix.settings.trusted-users = [ username ];
+
   users.mutableUsers = false;
   users.users.${username} = {
     isNormalUser = true;

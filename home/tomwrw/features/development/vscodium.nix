@@ -5,10 +5,10 @@
     package = pkgs.vscodium;
     profiles = {
       default = {
-        extensions = with pkgs.vscode-extensions; [
-          # anthropic.claude-code
-          jnoortheen.nix-ide
-          yzhang.markdown-all-in-one
+        extensions = [
+          # pkgs.vscode-extensions.anthropic.claude-code
+          pkgs.vscode-extensions.jnoortheen.nix-ide
+          pkgs.vscode-extensions.yzhang.markdown-all-in-one
         ];
         userSettings = {
           "git.confirmSync" = false;

@@ -4,16 +4,16 @@
   # rules are added in any module that requires
   # a specific exception.
   networking = {
+    search = [ "home.arpa" ];
     firewall = {
       enable = lib.mkForce true;
-      allowedTCPPorts = [ 22000 ];
-      allowedUDPPorts = [
-        22000
-        21027
-      ];
     };
     networkmanager = {
       enable = true;
     };
+  };
+
+  services.syncthing = {
+    openDefaultPorts = true;
   };
 }

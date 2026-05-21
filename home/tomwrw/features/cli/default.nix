@@ -7,17 +7,17 @@
     ./zsh.nix
   ];
 
-  home.packages = with pkgs; [
-    bc # Arbitrary-precision calculator language.
-    bottom # Cross-platform graphical process/system monitor.
-    eza # Modern replacement for `ls`.
-    fastfetch # Highly customizable system information tool.
-    ncdu # Disk usage analyzer for the terminal.
-    nh # NixOS configuration helper and cleaner.
-    nix-diff # Tool to compare two Nix derivations.
-    nix-output-monitor # Monitors and shows build logs for Nix.
-    nixd # Nix language server.
-    nixfmt # Nix code formatter conforming to RFC 0048.
-    nvd # Nix vulnerability scanner.
+  home.packages = [
+    pkgs.bc # Arbitrary-precision calculator language.
+    pkgs.bottom # Cross-platform graphical process/system monitor.
+    pkgs.eza # Modern replacement for `ls`.
+    pkgs.fastfetch # Highly customizable system information tool.
+    pkgs.ncdu # Disk usage analyzer for the terminal.
+    pkgs.nh # NixOS configuration helper and cleaner.
+    pkgs.nix-diff # Tool to compare two Nix derivations.
+    pkgs.nix-output-monitor # Monitors and shows build logs for Nix.
+    pkgs.nixd # Nix language server.
+    pkgs.nixfmt # Nix code formatter conforming to RFC 0048.
+    pkgs.nvd # Nix vulnerability scanner.
   ];
 }

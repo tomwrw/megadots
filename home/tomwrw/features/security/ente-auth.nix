@@ -1,6 +1,6 @@
 { pkgs, ... }:
 {
-  home.packages = with pkgs; [
-    ente-auth
+  home.packages = [
+    pkgs.ente-auth
   ];
 }

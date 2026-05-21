@@ -47,7 +47,7 @@ bootstrap HOST:
     scp ~/.ssh/id_ed25519           tomwrw@{{ HOST }}:.ssh/id_ed25519
     scp ~/.ssh/id_ed25519.pub       tomwrw@{{ HOST }}:.ssh/id_ed25519.pub
     ssh tomwrw@{{ HOST }} 'chmod 600 ~/.config/sops/age/keys.txt ~/.ssh/id_ed25519 && chmod 644 ~/.ssh/id_ed25519.pub'
-    nixos-rebuild switch --flake .#{{ HOST }} --target-host tomwrw@{{ HOST }} --sudo {{ cachyos-cache }}
+    nixos-rebuild switch --flake .#{{ HOST }} --target-host tomwrw@{{ HOST }} --sudo --ask-sudo-password {{ cachyos-cache }}
 
 # Build a host's config locally (no activation).
 build HOST:
@@ -55,7 +55,15 @@ build HOST:
 
 # Rebuild a remote host.
 rebuild HOST:
-    nixos-rebuild switch --flake .#{{ HOST }} --target-host tomwrw@{{ HOST }} --sudo {{ cachyos-cache }}
+    nixos-rebuild switch --flake .#{{ HOST }} --target-host tomwrw@{{ HOST }} --sudo --ask-sudo-password {{ cachyos-cache }}
+
+# One-time bridge: build on the target instead of pushing a closure.
+# Use this when the target's nix daemon hasn't yet learned to trust
+# `tomwrw` (e.g. on a freshly deployed host, before the user module's
+# nix.settings.trusted-users entry has been activated). After one
+# successful run, `just rebuild HOST` works normally.
+rebuild-onhost HOST:
+    nixos-rebuild switch --flake .#{{ HOST }} --build-host tomwrw@{{ HOST }} --target-host tomwrw@{{ HOST }} --sudo --ask-sudo-password {{ cachyos-cache }}
 
 # Rebuild the local host.
 local:

@@ -1,6 +1,6 @@
 { pkgs, ... }:
 {
-  home.packages = with pkgs; [
-    code-cursor
+  home.packages = [
+    pkgs.code-cursor
   ];
 }
