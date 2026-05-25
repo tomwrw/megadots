@@ -22,6 +22,10 @@
   # Set up my Home Manager instance.
   home = {
     stateVersion = lib.mkDefault "25.11";
+    spec = {
+      hostName = "flatmate";
+      platform = "nixos";
+    };
   };
   # Set up theming for this user on this host using stylix.
   # This is important as I refer to stylix lib and colors

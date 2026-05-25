@@ -1,12 +1,13 @@
 {
   config,
   lib,
-  osConfig,
   ...
 }:
 let
-  # Get the current host name from NixOS config.
-  currentHost = osConfig.networking.hostName;
+  # Read host identity from the home-spec, so this module works under
+  # both NixOS-integrated and standalone Home Manager.
+  currentHost = config.home.spec.hostName;
+  domain = config.home.spec.domainName;
   # Define my Syncthing hosts with thier Syncthing ID.
   hostIdentifiers = {
     endgame = "O5ZE76L-VFVTOEB-LBIKRRS-LNJKJTN-SOPSNTS-NMTNUHO-OOO453I-PXDOBAI";
@@ -51,7 +52,7 @@ in
       # and relays are disabled below.
       devices = lib.mapAttrs (host: id: {
         inherit id;
-        addresses = [ "tcp://${host}.home.arpa:22000" ];
+        addresses = [ "tcp://${host}.${domain}:22000" ];
       }) hostIdentifiers;
       # Specify additional options for Syncthing here.
       options = {
