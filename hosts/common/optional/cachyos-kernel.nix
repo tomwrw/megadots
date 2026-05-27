@@ -1,11 +1,13 @@
 {
   inputs,
+  lib,
   pkgs,
   ...
 }:
 {
   boot.kernelPackages =
-    inputs.nix-cachyos-kernel.legacyPackages.${pkgs.stdenv.hostPlatform.system}.linuxPackages-cachyos-latest;
+    lib.mkForce
+      inputs.nix-cachyos-kernel.legacyPackages.${pkgs.stdenv.hostPlatform.system}.linuxPackages-cachyos-latest;
 
   # Binary cache for the prebuilt CachyOS kernel — without these
   # the kernel rebuilds locally on every change.

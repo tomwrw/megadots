@@ -1,3 +1,4 @@
+{ inputs, ... }:
 {
   # Set the host-specific hostname here.
   networking = {
@@ -17,6 +18,8 @@
   # global configs (stuff shared between all hosts), optional configs, and
   # my user configs for any users I want added to this host.
   imports = [
+    # Import the Surface Pro defaults from nixos-hardware.
+    inputs.hardware.nixosModules.microsoft-surface-pro-intel
     # Import the disko disk configuration for this host.
     ./disks.nix
     # Import the specific hardware-configuration.nix for this host.
