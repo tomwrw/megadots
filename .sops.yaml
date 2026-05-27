@@ -13,7 +13,7 @@ keys:
   - &tomwrw age180zs35et9c5zljx9k86rusv7dvsft5znghd5fjf42n8umgjsjatq6f2d8m
 
   # Host age public keys — replaced by `just bootstrap HOST`.
-  - &endgame age180zs35et9c5zljx9k86rusv7dvsft5znghd5fjf42n8umgjsjatq6f2d8m
+  - &endgame age1zw2pudl3du0ldlx2g5jtda7ehewmkccwqsemvq3g0s7umu29cdlqyr8j9d
   - &flatmate age14tc2qwaxfrkcxcqpgtta84evps5fnr5lsrt77g73ck2xz4vckq0q4fkjke
   - &spectre age1lc2klf0xh05pl5wjyzr3yc4w73y8h58qyve5930qu0h0gxt85dlqqy7vun
 

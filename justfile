@@ -1,4 +1,4 @@
-cachyos-cache := "--option extra-substituters 'https://attic.xuyh0120.win/lantian' --option extra-trusted-public-keys 'lantian:EeAUQ+W+6r7EtwnmYjeVwx5kOGEBpjlBfPlzGlTNvHc='"
+cachyos-cache := "--option allow-import-from-derivation true --option extra-substituters 'https://attic.xuyh0120.win/lantian' --option extra-trusted-public-keys 'lantian:EeAUQ+W+6r7EtwnmYjeVwx5kOGEBpjlBfPlzGlTNvHc='"
 
 # Phase 1 — install OS. Nothing ships from the repo; nixos-anywhere
 # prompts for the LUKS passphrase interactively (type from password
@@ -47,7 +47,7 @@ bootstrap HOST:
     scp ~/.ssh/id_ed25519           tomwrw@{{ HOST }}:.ssh/id_ed25519
     scp ~/.ssh/id_ed25519.pub       tomwrw@{{ HOST }}:.ssh/id_ed25519.pub
     ssh tomwrw@{{ HOST }} 'chmod 600 ~/.config/sops/age/keys.txt ~/.ssh/id_ed25519 && chmod 644 ~/.ssh/id_ed25519.pub'
-    nixos-rebuild switch --flake .#{{ HOST }} --target-host tomwrw@{{ HOST }} --sudo --ask-sudo-password {{ cachyos-cache }}
+    NIX_SSHOPTS="-A" nixos-rebuild switch --flake .#{{ HOST }} --target-host tomwrw@{{ HOST }} --use-remote-sudo {{ cachyos-cache }}
 
 # Build a host's config locally (no activation).
 build HOST:
@@ -55,7 +55,7 @@ build HOST:
 
 # Rebuild a remote host.
 rebuild HOST:
-    nixos-rebuild switch --flake .#{{ HOST }} --target-host tomwrw@{{ HOST }} --sudo --ask-sudo-password {{ cachyos-cache }}
+    NIX_SSHOPTS="-A" nixos-rebuild switch --flake .#{{ HOST }} --target-host tomwrw@{{ HOST }} --use-remote-sudo {{ cachyos-cache }}
 
 # One-time bridge: build on the target instead of pushing a closure.
 # Use this when the target's nix daemon hasn't yet learned to trust
@@ -63,7 +63,7 @@ rebuild HOST:
 # nix.settings.trusted-users entry has been activated). After one
 # successful run, `just rebuild HOST` works normally.
 rebuild-onhost HOST:
-    nixos-rebuild switch --flake .#{{ HOST }} --build-host tomwrw@{{ HOST }} --target-host tomwrw@{{ HOST }} --sudo --ask-sudo-password {{ cachyos-cache }}
+    NIX_SSHOPTS="-A" nixos-rebuild switch --flake .#{{ HOST }} --build-host tomwrw@{{ HOST }} --target-host tomwrw@{{ HOST }} --use-remote-sudo {{ cachyos-cache }}
 
 # Rebuild the local host.
 local:

@@ -12,7 +12,6 @@ let
   hostIdentifiers = {
     endgame = "O5ZE76L-VFVTOEB-LBIKRRS-LNJKJTN-SOPSNTS-NMTNUHO-OOO453I-PXDOBAI";
     flatmate = "PSSB5YD-TVF4BXM-RH4E5DY-NZYON6Y-LKBBBGL-HHNIB2T-K6QRHIM-FTHKUAF";
-    spectre = "IV2MEMD-PDQR3JJ-SNL2QMY-52YXR5X-GM227G6-DTRMJLF-HRW6CA6-VZQ74AG";
   };
   # Helper to get the list of hostnames as
   # [ "endgame" "flatmate" "spectre" ].
@@ -67,7 +66,7 @@ in
       folders = {
         # Sync - my primary sync folder on all hosts.
         "Syncthing" = {
-          path = "${config.home.homeDirectory}/Documents/Syncthing";
+          path = "${config.home.homeDirectory}/Syncthing";
           # Use the list of all keys from the hostIdentifiers map.
           devices = allHosts;
           # File versioning to keep deleted/modified file history.

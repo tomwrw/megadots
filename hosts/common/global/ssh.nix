@@ -15,7 +15,7 @@
       KbdInteractiveAuthentication = false;
       PermitRootLogin = "no";
       X11Forwarding = false;
-      AllowAgentForwarding = false;
+      AllowAgentForwarding = true;
       MaxAuthTries = 3;
       LoginGraceTime = 30;
       ClientAliveInterval = 300;
