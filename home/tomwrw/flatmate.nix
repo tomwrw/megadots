@@ -23,7 +23,6 @@
   home = {
     stateVersion = lib.mkDefault "25.11";
     spec = {
-      hostName = "flatmate";
       platform = "nixos";
     };
   };

@@ -14,7 +14,6 @@
     ./sops.nix
     ./ssh.nix
     ./systemd-initrd.nix
-    ./yubikey.nix
     ./zsh.nix
   ]
   # Include any custom NixOS modules I have defined.

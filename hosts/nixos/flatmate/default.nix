@@ -31,21 +31,12 @@
     ../../common/optional/cachyos-kernel.nix
     ../../common/optional/graphics.nix
     ../../common/optional/pipewire.nix
+    ../../common/optional/systemd-boot.nix
     ../../common/optional/virt-manager.nix
+    ../../common/optional/yubikey.nix
     # Import my user configs.
     ../../common/users/tomwrw
     # Import my desktop.
     ../../common/optional/desktop/gnome
   ];
-
-  boot = {
-    loader = {
-      efi.canTouchEfiVariables = true;
-      timeout = 15;
-      systemd-boot = {
-        enable = true;
-        configurationLimit = 10;
-      };
-    };
-  };
 }

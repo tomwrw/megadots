@@ -1,4 +1,8 @@
-{ lib, ... }:
+{
+  lib,
+  osConfig ? null,
+  ...
+}:
 let
   inherit (lib) mkOption types;
 in
@@ -6,11 +10,18 @@ in
   options.home.spec = {
     hostName = mkOption {
       type = types.str;
+      default =
+        if osConfig != null then
+          osConfig.networking.hostName
+        else
+          throw "home.spec.hostName must be set explicitly under standalone Home Manager.";
+      defaultText = lib.literalExpression "osConfig.networking.hostName";
       description = ''
         Hostname of the machine this Home Manager configuration is
-        deployed to. Used by modules that need host-aware behaviour
-        (e.g. syncthing secret paths) without reaching into `osConfig`,
-        so it works under both NixOS-integrated and standalone HM.
+        deployed to. Defaults to `osConfig.networking.hostName` when
+        Home Manager is integrated as a NixOS module, eliminating
+        drift between the two. Must be set explicitly under standalone
+        Home Manager (where `osConfig` is unavailable).
       '';
       example = "endgame";
     };

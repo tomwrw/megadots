@@ -22,7 +22,6 @@
   home = {
     stateVersion = lib.mkDefault "25.11";
     spec = {
-      hostName = "endgame";
       platform = "nixos";
     };
   };

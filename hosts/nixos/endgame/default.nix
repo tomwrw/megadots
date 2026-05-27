@@ -34,6 +34,7 @@
     ../../common/optional/pipewire.nix
     ../../common/optional/secure-boot.nix
     ../../common/optional/virt-manager.nix
+    ../../common/optional/yubikey.nix
     # Import my user configs.
     ../../common/users/tomwrw
     # Import my desktop.
