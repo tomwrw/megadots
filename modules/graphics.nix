@@ -1,6 +1,0 @@
-{
-  flake.modules.nixos.pc.hardware.graphics = {
-    enable = true;
-    enable32Bit = true;
-  };
-}

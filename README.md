@@ -4,156 +4,175 @@
 
 # Introduction
 
-My NixOS configuration, built on the [dendritic](https://github.com/mightyiam/dendritic) pattern using [flake-parts](https://github.com/hercules-ci/flake-parts) and [import-tree](https://github.com/vic/import-tree). I publish this to help others, as I found other peoples repos extremely helpful when learning Nix/NixOS. Hopefully I can return the favour.
+My NixOS configuration, built on the classic NixOS + Home Manager + Flake pattern. I publish this to help others, as I found other peoples repos extremely helpful when learning Nix/NixOS. Hopefully I can return the favour.
 
 > **Note:** This is my personal config. Any branch other than `main` should be considered a work in progress. Hardware configs, hostnames, secrets and user attributes are unique to me - you'll need to bring your own.
 
 ## About
 
-This is the second iteration of my NixOS configuration. The first was a more traditional modular flake structure influenced by [Misterio77's nix-config](https://github.com/Misterio77/nix-config). You can find that version [archived here](https://github.com/tomwrw/nix-config).
-
-This version follows the dendritic pattern - each file is a single feature, flake-parts composes them, and `import-tree` picks them up automatically. No manual import lists, no inheritance chains. Adding a new feature is one file. Adding a new host is one directory.
-
-The inspiration and structural wiring for this config was from [mightyiam's infra](https://github.com/Misterio77/nix-config) config. I learned a ton from their work, and the roots of my config can be directly traced back there.
+This is the third iteration of my NixOS configuration. I've been daily driving NixOS for nearly 2 years. Most recently, I have dabbled with the dendritic pattern (you can find this in the commit history tagged as 'dendritic'), but always found myself drawn back to the more traditional modular flake structure influenced by [Misterio77's nix-config](https://github.com/Misterio77/nix-config).
 
 I'm not a developer. I'm a tinkerer with a consultancy job in a technical field who got curious about declarative system management and fell down the NixOS rabbit hole. This project has genuinely brought some fun back in to computing for me.
 
-## Features
+## Features.
 
-- 🌳 **Dendritic pattern** flat modules, self-contained inputs, no inheritance chains.
-- 🏷️ **Typed host namespace** hosts live in `configurations.nixos.<host>.module`, separate from reusable `flake.modules.nixos.*` tags.
-- ✅ **`flake.checks` per host** `nix flake check` builds every host closure, so a broken refactor fails fast.
-- 🚫 **Strict unfree policy** no blanket `allowUnfree`, every unfree package is enumerated in `nixpkgs.config.allowUnfreePackages` next to the feature that pulls it in.
-- 📌 **Explicit `pkgs-stable`** a second nixpkgs instance pinned to nixos-25.11, injected via `_module.args` for anything that wants a stable rather than unstable package.
-- ❄️ **NixOS** system configuration across multiple hosts.
-- 🏠 **Home Manager** as a NixOS module for user configuration.
-- 🔐 **sops-nix** for secrets management with age encryption.
-- ♻️ **Impermanence** with LUKS encrypted btrfs rollback to a blank root snapshot on every boot.
-- 🛡️ **Secure Boot** via limine with automatic key generation and enrollment.
-- 💾 **Disko** for declarative disk partitioning.
-- ⚡ **CachyOS kernel** via nix-cachyos-kernel.
-- 🎨 **Stylix** for consistent theming across the desktop (Home Manager scoped, theme follows the user).
-- 🚀 **nixos-anywhere** for bare metal remote deployment.
-- ✨ **treefmt + nixfmt** `nix fmt` formats the whole tree; `check-flake-file` guards against hand-edits to the auto-generated `flake.nix`.
+- :desktop_computer: **NixOS** system configuration on multiple hosts.
+- :house: **Home Manager** as a NixOS module, with a per-host file per user.
+- :ghost: **sops-nix** for secrets management, with age keys derived from SSH host keys.
+- :camera_flash: **Preservation** with root on tmpfs for declarative impermanence.
+- :cop: **Secure Boot** via lanzaboote with automatic key generation and enrollment.
+- :snowflake: **Flake** with modular, composable host and user configs.
+- :floppy_disk: **Disko** for declarative disk partitioning.
+- :anger: **CachyOS kernel** for a gaming optimised kernel (opt-in per host).
+- :art: **Stylix** for consistent base16 theming across the desktop.
+- :rocket: **nixos-anywhere** for bare metal remote deployment.
+- :white_check_mark: **`nix flake check`** runs formatting, deadnix and statix on the whole tree.
 
-## Hosts
+## Usage.
 
-| System | Description | Type | CPU | GPU |
-|--------|-------------|------|-----|-----|
-| endgame | Primary desktop | Custom build | AMD Ryzen 7800X3D | AMD 9070XT |
-| flatmate | Mobile workstation | Surface Pro 7 | Intel i7-1065G7 | Intel iGPU |
-| spectre | Test VM | QEMU/KVM | Host passthrough | virtio-gpu |
+This configuration has multiple system entry points, with Home Manager configured as a NixOS module. At the moment, I am a single user (tomwrw) managing multiple machines. Each host gets its own Home Manager file at `home/tomwrw/<hostname>.nix`, so the same user can have a different feature set per machine.
 
-All hosts run NixOS unstable with GNOME on Wayland, full disk encryption (LUKS + btrfs), and impermanence. I have a single user (tomwrw) managed through Home Manager.
+### Getting Started.
 
-## Structure
-
-```
-.
-├── flake.nix                    # Auto-generated by flake-file. Do not edit.
-├── justfile                     # Deploy, build and rebuild commands.
-├── assets/
-│   └── wallpaper/               # Wallpapers used by Stylix.
-├── keys/                        # Encrypted age host keys for deployment.
-├── secrets/                     # sops-encrypted secrets (per-host + shared).
-└── modules/
-    ├── configurations/
-    │   └── nixos.nix            # Host namespace option + flake.checks wiring.
-    ├── endgame/                 # Per-host: hostname, hardware, disko, imports.
-    ├── flatmate/
-    ├── spectre/
-    ├── home-manager/
-    │   ├── base.nix             # Baseline HM config for the owner.
-    │   └── nixos.nix            # Wires homeManager.<tag> to nixos.<tag>.
-    └── *.nix                    # One feature per file, flat. Examples below.
-```
-
-Feature files sit flat under `modules/`. Each one declares its own `flake-file.inputs` (if it needs one), then writes into `flake.modules.nixos.<tag>` or `flake.modules.homeManager.<tag>` for the scope it belongs to (`base`, `pc`, `gaming`). A few key ones:
-
-- `flake-parts.nix` - flake-parts + flake-file + import-tree bootstrap.
-- `meta.nix` / `owner.nix` - typed metadata and the owner account.
-- `nixpkgs.nix` - `allowUnfree` predicate, `pkgs-stable` instance.
-- `nix-settings.nix` - substituters, GC, experimental features, `abort-on-warn`.
-- `impermanence.nix` - impermanence module + initrd rollback service.
-- `disko.nix` / `secure-boot.nix` / `systemd-boot.nix` / `sops.nix` - ecosystem modules.
-- `pc.nix` / `gaming.nix` - tag inheritance (e.g. `gaming` imports `pc` which imports `base`).
-- `firefox.nix`, `ghostty.nix`, `fish.nix`, `gnome.nix`, `steam.nix`, ... - one feature per file.
-- `treefmt.nix` - formatter wiring.
-
-`flake.nix` is auto-generated - run `nix run .#write-flake` to regenerate it after adding or removing inputs. `check-flake-file` in `nix flake check` will fail if the on-disk `flake.nix` drifts from what the generator would emit.
-
-## Usage
-
-### Deploying a new host
-
-Deploy a fresh host from the NixOS minimal live CD using nixos-anywhere:
+Most day-to-day work goes through the `justfile`. The full deploy flow is two phases - `deploy` installs the OS, `bootstrap` wires up secrets after the host has generated its SSH keys.
 
 ```bash
-just endgame-deploy
-```
+# Build a host's closure locally (no activation).
+just build endgame
 
-This decrypts the host's age key and LUKS passphrase, then runs nixos-anywhere against the target.
+# Rebuild a remote host (pushes locally-built closure).
+just rebuild endgame
 
-### Rebuilding
+# Rebuild on the target itself (one-time bridge before the user is
+# trusted with the remote nix daemon, e.g. straight after deploy).
+just rebuild-onhost endgame
 
-```bash
-# Rebuild the current host locally.
-just local-rebuild
+# Rebuild the local host.
+just local
 
-# Rebuild a remote host.
-just endgame-rebuild
-```
+# Phase 1 - bare metal install via nixos-anywhere from the NixOS
+# minimal live CD. Prompts for the LUKS passphrase. Secrets do NOT
+# work yet at this point.
+just deploy endgame
 
-### Building without switching
+# Phase 2 - register the host's age identity (derived from the SSH
+# host key it just generated), copy in user keys, rewrap secrets,
+# trigger a rebuild. After this, all secrets decrypt.
+just bootstrap endgame
 
-```bash
-just endgame-build
-```
-
-### Validating the tree
-
-Before pushing, or after any non-trivial refactor:
-
-```bash
-# Evaluates every module and builds every host closure.
-nix flake check
-
-# Formats every .nix file in place via nixfmt.
+# Format every .nix file in the tree.
 nix fmt
+
+# Run flake checks (formatting, deadnix, statix, host eval).
+nix flake check
 ```
 
-### Updating flake inputs
+### Updating.
+
+To update the flake inputs (e.g., `nixpkgs`), run the following command:
 
 ```bash
 nix flake update
 ```
 
-### Regenerating flake.nix
+### Configuring sops-nix.
 
-After adding or removing a module with `flake-file.inputs`:
+I use sops-nix for secrets in this configuration (user passwords, syncthing keys, etc). Secrets are encrypted with age, and each host has its own age key derived from its SSH host key via `ssh-to-age`. My user age key is derived the same way from `~/.ssh/id_ed25519`.
 
-```bash
-nix run .#write-flake
+The flow for adding a new host:
+
+1. Add a new `- &HOST age1...placeholder` entry to `.sops.yaml` under `keys:`, and a matching `- *HOST` reference under the `creation_rules` `age:` list. The bootstrap recipe does an in-place sed on this line, so the placeholder needs to exist for the match to succeed.
+2. Run `just deploy HOST`. This installs the OS via nixos-anywhere. The host generates its own SSH host key during install.
+3. Run `just bootstrap HOST`. This:
+    - Derives your local user age key from `~/.ssh/id_ed25519` if it doesn't already exist.
+    - Reads the host's new SSH pubkey over SSH and converts it to an age pubkey.
+    - Replaces the placeholder in `.sops.yaml` with the real key.
+    - Re-wraps all secrets with `sops updatekeys`.
+    - Copies your user SSH key and age key to the host.
+    - Triggers a rebuild so the host can decrypt its secrets.
+
+After `bootstrap`, the host is fully functional and `just rebuild HOST` works normally.
+
+### Configuring Secure Boot.
+
+Secure Boot is handled by [lanzaboote](https://github.com/nix-community/lanzaboote) with `autoGenerateKeys` and `autoEnrollKeys` turned on, so the manual `sbctl` ritual is mostly automated. To enable it on a host:
+
+1. Put the host into Secure Boot 'Setup Mode' in the UEFI firmware. On my MSI board there isn't a specific 'Setup Mode' toggle - I set `Factory Keys = disabled` and `Secure Boot Mode = Custom`, then use the resulting custom option to `Delete all UEFI vars`.
+2. Add `../../common/optional/secure-boot.nix` to the host's imports (already done for endgame).
+3. Rebuild the host. lanzaboote generates the keys, signs the bootloader and reboots once enrollment is complete.
+4. Verify with `sudo sbctl status` - Secure Boot should show as enabled (user).
+
+## Hosts.
+
+| System | Description | Type | OS | CPU | GPU |
+|---|---|---|---|---|---|
+| endgame | My personal desktop | Custom build | NixOS | AMD Ryzen 7800X3D | AMD 9070XT |
+| flatmate | My mobile workstation | Surface Pro 7 | NixOS | Intel i7-1065G7 | Intel iGPU |
+| spectre | My test VM | QEMU VM | NixOS | Host passthrough | virtio-gpu |
+
+I have a single user that I manage through Home Manager (tomwrw). You may add additional users or rename mine to inherit my existing settings - though you'll need to replace the age keys in `.sops.yaml` with your own, and re-create the `secrets/secrets.yaml` file with your own paths and secrets.
+
+### File structure.
+
+I use the following structure to organise my configurations.
+
+```
+.
+├── flake.nix             # My flake. Entry point for system configs.
+├── flake.lock            # Pinned flake inputs.
+├── justfile              # Deploy, bootstrap, build and rebuild recipes.
+├── .sops.yaml            # sops-nix recipients and creation rules.
+├── assets                # Static assets used by the config.
+│   └── wallpaper         # Wallpapers used by my stylix theme.
+├── home                  # Home Manager configs, one folder per user.
+│   └── tomwrw            # My primary user.
+│       ├── global        # Global Home Manager configs, applied for the user on every host.
+│       ├── features      # Optional Home Manager configs, selectively imported per host.
+│       │   ├── cli           # Terminal tooling (ghostty, zsh, git, btop, etc.).
+│       │   ├── comms         # Messaging apps (signal, element, vesktop, whatsapp).
+│       │   ├── desktop       # Desktop-environment specific config.
+│       │   │   ├── common    # Shared desktop config (stylix, etc.).
+│       │   │   └── gnome     # GNOME-specific config and extensions.
+│       │   ├── development   # Editors and AI tooling (vscodium, cursor, claude-code, gemini).
+│       │   ├── media         # Media apps (spotify, ente).
+│       │   ├── productivity  # Browser, notes, etc. (firefox, obsidian, joplin).
+│       │   ├── security      # User-scoped security (sops, proton suite, ente-auth).
+│       │   └── services      # User services (syncthing, filen).
+│       ├── endgame.nix   # Per-host Home Manager entry point (imports features).
+│       ├── flatmate.nix
+│       └── spectre.nix
+├── hosts                 # NixOS host configs.
+│   ├── common            # Shared NixOS config.
+│   │   ├── global        # Global system configs, applied on every host.
+│   │   ├── optional      # Optional system configs, selectively imported per host.
+│   │   │   └── desktop   # Optional desktop-environment configs (e.g. gnome).
+│   │   └── users         # Per-user system-level config.
+│   │       └── tomwrw    # My user account, groups, sops password binding.
+│   └── nixos             # NixOS hosts managed by this repo.
+│       ├── endgame       # My primary desktop.
+│       ├── flatmate      # My mobile device (Surface Pro 7).
+│       └── spectre       # My test VM.
+├── modules               # Reusable modules I'd be happy to share.
+│   ├── home-manager      # Custom-written Home Manager modules.
+│   └── nixos             # Custom-written NixOS modules.
+├── overlays              # Overlays for patches and overrides.
+├── pkgs                  # Custom packages built from this repo.
+└── secrets               # sops-encrypted secrets.
+    └── secrets.yaml
 ```
 
-## Configuring sops-nix
+## Community.
 
-I use sops-nix for secrets (user passwords, etc). Secrets are encrypted with age using per-host keys. Since I use nixos-anywhere for deployment and impermanence wipes root on every boot, the host's age key needs to exist at deploy time.
+I learn by doing. None of this would be possible without the copious ammounts of developers and repos that share their content freely for others like me to disect and study. There are many, but to name a few - shout outs go to:
 
-My justfile `prep` recipe handles this - it decrypts the host's age key from `keys/<host>.enc` and the LUKS passphrase from `secrets/<host>.yaml`, then passes them to nixos-anywhere via `--extra-files` and `--disk-encryption-keys`.
+[ryan4yin](https://github.com/ryan4yin/) for their [awesome book](https://nixos-and-flakes.thiscute.world/) on NixOS (if you haven't started here, then give it a whirl - it really was great) and the [i3 Kickstarter repo](https://github.com/ryan4yin/nix-config/blob/i3-kickstarter/). Both excellent resources to help me understand the power of NixOS.
 
-For this to work, you need:
+The majority of my config structure was heavily influenced by the awesome [Misterio77](https://github.com/Misterio77/). Not only did his [Nix Starter Configs](https://github.com/Misterio77/nix-starter-configs) help guide me early on, but his own [Nix Config](https://github.com/Misterio77/nix-config/tree/main) repo was a great inspiration on how to construct and model a modular Nix configuration.
 
-1. Your age master key at `~/.config/sops/age/keys.txt`.
-2. An encrypted host key at `keys/<host>.enc`.
-3. Host secrets at `secrets/<host>.yaml` containing a `luks-passphrase` field.
+#### And more inspiration...
 
-## Community
-
-None of this would be possible without the people who share their work freely. Some shout outs:
-
-- [mightyiam](https://github.com/mightyiam/) for the [dendritic pattern](https://github.com/mightyiam/dendritic) itself and the [infra repo](https://github.com/mightyiam/infra) as the canonical reference - most of the structural decisions in this config are traceable back there.
-- [ryan4yin](https://github.com/ryan4yin/) for their [NixOS & Flakes Book](https://nixos-and-flakes.thiscute.world/) - the best starting point I found.
-- [Misterio77](https://github.com/Misterio77/) for [nix-starter-configs](https://github.com/Misterio77/nix-starter-configs) and their [personal config](https://github.com/Misterio77/nix-config) which heavily influenced my first iteration.
-- [vic](https://github.com/vic/) for [import-tree](https://github.com/vic/import-tree) and [flake-file](https://github.com/vic/flake-file) - the foundation of the dendritic pattern.
-- [doc-steve](https://github.com/doc-steve/) for their [dendritic guide](https://github.com/doc-steve/nix-config-guide) which taught me how to structure this config.
+- Nvim - https://github.com/Nvim (https://github.com/Nvim/snowfall)
+- mtrsk - https://github.com/mtrsk (https://github.com/mtrsk/nixos-config)
+- runarsf - https://github.com/runarsf (https://github.com/runarsf/dotfiles)
+- librephoenix - https://github.com/librephoenix (https://github.com/librephoenix/nixos-config)
+- frost-phoenix - https://github.com/Frost-Phoenix (https://github.com/Frost-Phoenix/nixos-config)
