@@ -11,6 +11,7 @@
     # Import my features for the user on this host.
     ./features/comms
     ./features/development
+    ./features/gaming
     ./features/media
     ./features/productivity
     ./features/security
