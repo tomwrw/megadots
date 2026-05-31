@@ -21,7 +21,7 @@
   services.sunshine = {
     enable = true;
     autoStart = true;
-    capSysAdmin = false; # only needed for Wayland -- omit this when using with Xorg
+    capSysAdmin = true; # only needed for Wayland -- omit this when using with Xorg
     openFirewall = true;
   };
 
