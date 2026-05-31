@@ -1,5 +1,5 @@
 {
   imports = [
-    ./eden.nix
+    ./ryujinx.nix
   ];
 }

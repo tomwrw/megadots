@@ -1,6 +1,6 @@
 { pkgs, ... }:
 {
   home.packages = [
-    pkgs.eden
+    pkgs.ryubing
   ];
 }
