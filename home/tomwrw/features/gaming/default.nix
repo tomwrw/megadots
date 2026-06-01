@@ -1,5 +1,5 @@
 {
   imports = [
-    ./ryujinx.nix
+    ./emulation.nix
   ];
 }
