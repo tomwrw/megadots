@@ -1,0 +1,21 @@
+{ ... }:
+{
+  den.aspects.hardware.nixos =
+    { lib, ... }:
+    {
+      # Core hardware settings.
+      hardware = {
+        enableRedistributableFirmware = true;
+        enableAllFirmware = true;
+        uinput.enable = true;
+      };
+
+      # Wrapper service for udisks. Lets non-root users mount removable
+      # media without polkit prompts.
+      services.devmon.enable = true;
+
+      # Disabling speechd, the speech dispatcher daemon, as it's not
+      # needed for most desktop use cases and can consume resources.
+      services.speechd.enable = lib.mkForce false;
+    };
+}
