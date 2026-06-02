@@ -11,6 +11,7 @@
     den.aspects.networking
     den.aspects.hardware
     den.aspects.disko
+    den.aspects.boot
     den.aspects.cli-tools
   ];
 }

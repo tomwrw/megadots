@@ -3,15 +3,10 @@
   den.aspects.secure-boot.nixos =
     { lib, ... }:
     {
+      # Replace the default bootloader from den.aspects.boot: force systemd-boot
+      # off and hand over to lanzaboote. (canTouchEfiVariables is already set by
+      # the boot aspect; lanzaboote's lzbt installer doesn't consult it anyway.)
       boot.loader.systemd-boot.enable = lib.mkForce false;
-
-      # Conventional EFI baseline (matches lanzaboote's own test config).
-      # NB: lanzaboote installs via boot.loader.external/lzbt and does not read
-      # this option, so it is currently inert — boot-entry registration and key
-      # enrollment happen at runtime and depend on the firmware (UEFI + Secure
-      # Boot in setup mode + writable efivars), not on this flag. Kept as the
-      # correct baseline and in case the bootloader ever changes.
-      boot.loader.efi.canTouchEfiVariables = true;
 
       boot.lanzaboote = {
         enable = true;
