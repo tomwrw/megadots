@@ -35,7 +35,14 @@
           ]
           ++ lib.concatMap (e: e.directories or [ ]) persist;
           files = [
-            "/etc/machine-id"
+            # machine-id persisted as a bind-mount (matches the proven `main`
+            # branch). `inInitrd = true` brings it up early so the bootloader
+            # install on a fresh nixos-anywhere deploy sees a valid id instead
+            # of crashing on an empty one.
+            {
+              file = "/etc/machine-id";
+              inInitrd = true;
+            }
             # NB: SSH host keys are NOT bind-mounted from /persist back to
             # /etc/ssh/. Instead `services.openssh.hostKeys` (below)
             # points sshd directly at /persist paths. Bind-mounting empty
@@ -45,6 +52,11 @@
           ++ lib.concatMap (e: e.files or [ ]) persist;
         };
       };
+
+      # machine-id is bind-mounted from /persist, so systemd's "commit the
+      # transient id from tmpfs to disk" service has nothing to do and would
+      # fail noisily — disable it (matches the `main` branch).
+      systemd.services.systemd-machine-id-commit.enable = false;
 
       # Make sshd read & generate host keys directly on /persist. On
       # first boot sshd-keygen creates valid keys there; on subsequent

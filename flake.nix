@@ -24,6 +24,8 @@
       inputs.nixpkgs.follows = "nixpkgs";
       url = "github:nix-community/lanzaboote";
     };
+    nix-cachyos-kernel.url = "github:xddxdd/nix-cachyos-kernel/release";
+    nixos-hardware.url = "github:nixos/nixos-hardware";
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     nixpkgs-lib.follows = "nixpkgs";
     preservation.url = "github:nix-community/preservation";
