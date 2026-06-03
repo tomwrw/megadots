@@ -8,4 +8,4 @@ build HOST:
     nixos-rebuild build --flake .#{{ HOST }}
 
 rebuild HOST:
-    nixos-rebuild switch --flake .#{{ HOST }} --target-host tomwrw@{{ HOST }} --use-remote-sudo
+    nixos-rebuild switch --flake .#{{ HOST }} --target-host tomwrw@{{ HOST }} --sudo --ask-sudo-password
