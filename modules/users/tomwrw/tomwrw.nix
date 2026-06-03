@@ -51,24 +51,6 @@
         includes = [
           den.aspects.gaming
         ];
-
-        # Persistence rules that belong to *this* user on an impermanent
-        # host. The host owns "system identity should survive a wipe"
-        # (machine-id, sshd keys); the user owns "my home should survive
-        # a wipe." Routed via mutual-provider so it only fires when
-        # tomwrw is on spectre.
-        nixos =
-          { ... }:
-          {
-            preservation.preserveAt."/persist".directories = [
-              {
-                directory = "/home/tomwrw";
-                user = "tomwrw";
-                group = "users";
-                mode = "0700";
-              }
-            ];
-          };
       };
     };
 }

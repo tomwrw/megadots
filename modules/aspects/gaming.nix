@@ -12,8 +12,8 @@
     homeManager =
       { pkgs, ... }:
       {
-        home.packages = with pkgs; [
-          mangohud
+        home.packages = [
+          pkgs.mangohud
         ];
       };
   };

@@ -1,10 +1,3 @@
-# Disk configuration file for disko for the host 'spectre'.
-# There are some specific configurations in this disko
-# file that are needed for my impermanence setup to work.
-# The primary btrfs volume needs to be labelled 'nixos'
-# using the extraArgs = ["-L" "nixos" "-f"]; setting,
-# and I also use a postCreateHook to generate a blank
-# root snapshot when the host is first created.
 { ... }:
 let
   diskId = "/dev/vda";
