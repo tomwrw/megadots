@@ -52,7 +52,7 @@
                 globalAnnounceEnabled = false; # no global discovery
                 localAnnounceEnabled = true; # LAN discovery only
                 natEnabled = false; # local network, no NAT traversal
-                urAcceptedStr = "-1"; # disable usage-reporting prompts
+                urAccepted = -1; # disable usage-reporting prompts
               };
 
               folders.Syncthing = {
