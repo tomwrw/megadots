@@ -13,6 +13,8 @@
         (den.provides.user-shell "fish")
         den.provides.define-user
         den.aspects.sops
+        den.aspects.syncthing
+        den.aspects.firefox
       ];
 
       nixos =
@@ -44,21 +46,33 @@
             ];
           };
 
-          # Files shipped via `nixos-anywhere --extra-files` land root-owned, and
-          # --extra-files also creates their parent dirs (.config, .config/sops)
-          # as root before the user exists — NixOS only chowns the home dir
-          # itself, not nested subdirs. Hand every seeded dir + file to tomwrw so
-          # HM activation (and ssh) can use them. Covers the SSH keypair too (not
-          # a sops concern, but shipped the same way).
+          # `--extra-files` seeds these dirs + files root-owned (before the user
+          # exists). tmpfiles `d` owns the dirs fine, but systemd-tmpfiles refuses
+          # to chown a *file* once the path runs through tomwrw-owned dirs (its
+          # safe-path protection), so the key files stay root-owned. The oneshot
+          # below owns them from root instead, before HM activation reads them.
           systemd.tmpfiles.rules = [
             "d /home/tomwrw/.ssh 0700 tomwrw users -"
-            "z /home/tomwrw/.ssh/id_ed25519 0600 tomwrw users -"
-            "z /home/tomwrw/.ssh/id_ed25519.pub 0644 tomwrw users -"
             "d /home/tomwrw/.config 0755 tomwrw users -"
             "d /home/tomwrw/.config/sops 0700 tomwrw users -"
             "d /home/tomwrw/.config/sops/age 0700 tomwrw users -"
-            "z /home/tomwrw/.config/sops/age/keys.txt 0600 tomwrw users -"
           ];
+
+          systemd.services.tomwrw-seeded-keys = {
+            description = "Own tomwrw's deploy-seeded key files";
+            wantedBy = [ "multi-user.target" ];
+            before = [ "home-manager-tomwrw.service" ];
+            serviceConfig = {
+              Type = "oneshot";
+              RemainAfterExit = true;
+            };
+            script = ''
+              chown tomwrw:users \
+                /home/tomwrw/.config/sops/age/keys.txt \
+                /home/tomwrw/.ssh/id_ed25519 \
+                /home/tomwrw/.ssh/id_ed25519.pub || true
+            '';
+          };
         };
 
       homeManager =
