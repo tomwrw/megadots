@@ -21,7 +21,12 @@
           ./_disko.nix
           ./_hardware.nix
         ];
-        networking.hostName = "flatmate";
+        # Set the host-specific hostname here.
+        networking = {
+          hostName = "flatmate";
+          domain = "home.arpa";
+        };
+        # Set the system state version.
         system.stateVersion = "26.05";
       };
   };

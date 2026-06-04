@@ -1,6 +1,6 @@
 { ... }:
 let
-  diskId = "/dev/vda";
+  diskId = "/dev/disk/by-id/nvme-Sabrent_SB-RKT5-2TB_48836385600606";
 in
 {
   boot.tmp.cleanOnBoot = true;
@@ -76,7 +76,7 @@ in
                       ];
                     };
                     "/swap" = {
-                      swap.swapfile.size = "12G";
+                      swap.swapfile.size = "48G";
                       mountpoint = "/swap";
                       mountOptions = [
                         "noatime"

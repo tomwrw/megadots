@@ -5,7 +5,7 @@
 }:
 {
   den.hosts.x86_64-linux = {
-    spectre = {
+    endgame = {
       users = {
         tomwrw = { };
       };

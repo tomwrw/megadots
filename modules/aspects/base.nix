@@ -13,6 +13,7 @@
     den.aspects.kernel
     den.aspects.disko
     den.aspects.boot
+    den.aspects.sops
     den.aspects.cli-tools
   ];
 }

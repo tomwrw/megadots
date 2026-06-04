@@ -15,15 +15,20 @@
   boot = {
     initrd = {
       availableKernelModules = [
+        "nvme"
         "xhci_pci"
         "ahci"
-        "sr_mod"
-        "virtio_pci"
-        "virtio_blk"
+        "usb_storage"
+        "usbhid"
+        "sd_mod"
+        "hid"
       ];
       kernelModules = [ "amdgpu" ];
     };
-    kernelModules = [ ];
+    kernelModules = [
+      "kvm-amd"
+      "amdgpu"
+    ];
     extraModulePackages = [ ];
   };
 
@@ -32,7 +37,6 @@
   # still possible to use this option, but it's recommended to use it in conjunction
   # with explicit per-interface declarations with `networking.interfaces.<interface>.useDHCP`.
   networking.useDHCP = lib.mkDefault true;
-  # networking.interfaces.enp6s0.useDHCP = lib.mkDefault true;
 
   nixpkgs.hostPlatform.system = "x86_64-linux";
   hardware.cpu.amd.updateMicrocode = lib.mkDefault config.hardware.enableRedistributableFirmware;

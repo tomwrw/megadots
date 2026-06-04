@@ -1,6 +1,6 @@
 { den, ... }:
 {
-  den.aspects.spectre = {
+  den.aspects.endgame = {
     includes = [
       den.aspects.base
       den.aspects.secure-boot
@@ -17,7 +17,12 @@
           ./_disko.nix
           ./_hardware.nix
         ];
-        networking.hostName = "spectre";
+        # Set the host-specific hostname here.
+        networking = {
+          hostName = "endgame";
+          domain = "home.arpa";
+        };
+        # Set the system state version.
         system.stateVersion = "26.05";
       };
   };

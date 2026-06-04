@@ -1,0 +1,29 @@
+# sops creation rules. Split by scope: each host/user secrets file is encrypted
+# only to that entity's dedicated age key.
+#
+# Replace the age1...REPLACE_ME public keys below with your pre-generated keys:
+#   age-keygen -o age.txt   # private -> LUKS USB; never commit
+#   age-keygen -y age.txt   # public  -> paste here
+#
+# After editing recipients, rewrap existing secrets with:
+#   sops updatekeys secrets/hosts/<host>.yaml
+keys:
+  - &tomwrw age1l9qj6yujk9ezcepenlwx5knpyrrefw9d0304u73k7gunztmu9uvqcyv2tj
+  - &endgame age1hwdpgjlttsgxlu0qtqd4x752tx3ucn8n6ghc3etwnmru430ugcvquv4kkg
+  - &flatmate age16v6x8zjr8q3mhavct60resfte35xd4e624pu263zk938c9e7m4ys8e2qwm
+
+creation_rules:
+  - path_regex: ^secrets/hosts/endgame\.yaml$
+    key_groups:
+      - age:
+          - *tomwrw
+          - *endgame
+  - path_regex: ^secrets/hosts/flatmate\.yaml$
+    key_groups:
+      - age:
+          - *tomwrw
+          - *flatmate
+  - path_regex: ^secrets/users/tomwrw\.yaml$
+    key_groups:
+      - age:
+          - *tomwrw
