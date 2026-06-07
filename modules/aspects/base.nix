@@ -13,7 +13,11 @@
     den.aspects.kernel
     den.aspects.disko
     den.aspects.boot
+    den.aspects.systemd-initrd
     den.aspects.sops
-    den.aspects.cli-tools
+    den.aspects.system-packages
+    den.aspects.fonts
+    den.aspects.security
+    den.aspects.hardening
   ];
 }

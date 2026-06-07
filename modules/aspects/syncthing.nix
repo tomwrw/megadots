@@ -10,6 +10,20 @@
   den.aspects.syncthing =
     { host, ... }:
     {
+      # Syncthing runs as a Home Manager service, so it can't touch the system
+      # firewall — open its ports at the NixOS layer here. Transfer is 22000
+      # (tcp+udp/QUIC); local discovery is 21027 (udp). Direct assignment: the
+      # firewall options merge natively across aspects, so no quirk is needed.
+      nixos =
+        { ... }:
+        {
+          networking.firewall.allowedTCPPorts = [ 22000 ];
+          networking.firewall.allowedUDPPorts = [
+            22000
+            21027
+          ];
+        };
+
       homeManager =
         {
           config,

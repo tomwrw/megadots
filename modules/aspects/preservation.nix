@@ -32,6 +32,9 @@
             "/var/lib/nixos"
             "/var/lib/systemd"
             "/etc/NetworkManager/system-connections"
+            "/var/db/sudo/lectured" # don't re-lecture sudo each boot
+            "/var/lib/alsa" # sound card mixer state
+            "/var/lib/upower" # battery history (laptops)
           ]
           ++ lib.concatMap (e: e.directories or [ ]) persist;
           files = [

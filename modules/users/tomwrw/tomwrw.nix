@@ -9,12 +9,32 @@
     {
 
       includes = [
-        den.provides.primary-user
-        (den.provides.user-shell "fish")
-        den.provides.define-user
+        den.batteries.primary-user
+        (den.batteries.user-shell "zsh")
+        den.batteries.define-user
         den.aspects.sops
         den.aspects.syncthing
         den.aspects.firefox
+        den.aspects.git
+        den.aspects.zsh
+        den.aspects.ghostty
+        den.aspects.btop
+        den.aspects.cli-apps
+        den.aspects.stylix
+
+        # Applications (common to all hosts).
+        den.aspects.element
+        den.aspects.signal
+        den.aspects.vesktop
+        den.aspects.whatsapp
+        den.aspects.ente-desktop
+        den.aspects.spotify
+        den.aspects.joplin
+        den.aspects.obsidian
+        den.aspects.ente-auth
+        den.aspects.bitwarden
+        den.aspects.filen-desktop
+        den.aspects.claude-code
       ];
 
       nixos =
@@ -38,11 +58,22 @@
             openssh.authorizedKeys.keys = [
               "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFCIJ1LhkFDBZaZU/bf8Y3XyCXb3RnVxg4gRs6i+XbSe tomwrw@proton.me"
             ];
-            extraGroups = [
+            # Filter to groups that actually exist on this host, so host-specific
+            # groups (e.g. `libvirtd`, present only where virtualisation is
+            # enabled = endgame) are silently skipped elsewhere — one list, no
+            # per-host variants, no dead entries.
+            extraGroups = builtins.filter (g: builtins.hasAttr g config.users.groups) [
               "disk"
               "i2c"
               "networkmanager"
               "wheel"
+              "libvirtd" # virt-manager (endgame only)
+              "kvm" # /dev/kvm access
+              "video" # GPU / camera
+              "render" # GPU render nodes
+              "audio" # direct audio device access
+              "input" # input devices (evdev)
+              "plugdev" # pluggable devices (USB)
             ];
           };
 
@@ -82,6 +113,11 @@
           home.homeDirectory = "/home/tomwrw";
           home.stateVersion = "26.05";
 
+          # HM user-global boilerplate (applies on every host / standalone HM).
+          systemd.user.startServices = "sd-switch";
+          programs.home-manager.enable = true;
+          home.sessionPath = [ "$HOME/.local/bin" ];
+
           programs.git.settings.user.name = "tomwrw";
           programs.git.settings.user.email = "tomwrw@proton.me";
         };
@@ -89,6 +125,9 @@
       provides.endgame = {
         includes = [
           den.aspects.gaming
+          den.aspects.code-cursor
+          den.aspects.gemini
+          den.aspects.emulation
         ];
       };
     };

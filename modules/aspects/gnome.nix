@@ -50,6 +50,43 @@
           pkgs.gnomeExtensions.appindicator
           pkgs.gnomeExtensions.user-themes
         ];
+
+        dconf.settings = {
+          # Don't try to suspend while on AC.
+          "org/gnome/settings-daemon/plugins/power".sleep-inactive-ac-type = "nothing";
+          "org/gnome/desktop/interface" = {
+            color-scheme = "prefer-dark";
+            show-battery-percentage = true;
+            enable-hot-corners = true;
+          };
+          # Window controls: minimise/maximise/close.
+          "org/gnome/desktop/wm/preferences".button-layout = ":appmenu,minimize,maximize,close";
+          "org/gnome/mutter" = {
+            edge-tiling = true;
+            dynamic-workspaces = true;
+          };
+          "org/gnome/desktop/peripherals/touchpad" = {
+            tap-to-click = true;
+            natural-scroll = true;
+          };
+          "org/gnome/shell" = {
+            disable-user-extensions = false;
+            enabled-extensions = [
+              pkgs.gnomeExtensions.appindicator.extensionUuid
+              pkgs.gnomeExtensions.user-themes.extensionUuid
+            ];
+          };
+        };
+
+        # XDG dirs + mime associations (nautilus bookmarks, default-app handlers).
+        xdg = {
+          enable = true;
+          mime.enable = true;
+          mimeApps.enable = true;
+        };
       };
+
+    # GNOME/AccountsService user state (avatars, login prefs) persisted.
+    persist.directories = [ "/var/lib/AccountsService" ];
   };
 }

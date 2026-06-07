@@ -1,6 +1,6 @@
 { ... }:
 {
-  den.aspects.cli-tools.nixos =
+  den.aspects.system-packages.nixos =
     { pkgs, ... }:
     {
       # General CLI tooling installed on every NixOS host.

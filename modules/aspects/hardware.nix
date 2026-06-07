@@ -14,6 +14,9 @@
       # media without polkit prompts.
       services.devmon.enable = true;
 
+      # Firmware update service (fwupd / LVFS).
+      services.fwupd.enable = true;
+
       # Disabling speechd, the speech dispatcher daemon, as it's not
       # needed for most desktop use cases and can consume resources.
       services.speechd.enable = lib.mkForce false;

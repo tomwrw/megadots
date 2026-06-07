@@ -3,10 +3,10 @@
   den.aspects.endgame = {
     includes = [
       den.aspects.base
+      den.aspects.desktop
       den.aspects.secure-boot
-      den.aspects.fonts
-      den.aspects.gnome
       den.aspects.gaming
+      den.aspects.virtualisation
       den.aspects.preservation
     ];
 

@@ -5,8 +5,7 @@
   den.aspects.flatmate = {
     includes = [
       den.aspects.base
-      den.aspects.fonts
-      den.aspects.gnome
+      den.aspects.desktop
       den.aspects.preservation
     ];
 

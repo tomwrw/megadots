@@ -1,12 +1,3 @@
-# sops creation rules. Split by scope: each host/user secrets file is encrypted
-# only to that entity's dedicated age key.
-#
-# Replace the age1...REPLACE_ME public keys below with your pre-generated keys:
-#   age-keygen -o age.txt   # private -> LUKS USB; never commit
-#   age-keygen -y age.txt   # public  -> paste here
-#
-# After editing recipients, rewrap existing secrets with:
-#   sops updatekeys secrets/hosts/<host>.yaml
 keys:
   - &tomwrw age1l9qj6yujk9ezcepenlwx5knpyrrefw9d0304u73k7gunztmu9uvqcyv2tj
   - &endgame age1hwdpgjlttsgxlu0qtqd4x752tx3ucn8n6ghc3etwnmru430ugcvquv4kkg

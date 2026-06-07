@@ -1,4 +1,4 @@
-{ ... }:
+{ inputs, ... }:
 {
   den.aspects.nix.nixos =
     { lib, ... }:
@@ -7,17 +7,18 @@
       nixpkgs.config.allowUnfree = true;
 
       nix = {
-        # Add custom caches here.
+        # Make `nix run nixpkgs#…` etc. resolve flake refs to the same inputs
+        # this system was built from (pinned, consistent nix3 commands).
+        registry = lib.mapAttrs (_: flake: { inherit flake; }) inputs;
+
+        # Add custom caches here. (CachyOS kernel caches live in the `kernel`
+        # aspect.)
         settings = {
           extra-substituters = [
-            "https://attic.xuyh0120.win/lantian/"
-            "https://cache.garnix.io/"
             "https://cosmic.cachix.org/"
             "https://niri.cachix.org/"
           ];
           extra-trusted-public-keys = [
-            "lantian:EeAUQ+W+6r7EtwnmYjeVwx5kOGEBpjlBfPlzGlTNvHc="
-            "cache.garnix.io:CTFPyKSLcx5RMJKfLo5EEPUObbA78b0YQ2DTCJXqr9g="
             "cosmic.cachix.org-1:Dya9IyXD4xdBehWjrkPv6rtxpmMdRel02smYzA85dPE="
             "niri.cachix.org-1:Wv0OmO7PsuocRKzfDoJ3mulSl7Z6oezYhGhR+3W2964="
           ];
@@ -34,7 +35,9 @@
           auto-optimise-store = true;
           # Stop telling me there are uncommited changes!
           warn-dirty = false;
-          # Allow importing derivations from derivations.
+          # Import-from-derivation must stay enabled: stylix's base16 scheme
+          # reader readFiles a yaml from the base16-schemes derivation at eval
+          # time, which is IFD. (Was the den default; do not disable.)
           allow-import-from-derivation = true;
           # Enable experimental features.
           experimental-features = [

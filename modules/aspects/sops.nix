@@ -8,7 +8,10 @@
 # One aspect, two classes: hosts include it (via den.aspects.base) and pick up the
 # `nixos` class; the user includes it and picks up `homeManager`. Each class
 # derives its own per-entity secrets file, so the aspect stays reusable.
-{ inputs, ... }:
+#
+# Secret paths are anchored at the flake root via `self` (its outPath is the
+# project root) rather than depth-relative `../../`, so this file can move.
+{ inputs, self, ... }:
 {
   flake-file.inputs.sops-nix = {
     url = "github:Mic92/sops-nix";
@@ -22,7 +25,7 @@
       {
         imports = [ inputs.sops-nix.nixosModules.sops ];
         sops = {
-          defaultSopsFile = ../../secrets/hosts/${config.networking.hostName}.yaml;
+          defaultSopsFile = "${self}/secrets/hosts/${config.networking.hostName}.yaml";
           age.keyFile = "/persist/var/lib/sops-nix/key.txt";
           age.generateKey = false;
           # Individual host secrets are declared where they're consumed
@@ -36,7 +39,7 @@
       {
         imports = [ inputs.sops-nix.homeManagerModules.sops ];
         sops = {
-          defaultSopsFile = ../../secrets/users/${config.home.username}.yaml;
+          defaultSopsFile = "${self}/secrets/users/${config.home.username}.yaml";
           age.keyFile = "${config.home.homeDirectory}/.config/sops/age/keys.txt";
           age.generateKey = false;
           # Individual user secrets are declared by the user module as needed.
