@@ -57,7 +57,6 @@
             hashedPasswordFile = config.sops.secrets."users/tomwrw/password".path;
             openssh.authorizedKeys.keys = [
               "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFCIJ1LhkFDBZaZU/bf8Y3XyCXb3RnVxg4gRs6i+XbSe tomwrw"
-              #"ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIC1jQK1qY7I0ll2Cn+0+D7ilaveL5K07ftRcBx/k6cFK tomwrw"
             ];
             # Filter to groups that actually exist on this host, so host-specific
             # groups (e.g. `libvirtd`, present only where virtualisation is
