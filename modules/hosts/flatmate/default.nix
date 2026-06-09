@@ -13,9 +13,6 @@
       { ... }:
       {
         imports = [
-          # Surface Pro 7 hardware support (Intel GPU/display, Surface
-          # Aggregator Module, touch). Without it the GPU hangs early in boot.
-          # The cachyos kernel aspect mkForce-overrides the kernel this sets.
           inputs.nixos-hardware.nixosModules.microsoft-surface-pro-intel
           ./_disko.nix
           ./_hardware.nix
@@ -24,6 +21,7 @@
         networking = {
           hostName = "flatmate";
           domain = "home.arpa";
+          search = [ "home.arpa" ];
         };
         # Set the system state version.
         system.stateVersion = "26.05";

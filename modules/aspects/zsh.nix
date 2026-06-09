@@ -1,8 +1,5 @@
 { ... }:
 {
-  # Interactive shell experience: zsh + fzf + starship. The system-level shell
-  # enablement and tomwrw's login shell come from the `user-shell "zsh"`
-  # provider in the user module, so this aspect is HM-only.
   den.aspects.zsh.homeManager =
     { config, ... }:
     {

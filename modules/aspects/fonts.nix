@@ -1,7 +1,5 @@
 { ... }:
 let
-  # Shared font set for both the NixOS system fonts and the Home-Manager user
-  # profile (the latter keeps standalone HM self-contained).
   fontPkgs = pkgs: [
     pkgs.dejavu_fonts
     pkgs.fira-code

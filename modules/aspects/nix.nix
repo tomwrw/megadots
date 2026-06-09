@@ -11,8 +11,6 @@
         # this system was built from (pinned, consistent nix3 commands).
         registry = lib.mapAttrs (_: flake: { inherit flake; }) inputs;
 
-        # Add custom caches here. (CachyOS kernel caches live in the `kernel`
-        # aspect.)
         settings = {
           extra-substituters = [
             "https://cosmic.cachix.org/"
@@ -73,9 +71,6 @@
         };
       };
 
-      # nix-ld provides a shim for ELF binaries to automatically find their
-      # shared library dependencies in the Nix store. This is essential for
-      # running pre-compiled binaries that are not packaged in Nixpkgs.
       programs.nix-ld.enable = true;
     };
 }

@@ -3,9 +3,6 @@
   den.schema.host =
     { lib, ... }:
     {
-      # Per-host Syncthing identity. Each host declares its own device ID in the
-      # roster (modules/hosts.nix); the Syncthing HM aspect reads den.hosts to
-      # build the mesh, so there is no central device map.
       options.syncthing = {
         enable = lib.mkEnableOption "participation in the Syncthing mesh" // {
           default = true;

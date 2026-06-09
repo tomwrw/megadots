@@ -21,6 +21,7 @@
         networking = {
           hostName = "endgame";
           domain = "home.arpa";
+          search = [ "home.arpa" ];
         };
         # Set the system state version.
         system.stateVersion = "26.05";

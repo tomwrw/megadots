@@ -1,7 +1,5 @@
 { ... }:
 {
-  # PipeWire audio stack (replaces PulseAudio). Realtime scheduling is granted
-  # by rtkit, enabled in the `security` aspect.
   den.aspects.audio.nixos =
     { ... }:
     {

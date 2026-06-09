@@ -78,7 +78,6 @@
           };
         };
 
-        # XDG dirs + mime associations (nautilus bookmarks, default-app handlers).
         xdg = {
           enable = true;
           mime.enable = true;
@@ -86,7 +85,6 @@
         };
       };
 
-    # GNOME/AccountsService user state (avatars, login prefs) persisted.
     persist.directories = [ "/var/lib/AccountsService" ];
   };
 }

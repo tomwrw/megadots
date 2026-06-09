@@ -1,6 +1,5 @@
 { ... }:
 {
-  # General CLI tooling for tomwrw (Home Manager), on every host.
   den.aspects.cli-apps.homeManager =
     { pkgs, ... }:
     {

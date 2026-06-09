@@ -9,6 +9,5 @@
       };
     };
 
-  # Persist pairing/adapter state across reboots on impermanent hosts.
   den.aspects.bluetooth.persist.directories = [ "/var/lib/bluetooth" ];
 }

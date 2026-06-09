@@ -1,9 +1,5 @@
 { ... }:
 {
-  # System hardening applied to every host. Both current hosts use in-tree GPU
-  # drivers (AMD/Intel), so `lockdown=confidentiality` does not block module
-  # loading. Note: lockdown disables hibernation/suspend-to-disk and restricts
-  # /dev/mem and some debugging — verify suspend and watch for apparmor denials.
   den.aspects.hardening.nixos =
     { ... }:
     {

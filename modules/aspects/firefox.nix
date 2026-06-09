@@ -10,7 +10,6 @@
     {
       programs.firefox = {
         enable = true;
-        #configPath = "${config.home.homeDirectory}/mozilla/firefox";
         policies = {
           AppAutoUpdate = false;
           BackgroundAppUpdate = false;

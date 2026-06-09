@@ -1,19 +1,8 @@
-# Syncthing as a Home Manager service, forming a private LAN mesh across hosts.
-#
-# The device mesh is built from the den.hosts roster: each host declares its own
-# `syncthing.id` (modules/hosts.nix), and this aspect reads den.hosts to assemble
-# the device list — no central device map. cert/key/guiPassword come from the
-# user's sops scope (secrets/users/tomwrw.yaml), keyed per host, so device IDs
-# are deterministic and peers auto-trust each other.
 { den, ... }:
 {
   den.aspects.syncthing =
     { host, ... }:
     {
-      # Syncthing runs as a Home Manager service, so it can't touch the system
-      # firewall — open its ports at the NixOS layer here. Transfer is 22000
-      # (tcp+udp/QUIC); local discovery is 21027 (udp). Direct assignment: the
-      # firewall options merge natively across aspects, so no quirk is needed.
       nixos =
         { ... }:
         {
@@ -31,7 +20,6 @@
           ...
         }:
         let
-          # Flatten all systems' hosts into name -> hostCfg, keep mesh members.
           meshHosts = lib.filterAttrs (_: h: h.syncthing.enable && h.syncthing.id != "") (
             lib.foldl' (acc: sys: acc // den.hosts.${sys}) { } (builtins.attrNames den.hosts)
           );
@@ -45,22 +33,16 @@
 
           services.syncthing = {
             enable = true;
-            # Provisioned cert/key make the device ID deterministic and let peers
-            # auto-trust without a manual "accept device" prompt.
             key = config.sops.secrets."syncthing/${host.name}/key".path;
             cert = config.sops.secrets."syncthing/${host.name}/cert".path;
             guiCredentials = {
               username = "admin";
               passwordFile = config.sops.secrets."syncthing/${host.name}/guiPassword".path;
             };
-            # Keep Syncthing's on-disk config in lockstep with this declaration.
             overrideDevices = true;
             overrideFolders = true;
             settings = {
-              # No static addresses: all hosts share a subnet, so local-announce
-              # discovery connects peers by device ID (addresses default to dynamic).
               devices = lib.mapAttrs (_: h: { id = h.syncthing.id; }) meshHosts;
-
               options = {
                 relaysEnabled = false; # no relay servers
                 globalAnnounceEnabled = false; # no global discovery
