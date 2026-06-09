@@ -35,7 +35,7 @@
 
     # User secrets — decrypted with the user's dedicated age key in their home.
     homeManager =
-      { config, ... }:
+      { config, lib, ... }:
       {
         imports = [ inputs.sops-nix.homeManagerModules.sops ];
         sops = {
@@ -43,6 +43,23 @@
           age.keyFile = "${config.home.homeDirectory}/.config/sops/age/keys.txt";
           age.generateKey = false;
           # Individual user secrets are declared by the user module as needed.
+        };
+
+        # Decrypt secrets early in the user session — before basic.target, so any
+        # secret-consuming user service (e.g. Syncthing reading its provisioned
+        # cert/key) finds them on a cold boot instead of racing the decryption.
+        # This is generic and keeps consumers decoupled from sops. It's a *want*
+        # of basic.target, so a decrypt failure logs but doesn't wedge the session.
+        systemd.user.services.sops-nix = {
+          Unit = {
+            DefaultDependencies = false;
+            Before = [
+              "basic.target"
+              "shutdown.target"
+            ];
+            Conflicts = [ "shutdown.target" ];
+          };
+          Install.WantedBy = lib.mkForce [ "basic.target" ];
         };
       };
   };
