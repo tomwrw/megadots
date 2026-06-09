@@ -1,15 +1,6 @@
-# Path to where my key backup lives after LUKS decryption.
-# One of the backup keys must be plugged in and mounted
-# with decryption before running a deploy.
 usb := "/run/media/tomwrw/SURVIVOR/keys"
-# My main user for key shipping in deploy phase.
 user := "tomwrw"
 
-# Fresh install via nixos-anywhere. Stages the host and user age keys and the
-# user's SSH keypair from the LUKS USB into the target's directory structure,
-# then ships them with --extra-files. Ownership of the user-owned files is
-# corrected on the target by tmpfiles rules and a one shot systemd activation
-# script in the tomwrw module. The staging dir (private keys) is removed on exit.
 deploy HOST:
     #!/usr/bin/env bash
     set -euo pipefail
