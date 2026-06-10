@@ -1,6 +1,9 @@
 { den, inputs, ... }:
 {
-  flake-file.inputs.nixos-hardware.url = "github:nixos/nixos-hardware";
+  flake-file.inputs.nixos-hardware = {
+    url = "github:nixos/nixos-hardware";
+    inputs.nixpkgs.follows = "nixpkgs";
+  };
 
   den.aspects.flatmate = {
     includes = [

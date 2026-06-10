@@ -1,5 +1,4 @@
-{ ... }:
-{
+_: {
   den.aspects.cli-apps.homeManager =
     { pkgs, ... }:
     {

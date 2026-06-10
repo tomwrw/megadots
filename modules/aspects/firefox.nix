@@ -6,7 +6,7 @@
   };
 
   den.aspects.firefox.homeManager =
-    { config, pkgs, ... }:
+    { pkgs, ... }:
     {
       programs.firefox = {
         enable = true;

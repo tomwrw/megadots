@@ -1,8 +1,5 @@
-{ ... }:
-{
-  den.aspects.vscodium.homeManager =
-    { ... }:
-    {
-      programs.vscodium.enable = true;
-    };
+_: {
+  den.aspects.vscodium.homeManager = _: {
+    programs.vscodium.enable = true;
+  };
 }

@@ -1,11 +1,8 @@
-{ ... }:
-{
-  den.aspects.graphics.nixos =
-    { ... }:
-    {
-      hardware.graphics = {
-        enable = true;
-        enable32Bit = true;
-      };
+_: {
+  den.aspects.graphics.nixos = _: {
+    hardware.graphics = {
+      enable = true;
+      enable32Bit = true;
     };
+  };
 }

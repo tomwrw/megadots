@@ -1,8 +1,11 @@
-{ ... }:
-{
-  den.aspects.code-cursor.homeManager =
-    { pkgs, ... }:
-    {
-      home.packages = [ pkgs.code-cursor ];
-    };
+_: {
+  den.aspects.code-cursor = {
+    unfree = [ "cursor" ];
+
+    homeManager =
+      { pkgs, ... }:
+      {
+        home.packages = [ pkgs.code-cursor ];
+      };
+  };
 }

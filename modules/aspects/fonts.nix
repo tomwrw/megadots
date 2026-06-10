@@ -1,4 +1,4 @@
-{ ... }:
+_:
 let
   fontPkgs = pkgs: [
     pkgs.dejavu_fonts

@@ -1,5 +1,4 @@
-{ ... }:
-{
+_: {
   den.aspects.proton-suite.homeManager =
     { pkgs, ... }:
     {

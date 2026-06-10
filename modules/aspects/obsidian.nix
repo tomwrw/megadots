@@ -1,8 +1,11 @@
-{ ... }:
-{
-  den.aspects.obsidian.homeManager =
-    { pkgs, ... }:
-    {
-      home.packages = [ pkgs.obsidian ];
-    };
+_: {
+  den.aspects.obsidian = {
+    unfree = [ "obsidian" ];
+
+    homeManager =
+      { pkgs, ... }:
+      {
+        home.packages = [ pkgs.obsidian ];
+      };
+  };
 }

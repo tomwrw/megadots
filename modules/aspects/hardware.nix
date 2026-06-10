@@ -1,12 +1,12 @@
-{ ... }:
-{
+_: {
   den.aspects.hardware.nixos =
     { lib, ... }:
     {
-      # Core hardware settings.
+      # Core hardware settings. Redistributable firmware covers everything
+      # these hosts need (linux-firmware: amdgpu, iwlwifi, …) without the
+      # unfree blobs that enableAllFirmware would drag in.
       hardware = {
         enableRedistributableFirmware = true;
-        enableAllFirmware = true;
         uinput.enable = true;
       };
 

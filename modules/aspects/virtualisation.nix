@@ -1,5 +1,4 @@
-{ ... }:
-{
+_: {
   den.aspects.virtualisation.nixos =
     { pkgs, ... }:
     {

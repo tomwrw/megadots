@@ -1,7 +1,5 @@
 {
   den,
-  inputs,
-  lib,
   ...
 }:
 {
@@ -13,16 +11,10 @@
       den.batteries.self'
     ];
 
-    nixos =
-      {
-        pkgs,
-        config,
-        ...
-      }:
-      {
-        home-manager.backupFileExtension = "hm-backup";
-        home-manager.useUserPackages = true;
-        home-manager.useGlobalPkgs = true;
-      };
+    nixos = {
+      home-manager.backupFileExtension = "hm-backup";
+      home-manager.useUserPackages = true;
+      home-manager.useGlobalPkgs = true;
+    };
   };
 }

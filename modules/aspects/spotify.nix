@@ -5,6 +5,13 @@
     inputs.nixpkgs.follows = "nixpkgs";
   };
 
+  den.aspects.spotify.unfree = [
+    "spotify"
+    # The spicetify wrapper (themed by stylix) inherits spotify's licence
+    # under its own name.
+    "spicetify-stylix"
+  ];
+
   den.aspects.spotify.homeManager =
     { pkgs, ... }:
     let

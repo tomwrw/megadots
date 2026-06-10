@@ -1,4 +1,4 @@
-{ ... }:
+_:
 let
   diskId = "/dev/disk/by-id/nvme-KBG40ZPZ512G_TOSHIBA_MEMORY_89R201INNLAP";
 in

@@ -1,4 +1,4 @@
-{ ... }:
+_:
 let
   diskId = "/dev/disk/by-id/nvme-Sabrent_SB-RKT5-2TB_48836385600606";
 in

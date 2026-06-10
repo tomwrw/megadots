@@ -1,5 +1,8 @@
 { inputs, ... }:
 {
+  # Deliberately NOT following our nixpkgs: the binary caches below hold
+  # kernels built against this input's own pin. Adding a follows would
+  # change the build and force compiling the kernel locally.
   flake-file.inputs.nix-cachyos-kernel.url = "github:xddxdd/nix-cachyos-kernel/release";
 
   den.aspects.kernel.nixos =

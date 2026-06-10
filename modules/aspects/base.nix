@@ -2,6 +2,7 @@
 {
   den.aspects.base.includes = [
     den.aspects.nix
+    den.aspects.unfree
     den.aspects.locale
     den.aspects.ssh
     den.aspects.networking

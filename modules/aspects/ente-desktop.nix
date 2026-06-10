@@ -1,5 +1,4 @@
-{ ... }:
-{
+_: {
   den.aspects.ente-desktop.homeManager =
     { pkgs, ... }:
     {

@@ -3,31 +3,19 @@
   den.aspects.nix.nixos =
     { lib, ... }:
     {
-      # Allow unfree pkgs.
-      nixpkgs.config.allowUnfree = true;
-
       nix = {
         # Make `nix run nixpkgs#…` etc. resolve flake refs to the same inputs
         # this system was built from (pinned, consistent nix3 commands).
         registry = lib.mapAttrs (_: flake: { inherit flake; }) inputs;
 
         settings = {
-          extra-substituters = [
-            "https://cosmic.cachix.org/"
-            "https://niri.cachix.org/"
-          ];
-          extra-trusted-public-keys = [
-            "cosmic.cachix.org-1:Dya9IyXD4xdBehWjrkPv6rtxpmMdRel02smYzA85dPE="
-            "niri.cachix.org-1:Wv0OmO7PsuocRKzfDoJ3mulSl7Z6oezYhGhR+3W2964="
-          ];
           # See https://jackson.dev/post/nix-reasonable-defaults/ for
-          # explaination of sensible defaults.
+          # explanation of sensible defaults.
           connect-timeout = 5;
           log-lines = 25;
           # Add the root user and wheel group as trusted.
           trusted-users = [
             "root"
-            "@wheel"
           ];
           # Deduplicate and optimise nix store.
           auto-optimise-store = true;

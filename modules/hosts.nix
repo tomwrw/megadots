@@ -1,9 +1,4 @@
-{
-  den,
-  inputs,
-  ...
-}:
-{
+_: {
   den.hosts.x86_64-linux = {
     endgame = {
       syncthing.id = "O5ZE76L-VFVTOEB-LBIKRRS-LNJKJTN-SOPSNTS-NMTNUHO-OOO453I-PXDOBAI";

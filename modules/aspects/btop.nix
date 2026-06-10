@@ -1,8 +1,5 @@
-{ ... }:
-{
-  den.aspects.btop.homeManager =
-    { ... }:
-    {
-      programs.btop.enable = true;
-    };
+_: {
+  den.aspects.btop.homeManager = _: {
+    programs.btop.enable = true;
+  };
 }

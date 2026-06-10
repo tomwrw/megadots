@@ -1,8 +1,5 @@
-{ ... }:
-{
-  den.aspects.vesktop.homeManager =
-    { ... }:
-    {
-      programs.vesktop.enable = true;
-    };
+_: {
+  den.aspects.vesktop.homeManager = _: {
+    programs.vesktop.enable = true;
+  };
 }

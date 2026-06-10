@@ -4,9 +4,8 @@ user := "tomwrw"
 deploy HOST:
     #!/usr/bin/env bash
     set -euo pipefail
-    staging=/tmp/megadots
+    staging=$(mktemp -d)
     trap 'rm -rf "$staging"' EXIT
-    rm -rf "$staging"
     install -Dm600 {{ usb }}/hosts/{{ HOST }}/age.txt "$staging/persist/var/lib/sops-nix/key.txt"
     install -Dm600 {{ usb }}/users/{{ user }}/age.txt "$staging/home/{{ user }}/.config/sops/age/keys.txt"
     install -Dm600 {{ usb }}/users/{{ user }}/id_ed25519 "$staging/home/{{ user }}/.ssh/id_ed25519"
