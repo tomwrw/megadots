@@ -10,6 +10,12 @@ deploy HOST:
     install -Dm600 {{ usb }}/users/{{ user }}/age.txt "$staging/home/{{ user }}/.config/sops/age/keys.txt"
     install -Dm600 {{ usb }}/users/{{ user }}/id_ed25519 "$staging/home/{{ user }}/.ssh/id_ed25519"
     install -Dm644 {{ usb }}/users/{{ user }}/id_ed25519.pub "$staging/home/{{ user }}/.ssh/id_ed25519.pub"
+    # FIDO2 sk key handles (useless without the physical token); seeding them
+    # avoids a post-deploy `ssh-keygen -K`.
+    for k in id_ed25519_sk_primary id_ed25519_sk_backup; do
+      install -Dm600 {{ usb }}/users/{{ user }}/$k "$staging/home/{{ user }}/.ssh/$k"
+      install -Dm644 {{ usb }}/users/{{ user }}/$k.pub "$staging/home/{{ user }}/.ssh/$k.pub"
+    done
     nix --extra-experimental-features 'nix-command flakes' run github:nix-community/nixos-anywhere -- \
       --disko-mode disko \
       --extra-files "$staging" \
@@ -20,4 +26,22 @@ build HOST:
     nixos-rebuild build --flake .#{{ HOST }}
 
 rebuild HOST:
-    nixos-rebuild switch --flake .#{{ HOST }} --target-host tomwrw@{{ HOST }} --sudo --ask-sudo-password
+    #!/usr/bin/env bash
+    set -euo pipefail
+    nixos-rebuild build --flake .#{{ HOST }}
+    # Sign the closure with the fleet key: the target daemon only accepts
+    # signed paths since pushing users are not in trusted-users.
+    sudo nix store sign -r -k /run/secrets/nix/signing-key ./result
+    nixos-rebuild switch --flake .#{{ HOST }} --target-host {{ user }}@{{ HOST }} --sudo --ask-sudo-password
+
+# Enroll the FIDO2 key currently plugged into HOST in its LUKS header.
+# Run once per token; the passphrase slot remains as fallback.
+enroll-fido2 HOST:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    case "{{ HOST }}" in
+      endgame) dev=/dev/disk/by-id/nvme-Sabrent_SB-RKT5-2TB_48836385600606-part2 ;;
+      flatmate) dev=/dev/disk/by-id/nvme-KBG40ZPZ512G_TOSHIBA_MEMORY_89R201INNLAP-part2 ;;
+      *) echo "unknown host: {{ HOST }}" >&2; exit 1 ;;
+    esac
+    ssh -t {{ user }}@{{ HOST }} sudo systemd-cryptenroll --fido2-device=auto --fido2-with-client-pin=yes "$dev"

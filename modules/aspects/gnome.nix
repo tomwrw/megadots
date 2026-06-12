@@ -9,6 +9,11 @@ _: {
 
         services = {
           libinput.enable = true;
+          # GNOME's ssh-agent advertises every key in ~/.ssh but can't do
+          # FIDO2 ceremonies, so it hijacks and refuses sk-key operations
+          # (ssh-keygen -Y sign consults the agent first). Our sk keys are
+          # verify-required (PIN + touch per use), so an agent adds nothing.
+          gnome.gcr-ssh-agent.enable = false;
           desktopManager.gnome = {
             enable = true;
           };

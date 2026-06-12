@@ -12,6 +12,7 @@
     den.aspects.boot
     den.aspects.systemd-initrd
     den.aspects.sops
+    den.aspects.fido2
     den.aspects.system-packages
     den.aspects.fonts
     den.aspects.security

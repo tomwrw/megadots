@@ -48,7 +48,11 @@
         users.users.tomwrw = {
           hashedPasswordFile = config.sops.secrets."users/tomwrw/password".path;
           openssh.authorizedKeys.keys = [
+            # File-based fallback identity (seeded by `just deploy`).
             "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFCIJ1LhkFDBZaZU/bf8Y3XyCXb3RnVxg4gRs6i+XbSe tomwrw"
+            # Token2 FIDO2 hardware keys (resident, PIN + touch per use).
+            "sk-ssh-ed25519@openssh.com AAAAGnNrLXNzaC1lZDI1NTE5QG9wZW5zc2guY29tAAAAIPiQIe8ejl2D9ZLBZCHYyt7Iyh9jFHZ5iMYydq57DnDSAAAACnNzaDp0b213cnc= tomwrw-primary"
+            "sk-ssh-ed25519@openssh.com AAAAGnNrLXNzaC1lZDI1NTE5QG9wZW5zc2guY29tAAAAIG+ODAzUIgoEOgf1+ijqOPCljmYoXn9HETmJ1kP5cuAFAAAACnNzaDp0b213cnc= tomwrw-backup"
           ];
 
           extraGroups = builtins.filter (g: builtins.hasAttr g config.users.groups) [
@@ -85,7 +89,11 @@
             chown tomwrw:users \
               /home/tomwrw/.config/sops/age/keys.txt \
               /home/tomwrw/.ssh/id_ed25519 \
-              /home/tomwrw/.ssh/id_ed25519.pub || true
+              /home/tomwrw/.ssh/id_ed25519.pub \
+              /home/tomwrw/.ssh/id_ed25519_sk_primary \
+              /home/tomwrw/.ssh/id_ed25519_sk_primary.pub \
+              /home/tomwrw/.ssh/id_ed25519_sk_backup \
+              /home/tomwrw/.ssh/id_ed25519_sk_backup.pub || true
           '';
         };
       };

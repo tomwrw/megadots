@@ -21,6 +21,7 @@ I'm not a developer. I'm a tinkerer with a consultancy job in a technical field 
 - :desktop_computer: **NixOS** aspects for multiple hosts.
 - :house: **Home Manager** as a NixOS module, also supporting standalone mode.
 - :ghost: **sops-nix** for secrets management, with dedicated age key support for hosts and users.
+- :key: **FIDO2 hardware keys** (Token2 PIN+) for SSH, git commit signing, sudo and LUKS unlock.
 - :camera_flash: **Preservation** with root on tmpfs for declarative impermanence.
 - :cop: **Secure Boot** via lanzaboote with automatic key generation and enrollment.
 - :snowflake: **Flake** with the den framework for modular, composable host and user aspects.
@@ -82,6 +83,9 @@ nix flake check
 
 # Format the tree (nixfmt + deadnix + statix via treefmt).
 nix fmt
+
+# Enroll the inserted FIDO2 key in a host's LUKS header (once per key).
+just enroll-fido2 endgame
 ```
 
 ### Updating.

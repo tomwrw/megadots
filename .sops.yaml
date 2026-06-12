@@ -2,6 +2,10 @@ keys:
   - &tomwrw age1l9qj6yujk9ezcepenlwx5knpyrrefw9d0304u73k7gunztmu9uvqcyv2tj
   - &endgame age1hwdpgjlttsgxlu0qtqd4x752tx3ucn8n6ghc3etwnmru430ugcvquv4kkg
   - &flatmate age16v6x8zjr8q3mhavct60resfte35xd4e624pu263zk938c9e7m4ys8e2qwm
+  # Token2 FIDO2 recovery recipients (age-plugin-fido2-hmac); decryption
+  # needs the physical token + PIN + the identity stub from the USB stick.
+  - &fido2-primary age16jxva560hz7y8etu7su98vs6krt7fwnyzfuc7ly59svc9w2xeq6skqxq0f
+  - &fido2-backup age1nleypjj6d0c5mkdnq6ua4ca6kpgu5r0htknl3l0elly6uvu704sqgdfzru
 
 creation_rules:
   - path_regex: ^secrets/hosts/endgame\.yaml$
@@ -9,12 +13,18 @@ creation_rules:
       - age:
           - *tomwrw
           - *endgame
+          - *fido2-primary
+          - *fido2-backup
   - path_regex: ^secrets/hosts/flatmate\.yaml$
     key_groups:
       - age:
           - *tomwrw
           - *flatmate
+          - *fido2-primary
+          - *fido2-backup
   - path_regex: ^secrets/users/tomwrw\.yaml$
     key_groups:
       - age:
           - *tomwrw
+          - *fido2-primary
+          - *fido2-backup
