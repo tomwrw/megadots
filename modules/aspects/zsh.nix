@@ -22,6 +22,40 @@ _: {
           psf = "ps -aux | grep";
           lsf = "ls | grep";
           nsp = "nix search nixpkgs";
+
+          # git — names follow the oh-my-zsh convention (gs is left to
+          # ghostscript). Commit aliases trigger the FIDO2 token (PIN + touch),
+          # since commit.gpgsign signs with the sk key.
+          # status / inspect
+          gst = "git status";
+          gss = "git status -s";
+          gd = "git diff";
+          gds = "git diff --staged";
+          glog = "git log --oneline --graph --decorate -20";
+          gloga = "git log --oneline --graph --decorate --all";
+          # stage
+          ga = "git add";
+          gaa = "git add --all";
+          # commit (usage: gc \"message\")
+          gc = "git commit -m";
+          gca = "git commit -a -m";
+          gcane = "git commit --amend --no-edit";
+          # push / pull / fetch
+          gp = "git push";
+          gpu = "git push -u origin HEAD"; # first push of a branch (sets upstream)
+          gpf = "git push --force-with-lease"; # safe force, e.g. after an amend
+          gl = "git pull";
+          glr = "git pull --rebase";
+          gf = "git fetch --all --prune";
+          # branch / switch
+          gsw = "git switch";
+          gswc = "git switch -c"; # create + switch to a new branch
+          gco = "git checkout";
+          gb = "git branch";
+          gbd = "git branch -d";
+          # stash
+          gsta = "git stash";
+          gstp = "git stash pop";
         };
         history = {
           path = "$HOME/.local/share/zsh/.zsh_history";

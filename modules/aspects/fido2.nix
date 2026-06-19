@@ -12,10 +12,6 @@ _: {
         pkgs.age-plugin-fido2-hmac
       ];
 
-      # uaccess rules for FIDO hidraw devices — belt-and-braces alongside
-      # systemd's built-in fido-id rules.
-      services.udev.packages = [ pkgs.libfido2 ];
-
       # sudo accepts a registered key (cued touch) as an alternative to the
       # password; login/GDM are deliberately left untouched. The credential
       # mapping ships as a sops secret so the public repo doesn't expose

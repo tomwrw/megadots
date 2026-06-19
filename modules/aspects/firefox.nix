@@ -87,8 +87,8 @@
 
           # Configure extension behavior (toolbar pinning, etc.).
           ExtensionSettings = {
-            # Bitwarden - pin to toolbar.
-            "{446900e4-71c2-419f-a6a7-df9c091e268b}" = {
+            # ProtonPass - pin to toolbar.
+            "78272b6fa58f4a1abaac99321d503a20@proton.me" = {
               installation_mode = "normal_installed";
               default_area = "navbar";
               private_browsing = true;
@@ -126,7 +126,7 @@
           # Extensions. Install extensions from firefox-addons
           # which are more secure, verified, than previous xpi method.
           extensions.packages = with inputs.firefox-addons.packages.${pkgs.stdenv.hostPlatform.system}; [
-            bitwarden
+            proton-pass
             multi-account-containers
             ublock-origin
           ];

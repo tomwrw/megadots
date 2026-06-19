@@ -9,6 +9,7 @@
       den.batteries.primary-user
       (den.batteries.user-shell "zsh")
       den.aspects.sops
+      den.aspects.ssh
       den.aspects.syncthing
       den.aspects.firefox
       den.aspects.git
@@ -48,18 +49,16 @@
         users.users.tomwrw = {
           hashedPasswordFile = config.sops.secrets."users/tomwrw/password".path;
           openssh.authorizedKeys.keys = [
-            # File-based fallback identity (seeded by `just deploy`).
-            "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFCIJ1LhkFDBZaZU/bf8Y3XyCXb3RnVxg4gRs6i+XbSe tomwrw"
             # Token2 FIDO2 hardware keys (resident, PIN + touch per use).
+            # The legacy file-based key was retired 2026-06-12.
             "sk-ssh-ed25519@openssh.com AAAAGnNrLXNzaC1lZDI1NTE5QG9wZW5zc2guY29tAAAAIPiQIe8ejl2D9ZLBZCHYyt7Iyh9jFHZ5iMYydq57DnDSAAAACnNzaDp0b213cnc= tomwrw-primary"
             "sk-ssh-ed25519@openssh.com AAAAGnNrLXNzaC1lZDI1NTE5QG9wZW5zc2guY29tAAAAIG+ODAzUIgoEOgf1+ijqOPCljmYoXn9HETmJ1kP5cuAFAAAACnNzaDp0b213cnc= tomwrw-backup"
           ];
 
+          # wheel + networkmanager come from the primary-user battery.
           extraGroups = builtins.filter (g: builtins.hasAttr g config.users.groups) [
             "disk"
             "i2c"
-            "networkmanager"
-            "wheel"
             "libvirtd" # virt-manager (endgame only)
             "kvm" # /dev/kvm access
             "video" # GPU / camera
@@ -88,8 +87,6 @@
           script = ''
             chown tomwrw:users \
               /home/tomwrw/.config/sops/age/keys.txt \
-              /home/tomwrw/.ssh/id_ed25519 \
-              /home/tomwrw/.ssh/id_ed25519.pub \
               /home/tomwrw/.ssh/id_ed25519_sk_primary \
               /home/tomwrw/.ssh/id_ed25519_sk_primary.pub \
               /home/tomwrw/.ssh/id_ed25519_sk_backup \
@@ -99,20 +96,31 @@
       };
 
     homeManager = _: {
-      home.username = "tomwrw";
-      home.homeDirectory = "/home/tomwrw";
-      home.stateVersion = "26.05";
-
+      # home.username / home.homeDirectory come from the define-user battery;
+      # home.stateVersion from den.default.
       systemd.user.startServices = "sd-switch";
       programs.home-manager.enable = true;
       home.sessionPath = [ "$HOME/.local/bin" ];
 
       programs.git.settings.user.name = "tomwrw";
       programs.git.settings.user.email = "tomwrw@proton.me";
+
+      # SSH signer identities for commit-signature verification. Lives with the
+      # user (not the git aspect) because it is pure identity — this user's
+      # email mapped to their specific keys. git.nix sets the file path.
+      xdg.configFile."git/allowed_signers".text = ''
+        tomwrw@proton.me sk-ssh-ed25519@openssh.com AAAAGnNrLXNzaC1lZDI1NTE5QG9wZW5zc2guY29tAAAAIPiQIe8ejl2D9ZLBZCHYyt7Iyh9jFHZ5iMYydq57DnDSAAAACnNzaDp0b213cnc= tomwrw-primary
+        tomwrw@proton.me sk-ssh-ed25519@openssh.com AAAAGnNrLXNzaC1lZDI1NTE5QG9wZW5zc2guY29tAAAAIG+ODAzUIgoEOgf1+ijqOPCljmYoXn9HETmJ1kP5cuAFAAAACnNzaDp0b213cnc= tomwrw-backup
+        # Retired 2026-06-12; kept so signatures on older commits still verify.
+        tomwrw@proton.me ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFCIJ1LhkFDBZaZU/bf8Y3XyCXb3RnVxg4gRs6i+XbSe tomwrw-legacy
+      '';
     };
 
     provides.endgame = {
       includes = [
+        # gaming is also a host aspect on endgame (its nixos side → steam);
+        # this user inclusion is what routes its homeManager side (mangohud)
+        # to tomwrw — not redundant.
         den.aspects.gaming
         den.aspects.code-cursor
         den.aspects.gemini

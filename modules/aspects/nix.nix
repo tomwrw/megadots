@@ -1,13 +1,8 @@
 { inputs, ... }:
 {
   den.aspects.nix.nixos =
-    { config, lib, ... }:
+    { lib, ... }:
     {
-      # Fleet signing key: the daemon signs everything it builds, so hosts
-      # accept pushed closures (just rebuild) from each other without
-      # putting users in trusted-users.
-      sops.secrets."nix/signing-key" = { };
-
       nix = {
         # Make `nix run nixpkgs#…` etc. resolve flake refs to the same inputs
         # this system was built from (pinned, consistent nix3 commands).
@@ -18,14 +13,11 @@
           # explanation of sensible defaults.
           connect-timeout = 5;
           log-lines = 25;
-          # Only root is trusted; fleet pushes are authenticated by the
-          # signing key below instead.
+          # Trust the wheel group so `nixos-rebuild --target-host` can push
+          # locally-built closures to the fleet (single-admin LAN).
           trusted-users = [
             "root"
-          ];
-          secret-key-files = [ config.sops.secrets."nix/signing-key".path ];
-          extra-trusted-public-keys = [
-            "megadots-1:pzNgKkrBOJ07H8Ki6Y8xb27NYLmgUgccmAT96C2aMmU="
+            "@wheel"
           ];
           # Deduplicate and optimise nix store.
           auto-optimise-store = true;

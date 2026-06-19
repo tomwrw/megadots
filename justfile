@@ -8,8 +8,6 @@ deploy HOST:
     trap 'rm -rf "$staging"' EXIT
     install -Dm600 {{ usb }}/hosts/{{ HOST }}/age.txt "$staging/persist/var/lib/sops-nix/key.txt"
     install -Dm600 {{ usb }}/users/{{ user }}/age.txt "$staging/home/{{ user }}/.config/sops/age/keys.txt"
-    install -Dm600 {{ usb }}/users/{{ user }}/id_ed25519 "$staging/home/{{ user }}/.ssh/id_ed25519"
-    install -Dm644 {{ usb }}/users/{{ user }}/id_ed25519.pub "$staging/home/{{ user }}/.ssh/id_ed25519.pub"
     # FIDO2 sk key handles (useless without the physical token); seeding them
     # avoids a post-deploy `ssh-keygen -K`.
     for k in id_ed25519_sk_primary id_ed25519_sk_backup; do
@@ -26,12 +24,6 @@ build HOST:
     nixos-rebuild build --flake .#{{ HOST }}
 
 rebuild HOST:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    nixos-rebuild build --flake .#{{ HOST }}
-    # Sign the closure with the fleet key: the target daemon only accepts
-    # signed paths since pushing users are not in trusted-users.
-    sudo nix store sign -r -k /run/secrets/nix/signing-key ./result
     nixos-rebuild switch --flake .#{{ HOST }} --target-host {{ user }}@{{ HOST }} --sudo --ask-sudo-password
 
 # Enroll the FIDO2 key currently plugged into HOST in its LUKS header.

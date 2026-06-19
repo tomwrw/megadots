@@ -31,15 +31,12 @@ _: {
           # delegates to the ssh-agent (which can't do FIDO2 ceremonies);
           # with the private file it performs PIN + touch itself.
           user.signingkey = "${config.home.homeDirectory}/.ssh/id_ed25519_sk_primary";
-          # Lets `git log --show-signature` verify locally.
+          # Verifies `git log --show-signature` locally; the file's path is
+          # the mechanism, its content (the signer identities) is supplied by
+          # the user module alongside user.name / user.email.
           gpg.ssh.allowedSignersFile = "${config.xdg.configHome}/git/allowed_signers";
           # user.name / user.email are set in the tomwrw user module.
         };
       };
-
-      xdg.configFile."git/allowed_signers".text = ''
-        tomwrw@proton.me sk-ssh-ed25519@openssh.com AAAAGnNrLXNzaC1lZDI1NTE5QG9wZW5zc2guY29tAAAAIPiQIe8ejl2D9ZLBZCHYyt7Iyh9jFHZ5iMYydq57DnDSAAAACnNzaDp0b213cnc= tomwrw-primary
-        tomwrw@proton.me sk-ssh-ed25519@openssh.com AAAAGnNrLXNzaC1lZDI1NTE5QG9wZW5zc2guY29tAAAAIG+ODAzUIgoEOgf1+ijqOPCljmYoXn9HETmJ1kP5cuAFAAAACnNzaDp0b213cnc= tomwrw-backup
-      '';
     };
 }

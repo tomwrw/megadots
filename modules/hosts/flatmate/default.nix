@@ -20,14 +20,12 @@
           ./_disko.nix
           ./_hardware.nix
         ];
-        # Set the host-specific hostname here.
+        # hostName comes from the hostname battery (host entity name);
+        # stateVersion from den.default.
         networking = {
-          hostName = "flatmate";
           domain = "home.arpa";
           search = [ "home.arpa" ];
         };
-        # Set the system state version.
-        system.stateVersion = "26.05";
       };
   };
 }

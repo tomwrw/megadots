@@ -5,6 +5,15 @@ _: {
       {
         programs.dconf.enable = true;
 
+        # git/ssh sign with the FIDO2 key by running ssh-keygen with a piped
+        # stdin, so OpenSSH cannot prompt for the PIN inline and requires an
+        # SSH_ASKPASS program (ssh-keygen.c, RP_ALLOW_STDIN). enableAskPassword
+        # defaults to services.xserver.enable, which is false under Wayland
+        # GNOME — so it must be set explicitly or SSH_ASKPASS stays empty and
+        # signing dies with "ssh_askpass: exec(): No such file or directory".
+        programs.ssh.enableAskPassword = true;
+        programs.ssh.askPassword = "${pkgs.seahorse}/libexec/seahorse/ssh-askpass";
+
         xdg.portal.enable = true;
 
         services = {
