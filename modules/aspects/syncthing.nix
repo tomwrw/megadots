@@ -42,11 +42,11 @@
             settings = {
               devices = lib.mapAttrs (_: h: { id = h.syncthing.id; }) meshHosts;
               options = {
-                relaysEnabled = false; # no relay servers
-                globalAnnounceEnabled = false; # no global discovery
-                localAnnounceEnabled = true; # LAN discovery only
-                natEnabled = false; # local network, no NAT traversal
-                urAccepted = -1; # disable usage-reporting prompts
+                relaysEnabled = false;
+                globalAnnounceEnabled = false;
+                localAnnounceEnabled = true;
+                natEnabled = false;
+                urAccepted = -1;
               };
 
               folders.Syncthing = {
@@ -55,8 +55,8 @@
                 versioning = {
                   type = "staggered";
                   params = {
-                    cleanInterval = "3600"; # prune hourly
-                    maxAge = "2592000"; # keep versions 30 days
+                    cleanInterval = "3600";
+                    maxAge = "2592000";
                   };
                 };
               };

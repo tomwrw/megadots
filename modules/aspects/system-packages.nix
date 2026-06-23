@@ -2,7 +2,6 @@ _: {
   den.aspects.system-packages.nixos =
     { pkgs, ... }:
     {
-      # General CLI tooling installed on every NixOS host.
       environment.systemPackages = [
         pkgs.age
         pkgs.nixfmt

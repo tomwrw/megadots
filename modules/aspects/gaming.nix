@@ -15,7 +15,6 @@ _: {
         programs.gamemode.enable = true;
         hardware.steam-hardware.enable = true;
 
-        # The sunshine module installs its own udev rules and enables uinput.
         services.sunshine = {
           enable = true;
           autoStart = true;
@@ -28,8 +27,6 @@ _: {
           capSysAdmin = true;
           openFirewall = true;
           settings = {
-            # Web UI reachable from the LAN only (sunshine's default, made
-            # explicit). Pairing still requires the PIN flow.
             origin_web_ui_allowed = "lan";
           };
         };

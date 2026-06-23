@@ -17,8 +17,7 @@
           ./_disko.nix
           ./_hardware.nix
         ];
-        # hostName comes from the hostname battery (host entity name);
-        # stateVersion from den.default.
+
         networking = {
           domain = "home.arpa";
           search = [ "home.arpa" ];
