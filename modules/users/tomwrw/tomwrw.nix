@@ -116,6 +116,7 @@
         den.aspects.code-cursor
         den.aspects.gemini
         den.aspects.emulation
+        den.aspects.minecraft
       ];
     };
   };
