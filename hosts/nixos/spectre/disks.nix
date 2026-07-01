@@ -10,14 +10,6 @@ in
   boot.tmp.cleanOnBoot = true;
 
   disko.devices = {
-    nodev."/" = {
-      fsType = "tmpfs";
-      mountOptions = [
-        "defaults"
-        "size=4G"
-        "mode=755"
-      ];
-    };
     disk = {
       main = {
         type = "disk";
@@ -54,7 +46,23 @@ in
                 content = {
                   type = "btrfs";
                   extraArgs = [ "-f" ];
+                  # Snapshot the freshly-formatted volume read-only before
+                  # anything is written to it; the rollback service restores
+                  # this blank snapshot on every boot.
+                  postCreateHook = ''
+                    mount -t btrfs /dev/mapper/crypted /mnt
+                    btrfs subvolume snapshot -r /mnt /mnt/root-blank
+                    umount /mnt
+                  '';
                   subvolumes = {
+                    "/root" = {
+                      mountpoint = "/";
+                      mountOptions = [
+                        "subvol=root"
+                        "compress=zstd"
+                        "noatime"
+                      ];
+                    };
                     "/nix" = {
                       mountpoint = "/nix";
                       mountOptions = [
@@ -67,14 +75,6 @@ in
                       mountpoint = "/persist";
                       mountOptions = [
                         "subvol=persist"
-                        "compress=zstd"
-                        "noatime"
-                      ];
-                    };
-                    "/home" = {
-                      mountpoint = "/home";
-                      mountOptions = [
-                        "subvol=home"
                         "compress=zstd"
                         "noatime"
                       ];
@@ -96,5 +96,4 @@ in
     };
   };
   fileSystems."/persist".neededForBoot = true;
-  fileSystems."/home".neededForBoot = true;
 }

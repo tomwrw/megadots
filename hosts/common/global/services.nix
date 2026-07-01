@@ -1,14 +1,14 @@
 { lib, ... }:
 {
   services = {
-    # Disabling speechd, the speech dispatcher daemon, as it's not
-    # needed for most desktop use cases and can consume resources.
+    # Disabling speechd, the speech dispatcher daemon. GNOME's orca
+    # accessibility module enables it, so mkForce is required to win.
     speechd.enable = lib.mkForce false;
     # Wrapper service for udisks.
     devmon.enable = true;
     # Firmware update service.
-    services.fwupd.enable = true;
+    fwupd.enable = true;
     # fail2ban for protection against credential stuffing.
-    services.fail2ban.enable = true;
+    fail2ban.enable = true;
   };
 }

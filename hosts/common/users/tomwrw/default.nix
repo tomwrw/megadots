@@ -6,14 +6,13 @@
 let
   # Configure user settings for NixOS.
   username = "tomwrw";
-  sshKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFCIJ1LhkFDBZaZU/bf8Y3XyCXb3RnVxg4gRs6i+XbSe tomwrw@proton.me";
   # Store the hostname for deriving the home file path.
   hostname = config.networking.hostName;
   ifTheyExist = groups: builtins.filter (group: builtins.hasAttr group config.users.groups) groups;
 in
 {
   # Read the sops managed secret for my user password.
-  sops.secrets."users/${username}/hashedPassword" = {
+  sops.secrets."users/${username}/password" = {
     neededForUsers = true;
   };
 
@@ -26,12 +25,14 @@ in
   users.users.${username} = {
     isNormalUser = true;
     shell = pkgs.zsh;
-    openssh.authorizedKeys.keys = [ sshKey ];
+    openssh.authorizedKeys.keys = [
+      "sk-ssh-ed25519@openssh.com AAAAGnNrLXNzaC1lZDI1NTE5QG9wZW5zc2guY29tAAAAIPiQIe8ejl2D9ZLBZCHYyt7Iyh9jFHZ5iMYydq57DnDSAAAACnNzaDp0b213cnc= tomwrw-primary"
+      "sk-ssh-ed25519@openssh.com AAAAGnNrLXNzaC1lZDI1NTE5QG9wZW5zc2guY29tAAAAIG+ODAzUIgoEOgf1+ijqOPCljmYoXn9HETmJ1kP5cuAFAAAACnNzaDp0b213cnc= tomwrw-backup"
+    ];
     packages = [ pkgs.home-manager ];
     extraGroups = ifTheyExist [
       "audio"
       "docker"
-      "git"
       "i2c"
       "libvirtd"
       "mysql"
@@ -46,7 +47,7 @@ in
       "kvm"
     ];
     # This uses the sops-nix managed password for my user.
-    hashedPasswordFile = config.sops.secrets."users/${username}/hashedPassword".path;
+    hashedPasswordFile = config.sops.secrets."users/${username}/password".path;
   };
 
   # Import the Home Manager config for this user on this host.

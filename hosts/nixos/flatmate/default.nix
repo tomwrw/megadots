@@ -13,7 +13,7 @@
   # to keep the old defaults. Only update this when you want to
   # adopt new defaults or upgrade major versions. You can verify
   # installed NixOS version with nixos-version.
-  system.stateVersion = "25.11";
+  system.stateVersion = "26.05";
   # Import needed modules here. This is going to pull in my hardware-configuration,
   # global configs (stuff shared between all hosts), optional configs, and
   # my user configs for any users I want added to this host.
@@ -32,11 +32,10 @@
     # it gets moved to global.
     ../../common/optional/bluetooth.nix
     ../../common/optional/cachyos-kernel.nix
+    ../../common/optional/fido2.nix
     ../../common/optional/graphics.nix
     ../../common/optional/pipewire.nix
-    ../../common/optional/systemd-boot.nix
     ../../common/optional/virt-manager.nix
-    ../../common/optional/yubikey.nix
     # Import my user configs.
     ../../common/users/tomwrw
     # Import my desktop.

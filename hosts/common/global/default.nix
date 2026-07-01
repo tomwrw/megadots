@@ -1,16 +1,20 @@
 { outputs, ... }:
 {
   imports = [
+    ./boot.nix
     ./fonts.nix
     ./gnupg.nix
+    ./hardening.nix
     ./hardware.nix
     ./home-manager.nix
+    ./impermanence.nix
     ./locale.nix
     ./network.nix
     ./nix.nix
     ./packages.nix
-    ./preservation.nix
+    ./rollback.nix
     ./security.nix
+    ./services.nix
     ./sops.nix
     ./ssh.nix
     ./systemd-initrd.nix

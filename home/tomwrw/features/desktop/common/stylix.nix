@@ -1,16 +1,18 @@
-{ inputs, ... }:
+{ inputs, pkgs, ... }:
 {
   imports = [
     # Import stylix as this is used throughout this
     # configuration to theme applications.
     inputs.stylix.homeModules.stylix
   ];
-  # Turn on stylix for themes. This is a very minimal
-  # enablement, as most of the actual configuration I
-  # perform in the hostname.nix file.
+  # Turn on stylix and set the base16 scheme, wallpaper and
+  # polarity that drive theming across the whole desktop.
   stylix = {
     enable = true;
     autoEnable = true;
+    base16Scheme = "${pkgs.base16-schemes}/share/themes/rose-pine-moon.yaml";
+    image = ../../../../../assets/wallpaper/snake.png;
+    polarity = "dark";
     # Disable overlays in home-manager as they conflict
     # with useGlobalPkgs. These should be applied at the
     # NixOS level instead.

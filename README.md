@@ -18,8 +18,8 @@ I'm not a developer. I'm a tinkerer with a consultancy job in a technical field 
 
 - :desktop_computer: **NixOS** system configuration on multiple hosts.
 - :house: **Home Manager** as a NixOS module, with a per-host file per user.
-- :ghost: **sops-nix** for secrets management, with age keys derived from SSH host keys.
-- :camera_flash: **Preservation** with root on tmpfs for declarative impermanence.
+- :ghost: **sops-nix** for secrets management, with per-host age keys and Token2/FIDO2 recovery recipients.
+- :camera_flash: **Impermanence** with a btrfs rollback root for declarative, opt-in persistence.
 - :cop: **Secure Boot** via lanzaboote with automatic key generation and enrollment.
 - :snowflake: **Flake** with modular, composable host and user configs.
 - :floppy_disk: **Disko** for declarative disk partitioning.
@@ -34,7 +34,10 @@ This configuration has multiple system entry points, with Home Manager configure
 
 ### Getting Started.
 
-Most day-to-day work goes through the `justfile`. The full deploy flow is two phases - `deploy` installs the OS, `bootstrap` wires up secrets after the host has generated its SSH keys.
+Most day-to-day work goes through the `justfile`. Deployment is a single
+phase - `deploy` installs the OS and seeds the host's pre-generated age key
+and FIDO2 key handles from a USB stick via `nixos-anywhere --extra-files`, so
+secrets decrypt immediately on first boot.
 
 ```bash
 # Build a host's closure locally (no activation).
@@ -50,15 +53,14 @@ just rebuild-onhost endgame
 # Rebuild the local host.
 just local
 
-# Phase 1 - bare metal install via nixos-anywhere from the NixOS
-# minimal live CD. Prompts for the LUKS passphrase. Secrets do NOT
-# work yet at this point.
+# Bare metal install via nixos-anywhere from the NixOS minimal live CD.
+# Prompts for the LUKS passphrase, then seeds the host age key + FIDO2
+# key handles so secrets work straight away.
 just deploy endgame
 
-# Phase 2 - register the host's age identity (derived from the SSH
-# host key it just generated), copy in user keys, rewrap secrets,
-# trigger a rebuild. After this, all secrets decrypt.
-just bootstrap endgame
+# Enrol the FIDO2 token currently plugged into a host in its LUKS header
+# (run once per token; the passphrase slot remains as a fallback).
+just enroll-fido2 endgame
 
 # Format every .nix file in the tree.
 nix fmt
@@ -77,21 +79,29 @@ nix flake update
 
 ### Configuring sops-nix.
 
-I use sops-nix for secrets in this configuration (user passwords, syncthing keys, etc). Secrets are encrypted with age, and each host has its own age key derived from its SSH host key via `ssh-to-age`. My user age key is derived the same way from `~/.ssh/id_ed25519`.
+I use sops-nix for secrets in this configuration (user passwords, U2F
+mappings, etc). Secrets are encrypted with age and split per host -
+`secrets/<hostname>.yaml`. Each host has its own age keypair: the public key
+is a recipient in `.sops.yaml`, and the private key lives on a USB stick and
+is seeded to `/persist/var/lib/sops-nix/key.txt` at deploy time (sops reads it
+from there, with `age.generateKey = false`). My own user age key (for editing
+secrets) and two Token2 FIDO2 recovery recipients are also listed in
+`.sops.yaml`.
 
 The flow for adding a new host:
 
-1. Add a new `- &HOST age1...placeholder` entry to `.sops.yaml` under `keys:`, and a matching `- *HOST` reference under the `creation_rules` `age:` list. The bootstrap recipe does an in-place sed on this line, so the placeholder needs to exist for the match to succeed.
-2. Run `just deploy HOST`. This installs the OS via nixos-anywhere. The host generates its own SSH host key during install.
-3. Run `just bootstrap HOST`. This:
-    - Derives your local user age key from `~/.ssh/id_ed25519` if it doesn't already exist.
-    - Reads the host's new SSH pubkey over SSH and converts it to an age pubkey.
-    - Replaces the placeholder in `.sops.yaml` with the real key.
-    - Re-wraps all secrets with `sops updatekeys`.
-    - Copies your user SSH key and age key to the host.
-    - Triggers a rebuild so the host can decrypt its secrets.
+1. Generate the host age keypair (`age-keygen -o <usb>/hosts/HOST/age.txt`)
+   and add its public key as a `- &HOST age1...` entry under `keys:` in
+   `.sops.yaml`, plus a matching `- *HOST` reference under the host's
+   `creation_rules` `age:` list.
+2. Create `secrets/HOST.yaml` and re-wrap it with `sops updatekeys` so the new
+   recipients can decrypt it.
+3. Run `just deploy HOST`. This installs the OS via nixos-anywhere and seeds
+   the host age key and FIDO2 key handles, so the host can decrypt its secrets
+   on first boot.
 
-After `bootstrap`, the host is fully functional and `just rebuild HOST` works normally.
+After `deploy`, the host is fully functional and `just rebuild HOST` works
+normally.
 
 ### Configuring Secure Boot.
 
@@ -110,7 +120,7 @@ Secure Boot is handled by [lanzaboote](https://github.com/nix-community/lanzaboo
 | flatmate | My mobile workstation | Surface Pro 7 | NixOS | Intel i7-1065G7 | Intel iGPU |
 | spectre | My test VM | QEMU VM | NixOS | Host passthrough | virtio-gpu |
 
-I have a single user that I manage through Home Manager (tomwrw). You may add additional users or rename mine to inherit my existing settings - though you'll need to replace the age keys in `.sops.yaml` with your own, and re-create the `secrets/secrets.yaml` file with your own paths and secrets.
+I have a single user that I manage through Home Manager (tomwrw). You may add additional users or rename mine to inherit my existing settings - though you'll need to replace the age keys in `.sops.yaml` with your own, and re-create the per-host `secrets/<hostname>.yaml` files with your own paths and secrets.
 
 ### File structure.
 
@@ -120,7 +130,7 @@ I use the following structure to organise my configurations.
 .
 ├── flake.nix             # My flake. Entry point for system configs.
 ├── flake.lock            # Pinned flake inputs.
-├── justfile              # Deploy, bootstrap, build and rebuild recipes.
+├── justfile              # Deploy, build, rebuild and enroll-fido2 recipes.
 ├── .sops.yaml            # sops-nix recipients and creation rules.
 ├── assets                # Static assets used by the config.
 │   └── wallpaper         # Wallpapers used by my stylix theme.
@@ -136,8 +146,8 @@ I use the following structure to organise my configurations.
 │       │   ├── development   # Editors and AI tooling (vscodium, cursor, claude-code, gemini).
 │       │   ├── media         # Media apps (spotify, ente).
 │       │   ├── productivity  # Browser, notes, etc. (firefox, obsidian, joplin).
-│       │   ├── security      # User-scoped security (sops, proton suite, ente-auth).
-│       │   └── services      # User services (syncthing, filen).
+│       │   ├── security      # User-scoped security (proton suite, ente-auth).
+│       │   └── services      # User services (filen).
 │       ├── endgame.nix   # Per-host Home Manager entry point (imports features).
 │       ├── flatmate.nix
 │       └── spectre.nix
@@ -157,8 +167,10 @@ I use the following structure to organise my configurations.
 │   └── nixos             # Custom-written NixOS modules.
 ├── overlays              # Overlays for patches and overrides.
 ├── pkgs                  # Custom packages built from this repo.
-└── secrets               # sops-encrypted secrets.
-    └── secrets.yaml
+└── secrets               # sops-encrypted secrets, one file per host.
+    ├── endgame.yaml
+    ├── flatmate.yaml
+    └── spectre.yaml
 ```
 
 ## Community.

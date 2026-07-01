@@ -1,5 +1,6 @@
 {
   inputs,
+  config,
   ...
 }:
 {
@@ -8,8 +9,8 @@
   ];
 
   sops = {
-    defaultSopsFile = ../../../secrets/secrets.yaml;
-    age.sshKeyPaths = [ "/persist/etc/ssh/ssh_host_ed25519_key" ];
+    defaultSopsFile = ../../../secrets/${config.networking.hostName}.yaml;
+    age.keyFile = "/persist/var/lib/sops-nix/key.txt";
     age.generateKey = false;
   };
 }

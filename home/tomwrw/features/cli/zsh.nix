@@ -6,6 +6,7 @@
       enableBashIntegration = true;
       enableZshIntegration = true;
     };
+
     zsh = {
       enable = true;
       dotDir = "${config.xdg.configHome}/zsh";
@@ -20,12 +21,42 @@
         psf = "ps -aux | grep";
         lsf = "ls | grep";
         nsp = "nix search nixpkgs";
+        gst = "git status";
+        gss = "git status -s";
+        gd = "git diff";
+        gds = "git diff --staged";
+        glog = "git log --oneline --graph --decorate -20";
+        gloga = "git log --oneline --graph --decorate --all";
+        # stage
+        ga = "git add";
+        gaa = "git add --all";
+        # commit (usage: gc \"message\")
+        gc = "git commit -m";
+        gca = "git commit -a -m";
+        gcane = "git commit --amend --no-edit";
+        # push / pull / fetch
+        gp = "git push";
+        gpu = "git push -u origin HEAD"; # first push of a branch (sets upstream)
+        gpf = "git push --force-with-lease"; # safe force, e.g. after an amend
+        gl = "git pull";
+        glr = "git pull --rebase";
+        gf = "git fetch --all --prune";
+        # branch / switch
+        gsw = "git switch";
+        gswc = "git switch -c"; # create + switch to a new branch
+        gco = "git checkout";
+        gb = "git branch";
+        gbd = "git branch -d";
+        # stash
+        gsta = "git stash";
+        gstp = "git stash pop";
       };
       history = {
         path = "$HOME/.local/share/zsh/.zsh_history";
         size = 8000;
       };
     };
+
     starship = {
       enable = true;
       enableBashIntegration = true;
@@ -36,10 +67,7 @@
           truncation_length = 2;
           format = "[$path]($style)[$read_only]($read_only_style) ";
         };
-        # Git
-        git_commit = {
-          disabled = false;
-        };
+        git_commit.disabled = false;
         hostname = {
           ssh_only = false;
           format = "[$hostname]($style) ";
@@ -50,8 +78,10 @@
   };
 
   home = {
-    sessionVariables = {
-      SPACESHIP_EXIT_CODE_SHOW = "true";
-    };
+    sessionVariables.SPACESHIP_EXIT_CODE_SHOW = "true";
+
+    persistence."/persist".files = [
+      ".local/share/zsh/.zsh_history"
+    ];
   };
 }

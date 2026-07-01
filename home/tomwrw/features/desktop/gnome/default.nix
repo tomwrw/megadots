@@ -23,6 +23,7 @@
       color-scheme = "prefer-dark";
       # accent-color = "slate";
       show-battery-percentage = true;
+      enable-hot-corners = true;
     };
     # Enable minimise, maximise buttons.
     "org/gnome/desktop/wm/preferences" = {
@@ -32,9 +33,6 @@
     "org/gnome/mutter" = {
       edge-tiling = true;
       dynamic-workspaces = true;
-    };
-    "org/gnome/desktop/interface" = {
-      enable-hot-corners = true;
     };
     # Touchpad support and config.
     "org/gnome/desktop/peripherals/touchpad" = {
@@ -57,4 +55,8 @@
     mime.enable = true;
     mimeApps.enable = true;
   };
+
+  home.persistence."/persist".directories = [
+    ".config/dconf"
+  ];
 }

@@ -27,4 +27,9 @@ in
       historyInSidebar
     ];
   };
+
+  # Login session — low urgency, just a re-login if lost.
+  home.persistence."/persist".directories = [
+    ".config/spotify"
+  ];
 }

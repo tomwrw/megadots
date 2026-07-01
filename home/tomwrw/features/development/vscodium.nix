@@ -32,4 +32,10 @@
       };
     };
   };
+
+  # Extension-internal state (auth tokens, recently-opened, etc.) not
+  # covered by the declarative userSettings above.
+  home.persistence."/persist".directories = [
+    ".config/VSCodium"
+  ];
 }

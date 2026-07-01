@@ -1,8 +1,4 @@
-{
-  lib,
-  pkgs,
-  ...
-}:
+{ lib, ... }:
 {
   imports = [
     # Import my global Home Manager configs. These are configs
@@ -21,18 +17,6 @@
   ];
   # Set up my Home Manager instance.
   home = {
-    stateVersion = lib.mkDefault "25.11";
-    spec = {
-      platform = "nixos";
-    };
-  };
-  # Set up theming for this user on this host using stylix.
-  # This is important as I refer to stylix lib and colors
-  # throughout many modules within this configuration.
-  stylix = {
-    # Set up the initial stylix config.
-    base16Scheme = "${pkgs.base16-schemes}/share/themes/rose-pine-moon.yaml";
-    image = ../../assets/wallpaper/snake.png;
-    polarity = "dark";
+    stateVersion = lib.mkDefault "26.05";
   };
 }

@@ -15,7 +15,7 @@
     # Supports: x86_64-linux, aarch64-linux, x86_64-darwin, aarch64-darwin
     systems.url = "github:nix-systems/default";
     # Manages impermanent file system configurations.
-    preservation.url = "github:nix-community/preservation";
+    impermanence.url = "github:nix-community/impermanence";
     # Home Manager is used to manage user-specific configurations
     # and dotfiles.
     home-manager = {

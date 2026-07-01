@@ -1,12 +1,21 @@
 { pkgs, ... }:
 {
-  # Enable dconf so it can be configured by home-manager.
-  programs.dconf.enable = true;
+  programs = {
+    # Enable dconf so it can be configured by home-manager.
+    dconf.enable = true;
+    # Let SSH (and thus git sk-signing/auth) prompt for the Token2 PIN via
+    # a graphical dialog in non-tty contexts (e.g. GUI git clients).
+    ssh.enableAskPassword = true;
+    ssh.askPassword = "${pkgs.seahorse}/libexec/seahorse/ssh-askpass";
+  };
 
   xdg.portal.enable = true;
 
   services = {
     libinput.enable = true;
+    # gcr-ssh-agent hijacks FIDO2 sk keys; disable it so SSH talks to the
+    # token directly.
+    gnome.gcr-ssh-agent.enable = false;
     desktopManager.gnome = {
       enable = true;
     };
@@ -40,11 +49,7 @@
     ];
   };
 
-  preservation = {
-    preserveAt."/persist" = {
-      directories = [
-        "/var/lib/AccountsService"
-      ];
-    };
-  };
+  environment.persistence."/persist".directories = [
+    "/var/lib/AccountsService"
+  ];
 }

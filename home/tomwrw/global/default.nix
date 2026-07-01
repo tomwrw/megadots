@@ -27,4 +27,14 @@
     homeDirectory = lib.mkDefault "/home/${config.home.username}";
     sessionPath = [ "$HOME/.local/bin" ];
   };
+
+  # Standard XDG user dirs. ~/Documents also covers Obsidian vaults, which
+  # live under it (or a subfolder of it).
+  home.persistence."/persist".directories = [
+    "Documents"
+    "Downloads"
+    "Pictures"
+    "Videos"
+    "Music"
+  ];
 }

@@ -4,6 +4,7 @@
     ./btop.nix
     ./ghostty.nix
     ./git.nix
+    ./ssh.nix
     ./zsh.nix
   ];
 

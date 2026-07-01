@@ -137,4 +137,10 @@
     "text/html" = [ "firefox.desktop" ];
     "application/pdf" = [ "firefox.desktop" ];
   };
+
+  # configPath above relocates the profile to .config/mozilla/firefox
+  # (not the default ~/.mozilla/firefox) — persist that location.
+  home.persistence."/persist".directories = [
+    ".config/mozilla/firefox"
+  ];
 }
