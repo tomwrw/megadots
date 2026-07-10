@@ -7,7 +7,6 @@
     den.aspects.ssh
     den.aspects.networking
     den.aspects.hardware
-    den.aspects.kernel
     den.aspects.disko
     den.aspects.boot
     den.aspects.systemd-initrd
@@ -17,5 +16,6 @@
     den.aspects.fonts
     den.aspects.security
     den.aspects.hardening
+    den.aspects.system.linux-kernel
   ];
 }

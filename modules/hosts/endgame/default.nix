@@ -1,5 +1,17 @@
 { den, ... }:
 {
+
+  den.hosts.x86_64-linux.endgame = {
+    settings = {
+      system = {
+        linux-kernel = {
+          channel = "latest";
+          optimization = "zen4";
+        };
+      };
+    };
+  };
+
   den.aspects.endgame = {
     includes = [
       den.aspects.base
