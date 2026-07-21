@@ -28,8 +28,7 @@
     sessionPath = [ "$HOME/.local/bin" ];
   };
 
-  # Standard XDG user dirs. ~/Documents also covers Obsidian vaults, which
-  # live under it (or a subfolder of it).
+  home.persistence."/persist".hideMounts = true;
   home.persistence."/persist".directories = [
     "Documents"
     "Downloads"

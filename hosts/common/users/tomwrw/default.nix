@@ -16,9 +16,6 @@ in
     neededForUsers = true;
   };
 
-  # Trust this user with the local nix daemon so cross-host
-  # `nixos-rebuild --target-host` can push locally-built closures
-  # without per-path signatures.
   nix.settings.trusted-users = [ username ];
 
   users.mutableUsers = false;
@@ -28,6 +25,7 @@ in
     openssh.authorizedKeys.keys = [
       "sk-ssh-ed25519@openssh.com AAAAGnNrLXNzaC1lZDI1NTE5QG9wZW5zc2guY29tAAAAIPiQIe8ejl2D9ZLBZCHYyt7Iyh9jFHZ5iMYydq57DnDSAAAACnNzaDp0b213cnc= tomwrw-primary"
       "sk-ssh-ed25519@openssh.com AAAAGnNrLXNzaC1lZDI1NTE5QG9wZW5zc2guY29tAAAAIG+ODAzUIgoEOgf1+ijqOPCljmYoXn9HETmJ1kP5cuAFAAAACnNzaDp0b213cnc= tomwrw-backup"
+      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFCIJ1LhkFDBZaZU/bf8Y3XyCXb3RnVxg4gRs6i+XbSe tomwrw"
     ];
     packages = [ pkgs.home-manager ];
     extraGroups = ifTheyExist [

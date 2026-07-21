@@ -12,7 +12,6 @@
     ./network.nix
     ./nix.nix
     ./packages.nix
-    ./rollback.nix
     ./security.nix
     ./services.nix
     ./sops.nix
