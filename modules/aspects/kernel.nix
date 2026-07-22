@@ -40,9 +40,9 @@
           if optimization == "server" then
             "linuxPackages-cachyos-server-lto"
           else if optimization == "generic" then
-            "linuxPackages-cachyos-${channel}-lto"
+            "linuxPackages-cachyos-${channel}"
           else
-            "linuxPackages-cachyos-${channel}-lto-${optimization}";
+            "linuxPackages-cachyos-${channel}-${optimization}";
       in
       {
         nixpkgs.overlays = [
