@@ -43,10 +43,6 @@ _: {
         };
       };
 
-    # gnome is a host-scope aspect (included via desktop → host). A bare
-    # `homeManager` block here would be inert: the host scope resolves the
-    # nixos class but not homeManager, so it never reaches users (den #609).
-    # `provides.to-users` delivers this home config DOWN to the host's users.
     provides.to-users.homeManager =
       { pkgs, ... }:
       {
