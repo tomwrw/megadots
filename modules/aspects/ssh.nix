@@ -16,19 +16,4 @@ _: {
       };
     };
   };
-
-  den.aspects.ssh.homeManager = _: {
-    programs.ssh = {
-      enable = true;
-      enableDefaultConfig = false;
-      settings."github.com" = {
-        User = "git";
-        IdentitiesOnly = true;
-        IdentityFile = [
-          "~/.ssh/id_ed25519_sk_primary"
-          "~/.ssh/id_ed25519_sk_backup"
-        ];
-      };
-    };
-  };
 }

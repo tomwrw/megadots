@@ -23,7 +23,7 @@ _: {
           pull.rebase = false;
           commit.gpgsign = true;
           gpg.format = "ssh";
-          user.signingkey = "${config.home.homeDirectory}/.ssh/id_ed25519_sk_primary";
+          user.signingkey = "${config.home.homeDirectory}/.ssh/id_ed25519";
           gpg.ssh.allowedSignersFile = "${config.xdg.configHome}/git/allowed_signers";
         };
       };
