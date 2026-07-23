@@ -18,13 +18,6 @@ _: {
         services.sunshine = {
           enable = true;
           autoStart = true;
-          # DRM/KMS capture needs CAP_SYS_ADMIN on GNOME Wayland. Sunshine
-          # master has XDG-portal/PipeWire capture that drops the setcap
-          # requirement (LizardByte/Sunshine#4417, merged 2026-02), but no
-          # packaged release contains it yet (nixpkgs ships 2025.924).
-          # TODO: set capSysAdmin = false once nixpkgs ships a release with
-          # portal capture.
-          capSysAdmin = true;
           openFirewall = true;
           settings = {
             origin_web_ui_allowed = "lan";
