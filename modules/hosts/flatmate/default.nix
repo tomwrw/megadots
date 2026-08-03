@@ -1,30 +1,16 @@
-{ den, inputs, ... }:
+{ den, ... }:
 {
-  flake-file.inputs.nixos-hardware = {
-    url = "github:nixos/nixos-hardware";
-    inputs.nixpkgs.follows = "nixpkgs";
-  };
-
   den.aspects.flatmate = {
     includes = [
-      den.aspects.base
-      den.aspects.desktop
-      den.aspects.preservation
+      den.aspects.roles.default
+      den.aspects.roles.workstation
+      den.aspects.core.boot.systemd-boot
+      den.aspects.hardware.surface-pro
+      den.aspects.hardware.flatmate
     ];
 
-    nixos =
-      { ... }:
-      {
-        imports = [
-          inputs.nixos-hardware.nixosModules.microsoft-surface-pro-intel
-          ./_disko.nix
-          ./_hardware.nix
-        ];
-
-        networking = {
-          domain = "home.arpa";
-          search = [ "home.arpa" ];
-        };
-      };
+    nixos = { ... }: {
+      imports = [ ./_disko.nix ];
+    };
   };
 }

@@ -1,0 +1,14 @@
+_: {
+  den.aspects.core.networking.nixos =
+    { lib, ... }:
+    {
+      networking = {
+        # Deliberate policy lock: firewall must never be turned off by any
+        # other aspect, even though `true` is already the NixOS default.
+        firewall.enable = lib.mkForce true;
+        networkmanager.enable = true;
+        domain = "home.arpa";
+        search = [ "home.arpa" ];
+      };
+    };
+}

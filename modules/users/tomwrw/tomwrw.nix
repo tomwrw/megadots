@@ -8,31 +8,31 @@
     includes = [
       den.batteries.primary-user
       (den.batteries.user-shell "zsh")
-      den.aspects.sops
-      den.aspects.syncthing
-      den.aspects.firefox
-      den.aspects.git
-      den.aspects.zsh
-      den.aspects.ghostty
-      den.aspects.btop
-      den.aspects.cli-apps
-      den.aspects.stylix
+      den.aspects.core.security.sops
+      den.aspects.core.syncthing
+      den.aspects.desktop.stylix
+      den.aspects.apps.browsers.firefox
+      den.aspects.apps.dev.git
+      den.aspects.apps.shell.zsh
+      den.aspects.apps.shell.cli-apps
+      den.aspects.apps.terminals.ghostty
+      den.aspects.apps.monitoring.btop
 
       # Applications (common to all hosts).
-      den.aspects.element
-      den.aspects.signal
-      den.aspects.vesktop
-      den.aspects.whatsapp
-      den.aspects.ente-desktop
-      den.aspects.spotify
-      den.aspects.joplin
-      den.aspects.obsidian
-      den.aspects.ente-auth
-      den.aspects.bitwarden
-      den.aspects.filen-desktop
-      den.aspects.claude-code
-      den.aspects.vscodium
-      den.aspects.proton-suite
+      den.aspects.apps.messaging.element
+      den.aspects.apps.messaging.signal
+      den.aspects.apps.messaging.vesktop
+      den.aspects.apps.messaging.whatsapp
+      den.aspects.apps.storage.ente-desktop
+      den.aspects.apps.media.spotify
+      den.aspects.apps.productivity.joplin
+      den.aspects.apps.productivity.obsidian
+      den.aspects.apps.security.ente-auth
+      den.aspects.apps.security.bitwarden
+      den.aspects.apps.storage.filen-desktop
+      den.aspects.apps.dev.claude-code
+      den.aspects.apps.dev.vscodium
+      den.aspects.apps.productivity.proton-suite
     ];
 
     nixos =
@@ -123,11 +123,11 @@
     # deployed to all my hosts.
     provides.endgame = {
       includes = [
-        den.aspects.gaming
-        den.aspects.code-cursor
-        den.aspects.gemini
-        den.aspects.emulation
-        den.aspects.minecraft
+        den.aspects.apps.gaming.mangohud
+        den.aspects.apps.gaming.emulation
+        den.aspects.apps.gaming.minecraft
+        den.aspects.apps.dev.code-cursor
+        den.aspects.apps.dev.gemini
       ];
     };
   };
