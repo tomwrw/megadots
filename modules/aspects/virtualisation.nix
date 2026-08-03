@@ -21,4 +21,14 @@ _: {
     "/var/lib/libvirt"
     "/var/lib/qemu"
   ];
+
+  # The aspect that creates the libvirtd group grants it. Only hosts
+  # including `virtualisation` deliver this, so no host-existence guard
+  # is needed at the user site.
+  den.aspects.virtualisation.provides.to-users =
+    { host, user, ... }:
+    {
+      name = "virtualisation/libvirtd-group(${user.userName}@${host.name})";
+      nixos.users.users.${user.userName}.extraGroups = [ "libvirtd" ];
+    };
 }

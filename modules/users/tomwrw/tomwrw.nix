@@ -53,16 +53,13 @@
             "sk-ssh-ed25519@openssh.com AAAAGnNrLXNzaC1lZDI1NTE5QG9wZW5zc2guY29tAAAAIG+ODAzUIgoEOgf1+ijqOPCljmYoXn9HETmJ1kP5cuAFAAAACnNzaDp0b213cnc= tomwrw-backup"
           ];
 
-          extraGroups = builtins.filter (g: builtins.hasAttr g config.users.groups) [
+          extraGroups = [
             "disk"
-            "i2c"
-            "libvirtd"
             "kvm"
             "video"
             "render"
             "audio"
             "input"
-            "plugdev"
           ];
         };
 
