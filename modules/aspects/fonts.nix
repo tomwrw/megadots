@@ -25,7 +25,11 @@ in
         fonts.packages = fontPkgs pkgs;
       };
 
-    homeManager =
+    # Opt-in only (e.g. a standalone den.homes with no system font path).
+    # Never included by 'base' - a bare homeManager block on a host-scope-only
+    # aspect is inert, so this is a named sub-aspect instead of a
+    # silent no-op.
+    provides.home.homeManager =
       { pkgs, ... }:
       {
         home.packages = fontPkgs pkgs;

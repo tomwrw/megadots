@@ -9,7 +9,6 @@
       den.batteries.primary-user
       (den.batteries.user-shell "zsh")
       den.aspects.sops
-      den.aspects.ssh
       den.aspects.syncthing
       den.aspects.firefox
       den.aspects.git

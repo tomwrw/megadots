@@ -47,13 +47,13 @@ modules/
 └── users/tomwrw/     # the Home Manager user, itself just another aspect
 ```
 
-The unit of composition is the **aspect**: a named, self-contained feature that can carry a NixOS side, a Home Manager side, or both. Hosts and users opt in via `includes`. For example, [fonts](modules/aspects/fonts.nix) installs the same font set whichever side consumes it:
+The unit of composition is the **aspect**: a named, self-contained feature that can carry a NixOS side, a Home Manager side, or both. Hosts and users opt in via `includes`. For example, [fonts](modules/aspects/fonts.nix) installs its font set at the system level for every host, and offers the same set as an opt-in `home` sub-aspect for standalone Home Manager users with no system font path to fall back on:
 
 ```nix
 {
   den.aspects.fonts = {
     nixos = { pkgs, ... }: { fonts.packages = fontPkgs pkgs; };
-    homeManager = { pkgs, ... }: { home.packages = fontPkgs pkgs; };
+    provides.home.homeManager = { pkgs, ... }: { home.packages = fontPkgs pkgs; };
   };
 }
 ```
