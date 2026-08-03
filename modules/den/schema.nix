@@ -56,5 +56,8 @@
     };
   };
 
-  den.schema.user.config.classes = lib.mkDefault [ "homeManager" ];
+  den.schema.user.config.classes = lib.mkDefault [
+    "homeManager"
+    "user"
+  ];
 }

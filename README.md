@@ -36,29 +36,41 @@ Everything lives under `modules/`, discovered automatically by [import-tree](htt
 
 ```
 modules/
-├── inputs.nix        # core inputs + the dendritic flake-modules
-├── schema.nix        # custom den host/user options (e.g. syncthing.id)
-├── defaults.nix      # den.default - batteries and settings every host gets
-├── hosts.nix         # the host roster: den.hosts.<system>.<name>
-├── hosts/            # one directory per host: includes, disko layout, hardware
+├── flake/               # flake plumbing: core inputs, dendritic flake-modules, treefmt
+├── den/                 # den.default, custom host/user schema options, the host roster, quirks
+├── hosts/                # one directory per host: includes, hardware
 │   ├── endgame/
 │   └── flatmate/
-├── aspects/          # the reusable aspect library - one concern per file
-└── users/tomwrw/     # the Home Manager user, itself just another aspect
+├── aspects/              # the reusable aspect library, organised by concern:
+│   ├── core/             #   always-on baseline (nix, security, networking, boot, …)
+│   ├── hardware/         #   graphics/audio/bluetooth + per-host hardware wrappers
+│   ├── desktop/          #   gnome, stylix, fonts
+│   ├── virtualisation/   #   libvirt (room for docker/podman siblings later)
+│   ├── apps/             #   every user-facing app, grouped by dotted category
+│   │                     #   (apps.messaging.*, apps.dev.*, apps.gaming.*, …)
+│   └── roles/            #   composite bundles hosts include (default, workstation, gaming)
+└── users/tomwrw/         # the Home Manager user, itself just another aspect
 ```
 
-The unit of composition is the **aspect**: a named, self-contained feature that can carry a NixOS side, a Home Manager side, or both. Hosts and users opt in via `includes`. For example, [fonts](modules/aspects/fonts.nix) installs its font set at the system level for every host, and offers the same set as an opt-in `home` sub-aspect for standalone Home Manager users with no system font path to fall back on:
+The unit of composition is the **aspect**: a named, self-contained feature that can carry a NixOS side, a Home Manager side, or both — never split by class, only by concern. Hosts and users opt in via `includes`. For example, [fonts](modules/aspects/desktop/fonts.nix) installs its font set at the system level for every host, and offers the same set as an opt-in `home` sub-aspect for standalone Home Manager users with no system font path to fall back on:
 
 ```nix
 {
-  den.aspects.fonts = {
+  den.aspects.desktop.fonts = {
     nixos = { pkgs, ... }: { fonts.packages = fontPkgs pkgs; };
     provides.home.homeManager = { pkgs, ... }: { home.packages = fontPkgs pkgs; };
   };
 }
 ```
 
-Cross-cutting data flows through the den roster rather than hard-coding: [syncthing](modules/aspects/syncthing.nix) builds its device mesh by reading every host's `syncthing.id` from `den.hosts`, an option declared once in [schema.nix](modules/schema.nix).
+Cross-cutting data flows through the den roster rather than hard-coding: [syncthing](modules/aspects/core/syncthing.nix) builds its device mesh by reading every host's `syncthing.id` from `den.hosts`, an option declared once in [den/schema.nix](modules/den/schema.nix).
+
+### Deliberate Nix settings.
+
+[core/nix.nix](modules/aspects/core/nix.nix) sets two options that are worth calling out explicitly, since both loosen a default security boundary:
+
+- `nix.settings.trusted-users = [ "root" "@wheel" ]` — lets any `wheel` member build/substitute arbitrary derivations and push closures via `nixos-rebuild --target-host`. This is a single-admin-LAN trade-off: fine when you and the fleet are the only wheel members, not something to carry into a multi-user or shared-admin setup without reconsidering.
+- `nix.settings.allow-import-from-derivation = true` — required because Stylix's base16 scheme reader does an IFD (`readFile`s a YAML out of the `base16-schemes` derivation at eval time). Without it, evaluation fails outright; it is not optional given the current Stylix setup.
 
 ## Usage.
 

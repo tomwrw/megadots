@@ -6,7 +6,11 @@
       nix = {
         # Make `nix run nixpkgs#…` etc. resolve flake refs to the same inputs
         # this system was built from (pinned, consistent nix3 commands).
-        registry = lib.mapAttrs (_: flake: { inherit flake; }) inputs;
+        # Filtered to actual flakes: a `flake = false` input has no `outputs`
+        # and would produce a broken registry entry.
+        registry = lib.mapAttrs (_: flake: { inherit flake; }) (
+          lib.filterAttrs (_: input: input ? outputs) inputs
+        );
 
         settings = {
           # See https://jackson.dev/post/nix-reasonable-defaults/ for

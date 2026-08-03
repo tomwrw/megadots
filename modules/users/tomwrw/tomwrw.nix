@@ -5,7 +5,7 @@
 }:
 let
   email = "tomwrw@proton.me";
-  # Single source for tomwrw's SSH keys — consumed below both as login
+  # Single source for tomwrw's SSH keys - consumed below both as login
   # credentials (authorizedKeys) and as commit-signing identities
   # (allowed_signers), which previously had to be kept in sync by hand.
   sshKeys = {
@@ -47,69 +47,69 @@ in
       den.aspects.apps.productivity.proton-suite
     ];
 
-    nixos =
-      {
-        config,
-        ...
-      }:
-      {
-        users.mutableUsers = false;
+    nixos = _: {
+      users.mutableUsers = false;
 
-        sops.secrets."users/tomwrw/password".neededForUsers = true;
+      sops.secrets."users/tomwrw/password".neededForUsers = true;
 
-        users.users.tomwrw = {
-          hashedPasswordFile = config.sops.secrets."users/tomwrw/password".path;
-          openssh.authorizedKeys.keys = lib.attrValues sshKeys;
-
-          extraGroups = [
-            "disk"
-            "kvm"
-            "video"
-            "render"
-            "audio"
-            "input"
-          ];
+      # 'd' fixes ownership/mode even when nixos-anywhere --extra-files
+      # already created these as root; 'z' does the same for the seeded
+      # files themselves and is a no-op if a path is absent (unlike the
+      # oneshot chown it replaces, no '|| true' needed). tmpfiles-setup
+      # runs at sysinit, well before home-manager-tomwrw.service, so no
+      # explicit ordering is needed either.
+      systemd.tmpfiles.settings."10-tomwrw-seed" = {
+        "/home/tomwrw/.ssh".d = {
+          user = "tomwrw";
+          group = "users";
+          mode = "0700";
+        };
+        "/home/tomwrw/.config".d = {
+          user = "tomwrw";
+          group = "users";
+          mode = "0755";
+        };
+        "/home/tomwrw/.config/sops".d = {
+          user = "tomwrw";
+          group = "users";
+          mode = "0700";
+        };
+        "/home/tomwrw/.config/sops/age".d = {
+          user = "tomwrw";
+          group = "users";
+          mode = "0700";
         };
 
-        # `d` fixes ownership/mode even when nixos-anywhere --extra-files
-        # already created these as root; `z` does the same for the seeded
-        # files themselves and is a no-op if a path is absent (unlike the
-        # oneshot chown it replaces, no `|| true` needed). tmpfiles-setup
-        # runs at sysinit, well before home-manager-tomwrw.service, so no
-        # explicit ordering is needed either.
-        systemd.tmpfiles.settings."10-tomwrw-seed" = {
-          "/home/tomwrw/.ssh".d = {
-            user = "tomwrw";
-            group = "users";
-            mode = "0700";
-          };
-          "/home/tomwrw/.config".d = {
-            user = "tomwrw";
-            group = "users";
-            mode = "0755";
-          };
-          "/home/tomwrw/.config/sops".d = {
-            user = "tomwrw";
-            group = "users";
-            mode = "0700";
-          };
-          "/home/tomwrw/.config/sops/age".d = {
-            user = "tomwrw";
-            group = "users";
-            mode = "0700";
-          };
-
-          # Mode is left alone here — justfile's `install -Dm600/-m644`
-          # already sets it; this only adopts ownership.
-          "/home/tomwrw/.config/sops/age/keys.txt".z = {
-            user = "tomwrw";
-            group = "users";
-          };
-          "/home/tomwrw/.ssh/id_ed25519*".z = {
-            user = "tomwrw";
-            group = "users";
-          };
+        # Mode is left alone here - justfile's 'install -Dm600/-m644'
+        # already sets it; this only adopts ownership.
+        "/home/tomwrw/.config/sops/age/keys.txt".z = {
+          user = "tomwrw";
+          group = "users";
         };
+        "/home/tomwrw/.ssh/id_ed25519*".z = {
+          user = "tomwrw";
+          group = "users";
+        };
+      };
+    };
+
+    # den's 'user' class forwards these fields directly onto
+    # users.users.tomwrw (os-user battery); osConfig is the injected parent
+    # NixOS config, since this module's own 'config' is the user-class's.
+    user =
+      { osConfig, ... }:
+      {
+        hashedPasswordFile = osConfig.sops.secrets."users/tomwrw/password".path;
+        openssh.authorizedKeys.keys = lib.attrValues sshKeys;
+
+        extraGroups = [
+          "disk"
+          "kvm"
+          "video"
+          "render"
+          "audio"
+          "input"
+        ];
       };
 
     homeManager = _: {
