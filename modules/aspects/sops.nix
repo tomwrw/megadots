@@ -36,6 +36,12 @@
             ];
             Conflicts = [ "shutdown.target" ];
           };
+          # sops-nix hardcodes Install.WantedBy = [ "default.target" ] with no
+          # option to override it (modules/home-manager/sops.nix:391-392,
+          # the `cfg.gnupg.home == null` branch). Secrets must be on disk
+          # before dependent user services (e.g. syncthing) start, so pull
+          # this to basic.target. mkForce is the minimal correct override;
+          # revisit if sops-nix ever exposes a startup-target option.
           Install.WantedBy = lib.mkForce [ "basic.target" ];
         };
       };

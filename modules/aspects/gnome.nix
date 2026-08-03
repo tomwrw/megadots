@@ -35,12 +35,21 @@ _: {
             pkgs.yelp
             pkgs.gnome-contacts
             pkgs.gnome-initial-setup
+            pkgs.orca
           ];
           systemPackages = [
             pkgs.dconf-editor
             pkgs.gnome-tweaks
           ];
         };
+
+        # Excluding orca above only stops GNOME enabling it (its module sets
+        # services.orca.enable = notExcluded pkgs.orca); orca.nix separately
+        # enables speechd itself when orca is on, so speechd still needs an
+        # explicit off switch here. Plain assignment beats the mkDefault true
+        # in nixos/modules/services/misc/graphical-desktop.nix — no mkForce
+        # needed since nothing else sets it once orca is excluded.
+        services.speechd.enable = false;
       };
 
     provides.to-users.homeManager =
