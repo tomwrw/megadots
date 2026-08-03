@@ -63,31 +63,44 @@
           ];
         };
 
-        systemd.tmpfiles.rules = [
-          "d /home/tomwrw/.ssh 0700 tomwrw users -"
-          "d /home/tomwrw/.config 0755 tomwrw users -"
-          "d /home/tomwrw/.config/sops 0700 tomwrw users -"
-          "d /home/tomwrw/.config/sops/age 0700 tomwrw users -"
-        ];
-
-        systemd.services.tomwrw-seeded-keys = {
-          description = "Own tomwrw's deploy-seeded key files";
-          wantedBy = [ "multi-user.target" ];
-          before = [ "home-manager-tomwrw.service" ];
-          serviceConfig = {
-            Type = "oneshot";
-            RemainAfterExit = true;
+        # `d` fixes ownership/mode even when nixos-anywhere --extra-files
+        # already created these as root; `z` does the same for the seeded
+        # files themselves and is a no-op if a path is absent (unlike the
+        # oneshot chown it replaces, no `|| true` needed). tmpfiles-setup
+        # runs at sysinit, well before home-manager-tomwrw.service, so no
+        # explicit ordering is needed either.
+        systemd.tmpfiles.settings."10-tomwrw-seed" = {
+          "/home/tomwrw/.ssh".d = {
+            user = "tomwrw";
+            group = "users";
+            mode = "0700";
           };
-          script = ''
-            chown tomwrw:users \
-              /home/tomwrw/.config/sops/age/keys.txt \
-              /home/tomwrw/.ssh/id_ed25519 \
-              /home/tomwrw/.ssh/id_ed25519.pub \
-              /home/tomwrw/.ssh/id_ed25519_sk_primary \
-              /home/tomwrw/.ssh/id_ed25519_sk_primary.pub \
-              /home/tomwrw/.ssh/id_ed25519_sk_backup \
-              /home/tomwrw/.ssh/id_ed25519_sk_backup.pub || true
-          '';
+          "/home/tomwrw/.config".d = {
+            user = "tomwrw";
+            group = "users";
+            mode = "0755";
+          };
+          "/home/tomwrw/.config/sops".d = {
+            user = "tomwrw";
+            group = "users";
+            mode = "0700";
+          };
+          "/home/tomwrw/.config/sops/age".d = {
+            user = "tomwrw";
+            group = "users";
+            mode = "0700";
+          };
+
+          # Mode is left alone here — justfile's `install -Dm600/-m644`
+          # already sets it; this only adopts ownership.
+          "/home/tomwrw/.config/sops/age/keys.txt".z = {
+            user = "tomwrw";
+            group = "users";
+          };
+          "/home/tomwrw/.ssh/id_ed25519*".z = {
+            user = "tomwrw";
+            group = "users";
+          };
         };
       };
 
