@@ -26,24 +26,21 @@ build HOST:
 rebuild HOST:
     nixos-rebuild switch --flake .#{{ HOST }} --target-host {{ user }}@{{ HOST }} --sudo --ask-sudo-password
 
+# The LUKS-partition device path for HOST, read from the den host roster
+# (single source of truth: modules/den/hosts.nix) rather than hardcoded here.
+luks-part HOST:
+    @nix eval --raw .#den.hosts.x86_64-linux.{{ HOST }}.disk.id | sed 's/$/-part2/'
+
 enroll-fido2 HOST:
     #!/usr/bin/env bash
     set -euo pipefail
-    case "{{ HOST }}" in
-      endgame) dev=/dev/disk/by-id/nvme-Sabrent_SB-RKT5-2TB_48836385600606-part2 ;;
-      flatmate) dev=/dev/disk/by-id/nvme-KBG40ZPZ512G_TOSHIBA_MEMORY_89R201INNLAP-part2 ;;
-      *) echo "unknown host: {{ HOST }}" >&2; exit 1 ;;
-    esac
+    dev="$(just luks-part {{ HOST }})"
     ssh -t {{ user }}@{{ HOST }} sudo systemd-cryptenroll --fido2-device=auto --fido2-with-client-pin=yes "$dev"
 
 unenroll-fido2 HOST:
     #!/usr/bin/env bash
     set -euo pipefail
-    case "{{ HOST }}" in
-      endgame) dev=/dev/disk/by-id/nvme-Sabrent_SB-RKT5-2TB_48836385600606-part2 ;;
-      flatmate) dev=/dev/disk/by-id/nvme-KBG40ZPZ512G_TOSHIBA_MEMORY_89R201INNLAP-part2 ;;
-      *) echo "unknown host: {{ HOST }}" >&2; exit 1 ;;
-    esac
+    dev="$(just luks-part {{ HOST }})"
     if [[ "{{ HOST }}" == "$(hostname)" ]]; then
       sudo cryptsetup open --test-passphrase "$dev" && sudo systemd-cryptenroll --wipe-slot=fido2 "$dev"
     else
