@@ -11,7 +11,7 @@
       {
         imports = [ inputs.sops-nix.nixosModules.sops ];
         sops = {
-          defaultSopsFile = ../../../secrets/hosts/${config.networking.hostName}.yaml;
+          defaultSopsFile = ../../../../secrets/hosts/${config.networking.hostName}.yaml;
           age.keyFile = "/persist/var/lib/sops-nix/key.txt";
           age.generateKey = false;
           # Exactly one decryption identity, stated explicitly. sops-nix
@@ -28,7 +28,7 @@
       {
         imports = [ inputs.sops-nix.homeManagerModules.sops ];
         sops = {
-          defaultSopsFile = ../../../secrets/users/${config.home.username}.yaml;
+          defaultSopsFile = ../../../../secrets/users/${config.home.username}.yaml;
           age.keyFile = "${config.home.homeDirectory}/.config/sops/age/keys.txt";
           age.generateKey = false;
         };

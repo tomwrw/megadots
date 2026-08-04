@@ -124,16 +124,9 @@ in
       );
     };
 
-    # This is stuff that I want on endgame only and not
-    # deployed to all my hosts.
-    provides.endgame = {
-      includes = [
-        den.aspects.apps.gaming.mangohud
-        den.aspects.apps.gaming.emulation
-        den.aspects.apps.gaming.minecraft
-        den.aspects.apps.dev.code-cursor
-        den.aspects.apps.dev.gemini
-      ];
-    };
+    # Host-specific extras are NOT listed here. They come from the roles a host
+    # takes (roles/gaming.nix, roles/dev.nix) via provides.to-users, so this
+    # file never mentions a host by name - renaming a host cannot silently
+    # change what a user gets.
   };
 }

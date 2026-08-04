@@ -25,7 +25,7 @@ let
 
   # Fleet-wide invariants. These encode decisions that are easy to undo by
   # accident and expensive to notice: a firewall port opened globally instead of
-  # on the LAN interface, a host that forgot 'roles.default' and therefore has no
+  # on the LAN interface, a host that forgot 'roles.base' and therefore has no
   # preservation or bootloader, a hardening kernel param silently dropped by the
   # module system's list-priority rules (see hardware/surface-pro.nix).
   #

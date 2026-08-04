@@ -2,7 +2,7 @@
 {
   flake-file.inputs.preservation.url = "github:nix-community/preservation";
 
-  den.aspects.core.impermanence.nixos =
+  den.aspects.core.preservation.nixos =
     { persist, lib, ... }:
     {
       imports = [ inputs.preservation.nixosModules.default ];
