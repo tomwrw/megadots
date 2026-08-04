@@ -12,10 +12,26 @@
         preserveAt."/persist" = {
           directories = [
             "/var/log"
-            "/var/lib/nixos"
+            {
+              # inInitrd because NixOS activation runs update-users-groups.pl
+              # from stage-2-init BEFORE stage-2 systemd mounts anything. As a
+              # plain entry this directory was still empty at that point, so
+              # every boot re-derived the UID/GID allocation from scratch and
+              # wrote it to the tmpfs copy, which the persisted one then
+              # shadowed. Stable today with one user, but with mutableUsers =
+              # false a second user would get boot-time UIDs that disagree with
+              # the ownership of files already on /persist and /home.
+              directory = "/var/lib/nixos";
+              inInitrd = true;
+            }
             "/var/lib/systemd"
             "/etc/NetworkManager/system-connections"
-            "/var/db/sudo/lectured"
+            {
+              # preservation's default directory mode is 0755; sudo creates
+              # this one 0700 and it records which accounts have been lectured.
+              directory = "/var/db/sudo/lectured";
+              mode = "0700";
+            }
             "/var/lib/alsa"
             "/var/lib/upower"
           ]

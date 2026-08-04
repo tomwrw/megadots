@@ -109,6 +109,17 @@ let
 
   rosterAssertions = name: host: [
     {
+      # Every LAN-scoped firewall rule hangs off this name, and a wrong one
+      # fails open-ended rather than loudly: the rules build fine and simply
+      # never match an interface. flatmate shipped with "REPLACE_ME" and had
+      # SSH, Syncthing and mDNS firewalled off as a result.
+      assertion =
+        host.lanInterface != ""
+        && host.lanInterface != "REPLACE_ME"
+        && builtins.stringLength host.lanInterface < 16;
+      message = "${name}: network.lanInterface must name a real interface (see `ip -br link`), not ${host.lanInterface}";
+    }
+    {
       assertion = lib.hasPrefix "/dev/disk/by-id/" host.id;
       message = "${name}: disk.id must be a stable /dev/disk/by-id/ path, not ${host.id}";
     }

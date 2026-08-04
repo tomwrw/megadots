@@ -43,7 +43,8 @@
         id = "/dev/disk/by-id/nvme-KBG40ZPZ512G_TOSHIBA_MEMORY_89R201INNLAP";
         swapSize = "24G";
       };
-      network.lanInterface = "REPLACE_ME";
+      # Verify via `ip -br addr` on host.
+      network.lanInterface = "wlp0s20f3";
       users = {
         tomwrw = { };
       };

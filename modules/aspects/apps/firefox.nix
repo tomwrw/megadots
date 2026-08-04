@@ -118,7 +118,7 @@
               google.metaData.hidden = true;
               bing.metaData.hidden = true;
               ebay.metaData.hidden = true;
-              amazondotcome-us.metaData.hidden = true;
+              amazondotcom-us.metaData.hidden = true;
               wikipedia.metaData.hidden = true;
             };
           };
@@ -133,6 +133,11 @@
         };
       };
 
+      # Home Manager gates the whole mimeapps.list write on xdg.mimeApps.enable,
+      # so without this the defaults below are silently a no-op. It used to work
+      # only because desktop/gnome.nix happens to enable it - an invisible
+      # dependency on an unrelated aspect being present.
+      xdg.mimeApps.enable = true;
       xdg.mimeApps.defaultApplications = {
         "x-scheme-handler/http" = [ "firefox.desktop" ];
         "x-scheme-handler/https" = [ "firefox.desktop" ];

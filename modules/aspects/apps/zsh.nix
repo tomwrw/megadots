@@ -81,8 +81,6 @@ _: {
               username.show_always = true;
             };
           };
-
-          home.sessionVariables.SPACESHIP_EXIT_CODE_SHOW = "true";
         };
     };
 }

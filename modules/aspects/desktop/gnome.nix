@@ -63,8 +63,11 @@ _: {
         dconf.settings = {
           # Don't try to suspend while on AC.
           "org/gnome/settings-daemon/plugins/power".sleep-inactive-ac-type = "nothing";
+          # No color-scheme here: Stylix's gnome target already writes this key
+          # from stylix.polarity, and neither side uses mkDefault. It only
+          # evaluated because both happened to emit "prefer-dark" - flipping
+          # polarity to "light" would have broken eval with a conflict.
           "org/gnome/desktop/interface" = {
-            color-scheme = "prefer-dark";
             show-battery-percentage = true;
             enable-hot-corners = true;
           };

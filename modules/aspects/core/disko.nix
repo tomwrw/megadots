@@ -44,16 +44,21 @@
                     content = {
                       type = "luks";
                       name = "crypted";
-                      extraOpenArgs = [
-                        "--allow-discards"
-                        "--perf-no_read_workqueue"
-                        "--perf-no_write_workqueue"
-                      ];
+                      # Everything must go through `settings`, not
+                      # `extraOpenArgs`: disko passes settings straight to
+                      # boot.initrd.luks.devices.<name>, whereas extraOpenArgs
+                      # is only used by its install-time `cryptsetup open`. The
+                      # perf flags used to live there and so were applied
+                      # exactly once, during nixos-anywhere, and never again at
+                      # boot - the generated crypttab read `crypted <dev> - discard`.
                       settings = {
                         # TRIM leaks unused-block patterns on SSDs, which can
                         # reveal filesystem structure. Accepted trade-off for
                         # SSD longevity and performance.
                         allowDiscards = true;
+                        # Skip dm-crypt's read/write queues. On NVMe the queues
+                        # cost more in latency than they buy in throughput.
+                        bypassWorkqueues = true;
                       };
                       content = {
                         type = "btrfs";
