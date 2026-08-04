@@ -3,7 +3,11 @@ _: {
     { host, ... }:
     {
       nixos =
-        { lib, ... }:
+        {
+          firewall,
+          lib,
+          ...
+        }:
         {
           networking = {
             # Deliberate choice here - firewall must never be turned off by any
@@ -12,17 +16,26 @@ _: {
             networkmanager.enable = true;
             domain = "home.arpa";
             search = [ "home.arpa" ];
-            # mDNS (avahi) - not explicitly enabled by anything in my config,
-            # it's auto-enabled by the GNOME desktop module. LAN-scoped here
-            # rather than left on the global allow-list, alongside ssh/
-            # syncthing/sunshine's own interface-scoped ports.
-            firewall.interfaces.${host.network.lanInterface}.allowedUDPPorts = [ 5353 ];
+
+            # The fleet's only firewall consumer. Aspects declare what they
+            # need via the 'firewall' quirk and this aggregates it onto the
+            # host's LAN interface, so no aspect has to know the interface
+            # name and nothing can accidentally open a port globally.
+            #
+            # lib.unique because an aspect included at both host and user
+            # scope contributes its entry twice once pipe.expose has run.
+            firewall.interfaces.${host.network.lanInterface} = {
+              allowedTCPPorts = lib.unique (lib.concatMap (f: f.tcp or [ ]) firewall);
+              allowedUDPPorts = lib.unique (lib.concatMap (f: f.udp or [ ]) firewall);
+            };
           };
 
-          # avahi.openFirewall defaults to true upstream (same as
-          # openssh) - must be explicit false or its own default reopens
-          # 5353 globally alongside the interface-scoped rule above.
-          services.avahi.openFirewall = false;
+          assertions = [
+            {
+              assertion = host.network.lanInterface != "" && host.network.lanInterface != "REPLACE_ME";
+              message = "host ${host.name}: den.hosts.<system>.${host.name}.network.lanInterface must name a real interface (see 'ip -br link'); every LAN-scoped firewall rule hangs off it.";
+            }
+          ];
         };
 
       # NetworkManager's own state, owned by the aspect that enables it.

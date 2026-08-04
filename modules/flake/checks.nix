@@ -51,6 +51,11 @@ let
         (cfg.boot.lanzaboote.enable or false)
       ];
       missingHardening = lib.subtractLists cfg.boot.kernelParams hardeningParams;
+      scoped = lib.attrValues cfg.networking.firewall.interfaces;
+      scopedTCP = lib.concatMap (i: i.allowedTCPPorts) scoped;
+      # Syncthing is configured per-user through Home Manager, so its ports
+      # only reach the host firewall via den.policies.firewall's pipe.expose.
+      syncthingUsers = lib.filterAttrs (_: u: u.services.syncthing.enable) cfg.home-manager.users;
     in
     [
       {
@@ -112,6 +117,17 @@ let
       {
         assertion = lib.all (k: lib.hasPrefix "/persist/" k.path) cfg.services.openssh.hostKeys;
         message = "${name}: every ssh host key must live under /persist - / is a tmpfs, so anything else regenerates host identity on each boot";
+      }
+      {
+        assertion = lib.length scoped == 1 && lib.elem 22 scopedTCP;
+        message = "${name}: ssh must be reachable on exactly one LAN-scoped interface - the firewall quirk consumer in core.networking is not producing rules";
+      }
+      {
+        # The canary for den.policies.firewall. core.syncthing is included at
+        # user scope, so if the expose policy is ever dropped these ports
+        # vanish from the host firewall silently, with no eval error.
+        assertion = syncthingUsers == { } || lib.elem 22000 scopedTCP;
+        message = "${name}: syncthing is enabled for ${toString (lib.attrNames syncthingUsers)} but port 22000 is not open - user-scope firewall quirks are not reaching the host, check den.policies.firewall";
       }
       {
         assertion = missingHardening == [ ];

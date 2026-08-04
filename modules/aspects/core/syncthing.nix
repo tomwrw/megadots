@@ -3,14 +3,18 @@
   den.aspects.core.syncthing =
     { host, ... }:
     {
-      nixos = _: {
-        networking.firewall.interfaces.${host.network.lanInterface} = {
-          allowedTCPPorts = [ 22000 ];
-          allowedUDPPorts = [
-            22000
-            21027
-          ];
-        };
+      # 22000 is sync traffic (TCP + QUIC), 21027 is local discovery. LAN-only
+      # by construction: relays and global announce are disabled below.
+      #
+      # This aspect is included at USER scope, so these ports only reach
+      # core.networking because den.policies.firewall exposes the quirk upward
+      # (modules/den/quirks.nix). Without that policy they vanish silently.
+      firewall = {
+        tcp = [ 22000 ];
+        udp = [
+          22000
+          21027
+        ];
       };
 
       homeManager =

@@ -7,6 +7,11 @@ _: {
 
         xdg.portal.enable = true;
 
+        # avahi.openFirewall defaults to true upstream (same as openssh) - must
+        # be explicit false, or its own default reopens 5353 globally alongside
+        # the interface-scoped rule the firewall quirk produces.
+        services.avahi.openFirewall = false;
+
         services = {
           libinput.enable = true;
           # gcr's agent handles sk-* (FIDO2) keys poorly, so the plain OpenSSH
@@ -100,6 +105,11 @@ _: {
           mimeApps.enable = true;
         };
       };
+
+    # mDNS. avahi is not enabled by anything of mine - the GNOME desktop module
+    # pulls it in - so the port and the openFirewall suppression above belong
+    # here, with the thing that causes them, rather than in core.networking.
+    firewall.udp = [ 5353 ];
 
     persist.directories = [
       # Per-account desktop settings (language, session, avatar).
