@@ -1,0 +1,28 @@
+name: check
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  flake-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: cachix/install-nix-action@v31
+        with:
+          # The lantian cache is declared in core/linux-kernel.nix as a NixOS
+          # setting, which applies to the built hosts and not to this runner.
+          # Without it here, checking endgame compiles a zen4 LTO CachyOS
+          # kernel from source and the job times out.
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+            extra-substituters = https://attic.xuyh0120.win/lantian
+            extra-trusted-public-keys = lantian:EeAUQ+W+6r7EtwnmYjeVwx5kOGEBpjlBfPlzGlTNvHc=
+
+      # Builds both hosts' toplevels, evaluates the fleet invariants and the
+      # roster checks, and runs treefmt. See modules/flake/checks.nix.
+      - run: nix flake check --print-build-logs

@@ -19,7 +19,7 @@ I'm not a developer. I'm a tinkerer with a consultancy job in a technical field 
 ## Features.
 
 - :desktop_computer: **NixOS** aspects for multiple hosts.
-- :house: **Home Manager** as a NixOS module, also supporting standalone mode.
+- :house: **Home Manager** as a NixOS module.
 - :ghost: **sops-nix** for secrets management, with dedicated age key support for hosts and users.
 - :key: **FIDO2 hardware keys** (Token2 PIN+) for SSH, with an optional extra LUKS unlock keyslot alongside the passphrase.
 - :camera_flash: **Preservation** with root on tmpfs for declarative impermanence.
@@ -42,17 +42,23 @@ modules/
 │   ├── endgame/
 │   └── flatmate/
 ├── aspects/              # the reusable aspect library, organised by concern:
-│   ├── core/             #   always-on baseline (nix, security, networking, boot, …)
-│   ├── hardware/         #   graphics/audio/bluetooth + per-host hardware wrappers
+│   ├── core/             #   always-on baseline (nix, networking, boot, preservation, …)
+│   │   └── security/     #     sops, openssh, hardening, fido2, ssh-agent
+│   ├── hardware/         #   graphics/audio/bluetooth + per-model support
 │   ├── desktop/          #   gnome, stylix, fonts
 │   ├── virtualisation/   #   libvirt (room for docker/podman siblings later)
 │   ├── apps/             #   every user-facing app, grouped by dotted category
 │   │                     #   (apps.messaging.*, apps.dev.*, apps.gaming.*, …)
-│   └── roles/            #   composite bundles hosts include (default, workstation, gaming)
+│   └── roles/            #   composite bundles hosts include (base, workstation, gaming, dev)
 └── users/tomwrw/         # the Home Manager user, itself just another aspect
 ```
 
-The unit of composition is the **aspect**: a named, self-contained feature that can carry a NixOS side, a Home Manager side, or both - never split by class, only by concern. Hosts and users opt in via `includes`. For example, [fonts](modules/aspects/desktop/fonts.nix) installs its font set at the system level for every host, and offers the same set as an opt-in `home` sub-aspect for standalone Home Manager users with no system font path to fall back on:
+The directory tree mirrors the aspect namespace: `core/security/sops.nix` declares
+`den.aspects.core.security.sops`. Host-specific hardware is *not* an aspect - each host
+imports its own `_hardware.nix` directly, and the `_` prefix is what stops
+[import-tree](https://github.com/vic/import-tree) picking it up as a module of its own.
+
+The unit of composition is the **aspect**: a named, self-contained feature that can carry a NixOS side, a Home Manager side, or both - never split by class, only by concern. Hosts and users opt in via `includes`. For example, [fonts](modules/aspects/desktop/fonts.nix) installs its font set at the system level for every host, and offers the same set as a named `home` sub-aspect for a standalone Home Manager setup with no system font path to fall back on (nothing in this repo includes it - it is there as an opt-in, and as an illustration of naming a sub-aspect rather than leaving a silently inert `homeManager` block on a host-scope aspect):
 
 ```nix
 {
@@ -65,6 +71,24 @@ The unit of composition is the **aspect**: a named, self-contained feature that 
 
 Cross-cutting data flows through the den roster rather than hard-coding: [syncthing](modules/aspects/core/syncthing.nix) builds its device mesh by reading every host's `syncthing.id` from `den.hosts`, an option declared once in [den/schema.nix](modules/den/schema.nix).
 
+Cross-cutting *configuration* flows through den quirks, declared in
+[den/quirks.nix](modules/den/quirks.nix). An aspect says what it needs and something
+else decides how to apply it:
+
+```nix
+# apps/sunshine.nix says only this...
+firewall.tcp = [ 47984 47989 47990 48010 ];
+
+# ...and core/networking.nix is the single place that turns every such
+# declaration into interface-scoped rules on host.network.lanInterface.
+```
+
+The same pattern carries `unfree` package names and `persist` paths. Note the trap: a
+quirk emitted from a **user-scope** aspect only reaches the host if an expose policy is
+registered for it in `den.schema.user.includes` - without one it is discarded silently,
+with no error. `core.syncthing` is included at user scope, so its ports depend on exactly
+that, and [modules/flake/checks.nix](modules/flake/checks.nix) asserts they arrive.
+
 ### Deliberate Nix settings.
 
 [core/nix.nix](modules/aspects/core/nix.nix) sets two options that are worth calling out explicitly, as they are security concerns I have made with my config:
@@ -72,44 +96,87 @@ Cross-cutting data flows through the den roster rather than hard-coding: [syncth
 - `nix.settings.trusted-users = [ "root" "@wheel" ]` - lets any `wheel` member build/substitute arbitrary derivations and push closures via `nixos-rebuild --target-host`. This is a single-admin-LAN trade-off: fine for me as the sole admin of the fleet, but not something you might want to carry into a multi-user or shared-admin setup without consideration.
 - `nix.settings.allow-import-from-derivation = true` - required because Stylix's base16 scheme reader does an IFD (`readFile`s a YAML out of the `base16-schemes` derivation at eval time). Without it, evaluation fails outright; it is not optional given my current Stylix setup. I may look at this in the future, but for now, Stylix theming is worth the risk to me.
 
+### Known trade-offs.
+
+Things that are deliberate rather than missed, so you can judge whether they suit you:
+
+- **Stylix is applied through Home Manager only.** The NixOS module is not imported, so
+  GDM's login screen, the TTY palette, plymouth and the system fontconfig are unthemed,
+  and `stylix.fonts`/`stylix.cursor` are unset - the desktop renders in Stylix's DejaVu
+  defaults even though [fonts.nix](modules/aspects/desktop/fonts.nix) installs rather more
+  than that. Wiring in `stylix.nixosModules.stylix` would fix all of it.
+- **LAN-scoped firewall rules are weaker on a laptop.** Every port is opened on
+  `host.network.lanInterface` rather than globally, which is a real improvement on a
+  desktop. On `flatmate`, that interface is the Wi-Fi adapter, so it is the same interface
+  at home and in a cafe - SSH and Syncthing are reachable on any network it joins. Source
+  subnet matching (which needs the nftables backend) is the actual fix.
+- **`trusted-users` includes `@wheel`, on a host that signs its own boot chain.** The two
+  entries above compose: a trusted user can get arbitrary content into the store, and
+  `endgame` is the machine that then signs whatever it boots with its Secure Boot key.
+
 ## Usage.
 
 This configuration has multiple system entry points. At the moment, I am a single user (tomwrw) managing multiple machines.
 
+### Prerequisites.
+
+- Nix with flakes enabled (`experimental-features = nix-command flakes`).
+- `just`, `sops` and `age`. `nix develop` provides these plus `nixfmt`, `nvd`,
+  `ssh-to-age` and `nixos-anywhere` - see [devshell.nix](modules/flake/devshell.nix).
+- An age keypair per host and per user, and a FIDO2 token if you want the extra LUKS
+  keyslot. The deploy recipe expects these on a removable drive at the path in the
+  `usb` variable at the top of the [justfile](justfile).
+
 ### Getting Started.
 
-Most day-to-day work goes through the `justfile`. The full deploy flow is a single recipe that stages keys for shipping to the host, deploys the host and then seeds the keys automatically.
+Everything goes through `just`. Run it bare to list the recipes.
 
 ```bash
-# Deploy the named host remotely.
-just deploy endgame
-
-# Rebuild a remote host (pushes locally-built closure).
-just rebuild endgame
-
-# Build a host's closure locally (no activation).
-just build endgame
-
-# Run flake checks.
-nix flake check
-
-# Format the tree (nixfmt + deadnix + statix via treefmt).
-nix fmt
-
-# Enroll the inserted FIDO2 key in a host's LUKS header (once per key).
-just enroll-fido2 endgame
-
-# Remove all FIDO2 keyslots from a host's LUKS header (reverts to passphrase-only).
-just unenroll-fido2 endgame
+just                      # list recipes
+just build endgame        # build a host's closure locally (no activation)
+just diff endgame         # build, then nvd diff against the running system
+just rebuild endgame      # switch a remote host (pushes a locally-built closure)
+just deploy endgame       # bare-metal install via nixos-anywhere (formats disks)
+just check                # build both hosts + fleet invariants + roster checks
+just fmt                  # nixfmt + deadnix + statix via treefmt
+just update               # nix flake update
+just gc                   # collect garbage older than 30 days
+just enroll-fido2 endgame # add the inserted token to the LUKS header
+just secrets-edit secrets/users/tomwrw.yaml
+just secrets-updatekeys   # re-sync sops recipients after editing .sops.yaml
 ```
 
-### Updating.
+`just check` is the one worth knowing about: it builds both hosts, then asserts a set of
+fleet invariants - no globally-open firewall ports, `/persist` marked `neededForBoot`,
+host keys under `/persist`, the bootloader bounded and its editor disabled, hardening
+kernel params actually present, and user-scope firewall quirks reaching the host. It is
+what CI runs.
 
-To update the flake inputs (e.g., `nixpkgs`), run the following command:
+### Bootstrapping a host from scratch.
 
-```bash
-nix flake update
-```
+1. Generate an age key for the host and one for the user; put both on the USB drive at
+   the layout the `deploy` recipe expects (`hosts/<name>/age.txt`, `users/<name>/age.txt`).
+2. Add their public keys as recipients in [.sops.yaml](.sops.yaml), then run
+   `just secrets-updatekeys`.
+3. Create `secrets/hosts/<name>.yaml` with at least `users/<user>/password`. Evaluation
+   interpolates this filename from the hostname, so a missing file fails the build.
+4. Add the host to the roster in [modules/den/hosts.nix](modules/den/hosts.nix): disk id
+   (a stable `/dev/disk/by-id/` path), swap size, LAN interface name from `ip -br link`,
+   and its Syncthing device id. `just check` validates these.
+5. Create `modules/hosts/<name>/` with a `default.nix` listing the roles it takes and a
+   `_hardware.nix` from `nixos-generate-config`.
+6. Boot the target from a NixOS installer ISO, set a password for the `nixos` user so SSH
+   works, then run `just deploy <name>` from this repo. nixos-anywhere partitions with
+   disko, seeds the keys and installs.
+
+### Adapting this for yourself.
+
+Fork it, then: replace `modules/users/` and `modules/hosts/` with your own, empty the
+roster in `modules/den/hosts.nix`, regenerate `.sops.yaml` with your own age keys, and
+replace `assets/` (the wallpapers are not covered by this repo's licence - see
+[LICENSE](LICENSE)). The parts worth keeping are `modules/aspects/`,
+`modules/den/quirks.nix` and `modules/flake/checks.nix`; none of them mention a host or
+user by name.
 
 ## Community.
 
