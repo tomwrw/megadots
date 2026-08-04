@@ -21,6 +21,9 @@
       programs.spicetify = {
         enable = true;
         wayland = false;
+        # 'with' here is spicetify-nix's own namespaced extension/app lists,
+        # not pkgs/lib, so it doesn't carry the usual "obscures where
+        # bindings come from" risk that with pkgs;/with lib; would.
         enabledExtensions = with spicePkgs.extensions; [
           playlistIcons
           historyShortcut

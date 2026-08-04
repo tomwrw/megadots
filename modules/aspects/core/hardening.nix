@@ -17,7 +17,5 @@ _: {
       "vsyscall=none"
       "lockdown=confidentiality"
     ];
-
-    security.apparmor.enable = true;
   };
 }

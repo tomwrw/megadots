@@ -46,3 +46,14 @@ unenroll-fido2 HOST:
     else
       ssh -t {{ user }}@{{ HOST }} "sudo cryptsetup open --test-passphrase '$dev' && sudo systemd-cryptenroll --wipe-slot=fido2 '$dev'"
     fi
+
+# Re-sync sops recipients on every secrets file against .sops.yaml
+# (e.g. after rotating fido2-primary/fido2-backup). Left interactive
+# (no -y) deliberately - this is exactly the moment to eyeball the
+# per-recipient diff sops prints before re-encrypting.
+secrets-updatekeys:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    for f in secrets/hosts/*.yaml secrets/users/*.yaml; do
+      sops updatekeys "$f"
+    done

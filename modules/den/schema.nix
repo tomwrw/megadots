@@ -30,6 +30,14 @@
       };
     };
 
+    options.network = {
+      lanInterface = lib.mkOption {
+        type = lib.types.str;
+        description = "Primary LAN interface name, for scoping firewall rules to the local network.";
+        example = "enp8s0";
+      };
+    };
+
     options.linux-kernel = {
       channel = lib.mkOption {
         type = lib.types.enum [

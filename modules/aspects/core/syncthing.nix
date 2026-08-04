@@ -4,11 +4,13 @@
     { host, ... }:
     {
       nixos = _: {
-        networking.firewall.allowedTCPPorts = [ 22000 ];
-        networking.firewall.allowedUDPPorts = [
-          22000
-          21027
-        ];
+        networking.firewall.interfaces.${host.network.lanInterface} = {
+          allowedTCPPorts = [ 22000 ];
+          allowedUDPPorts = [
+            22000
+            21027
+          ];
+        };
       };
 
       homeManager =
@@ -18,6 +20,10 @@
           ...
         }:
         let
+          # '//' would silently drop same-named hosts across two different
+          # 'system' values (e.g. a same-named host added under
+          # aarch64-linux) - purely theoretical with only x86_64-linux in
+          # the fleet today.
           meshHosts = lib.filterAttrs (_: h: h.syncthing.enable && h.syncthing.id != "") (
             lib.foldl' (acc: sys: acc // den.hosts.${sys}) { } (builtins.attrNames den.hosts)
           );

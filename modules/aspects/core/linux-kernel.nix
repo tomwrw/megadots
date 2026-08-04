@@ -22,6 +22,12 @@
             inputs.nix-cachyos-kernel.overlays.pinned
           ];
 
+          # Trusts attic.xuyh0120.win/lantian to supply pre-built kernel
+          # binaries. This aspect is only included on endgame - the one
+          # Secure Boot (lanzaboote) host - so a compromised cache could
+          # hand it a kernel that its own boot chain would still sign and
+          # boot without complaint. Accepted trade-off for not compiling
+          # zen4/LTO kernels locally on every kernel bump.
           nix.settings.substituters = [ "https://attic.xuyh0120.win/lantian" ];
           nix.settings.trusted-public-keys = [ "lantian:EeAUQ+W+6r7EtwnmYjeVwx5kOGEBpjlBfPlzGlTNvHc=" ];
 

@@ -21,7 +21,7 @@ I'm not a developer. I'm a tinkerer with a consultancy job in a technical field 
 - :desktop_computer: **NixOS** aspects for multiple hosts.
 - :house: **Home Manager** as a NixOS module, also supporting standalone mode.
 - :ghost: **sops-nix** for secrets management, with dedicated age key support for hosts and users.
-- :key: **FIDO2 hardware keys** (Token2 PIN+) for SSH, git commit signing, sudo and LUKS unlock.
+- :key: **FIDO2 hardware keys** (Token2 PIN+) for SSH, with an optional extra LUKS unlock keyslot alongside the passphrase.
 - :camera_flash: **Preservation** with root on tmpfs for declarative impermanence.
 - :cop: **Secure Boot** via lanzaboote with automatic key generation and enrollment.
 - :snowflake: **Flake** with the den framework for modular, composable host and user aspects.
@@ -52,7 +52,7 @@ modules/
 └── users/tomwrw/         # the Home Manager user, itself just another aspect
 ```
 
-The unit of composition is the **aspect**: a named, self-contained feature that can carry a NixOS side, a Home Manager side, or both — never split by class, only by concern. Hosts and users opt in via `includes`. For example, [fonts](modules/aspects/desktop/fonts.nix) installs its font set at the system level for every host, and offers the same set as an opt-in `home` sub-aspect for standalone Home Manager users with no system font path to fall back on:
+The unit of composition is the **aspect**: a named, self-contained feature that can carry a NixOS side, a Home Manager side, or both - never split by class, only by concern. Hosts and users opt in via `includes`. For example, [fonts](modules/aspects/desktop/fonts.nix) installs its font set at the system level for every host, and offers the same set as an opt-in `home` sub-aspect for standalone Home Manager users with no system font path to fall back on:
 
 ```nix
 {
@@ -67,10 +67,10 @@ Cross-cutting data flows through the den roster rather than hard-coding: [syncth
 
 ### Deliberate Nix settings.
 
-[core/nix.nix](modules/aspects/core/nix.nix) sets two options that are worth calling out explicitly, since both loosen a default security boundary:
+[core/nix.nix](modules/aspects/core/nix.nix) sets two options that are worth calling out explicitly, as they are security concerns I have made with my config:
 
-- `nix.settings.trusted-users = [ "root" "@wheel" ]` — lets any `wheel` member build/substitute arbitrary derivations and push closures via `nixos-rebuild --target-host`. This is a single-admin-LAN trade-off: fine when you and the fleet are the only wheel members, not something to carry into a multi-user or shared-admin setup without reconsidering.
-- `nix.settings.allow-import-from-derivation = true` — required because Stylix's base16 scheme reader does an IFD (`readFile`s a YAML out of the `base16-schemes` derivation at eval time). Without it, evaluation fails outright; it is not optional given the current Stylix setup.
+- `nix.settings.trusted-users = [ "root" "@wheel" ]` - lets any `wheel` member build/substitute arbitrary derivations and push closures via `nixos-rebuild --target-host`. This is a single-admin-LAN trade-off: fine for me as the sole admin of the fleet, but not something you might want to carry into a multi-user or shared-admin setup without consideration.
+- `nix.settings.allow-import-from-derivation = true` - required because Stylix's base16 scheme reader does an IFD (`readFile`s a YAML out of the `base16-schemes` derivation at eval time). Without it, evaluation fails outright; it is not optional given my current Stylix setup. I may look at this in the future, but for now, Stylix theming is worth the risk to me.
 
 ## Usage.
 
@@ -98,6 +98,9 @@ nix fmt
 
 # Enroll the inserted FIDO2 key in a host's LUKS header (once per key).
 just enroll-fido2 endgame
+
+# Remove all FIDO2 keyslots from a host's LUKS header (reverts to passphrase-only).
+just unenroll-fido2 endgame
 ```
 
 ### Updating.
