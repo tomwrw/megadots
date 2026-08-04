@@ -5,14 +5,15 @@ _: {
       homeManager =
         { config, ... }:
         {
-          programs.fzf = {
-            enable = true;
-            enableBashIntegration = true;
-            enableZshIntegration = true;
-          };
+          # Shell integration is on by default via
+          # home.shell.enableShellIntegration, so it is not restated here.
+          programs.fzf.enable = true;
 
           programs.zsh = {
-            enable = true;
+            # programs.zsh.enable is not set here: den.batteries.user-shell
+            # "zsh" (see users/tomwrw) already enables it at both the NixOS and
+            # Home Manager level. Setting it again just hides where it comes
+            # from.
             dotDir = "${config.xdg.configHome}/zsh";
             autosuggestion.enable = true;
             enableCompletion = true;
@@ -21,9 +22,8 @@ _: {
               nix-b = "nixos-rebuild build --flake .#${host.name} --sudo";
               nix-clean = "nix-collect-garbage -d --delete-old && sudo nix-collect-garbage -d --delete-old";
               hstat = "curl -o /dev/null --silent --head --write-out '%{http_code}\n' $1";
-              l = "ls -l";
-              ls = "ls -h --group-directories-first --color=auto";
-              la = "ls -lAh --group-directories-first --color=auto";
+              # ls/l/la come from programs.eza (apps/cli-apps.nix) - eza was
+              # installed but never actually used while these aliased coreutils.
               psf = "ps -aux | grep";
               lsf = "ls | grep";
               nsp = "nix search nixpkgs";
@@ -58,15 +58,16 @@ _: {
               gstp = "git stash pop";
             };
             history = {
-              path = "$HOME/.local/share/zsh/.zsh_history";
+              # Same path as before, expressed through xdg.dataHome to match
+              # dotDir above. Filename keeps its leading dot deliberately -
+              # renaming it would orphan the existing history file.
+              path = "${config.xdg.dataHome}/zsh/.zsh_history";
               size = 8000;
             };
           };
 
           programs.starship = {
             enable = true;
-            enableBashIntegration = true;
-            enableZshIntegration = true;
             settings = {
               add_newline = false;
               directory = {

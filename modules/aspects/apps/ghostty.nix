@@ -1,9 +1,7 @@
 _: {
   den.aspects.apps.terminals.ghostty.homeManager = _: {
-    programs.ghostty = {
-      enable = true;
-      enableFishIntegration = true;
-      enableZshIntegration = true;
-    };
+    # Shell integration is on by default via home.shell.enableShellIntegration,
+    # so it is not restated here.
+    programs.ghostty.enable = true;
   };
 }

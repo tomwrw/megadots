@@ -1,20 +1,18 @@
 _: {
-  den.aspects.virtualisation.libvirt.nixos =
-    { pkgs, ... }:
-    {
-      virtualisation.libvirtd = {
-        enable = true;
-        qemu.swtpm.enable = true;
-      };
-
-      services.spice-autorandr.enable = true;
-      services.spice-vdagentd.enable = true;
-
-      programs.virt-manager = {
-        enable = true;
-        package = pkgs.virt-manager;
-      };
+  den.aspects.virtualisation.libvirt.nixos = _: {
+    virtualisation.libvirtd = {
+      enable = true;
+      qemu.swtpm.enable = true;
     };
+
+    # No spice-vdagentd / spice-autorandr here: those are SPICE *guest* agents,
+    # meant to run inside a VM so the SPICE client can drive its clipboard and
+    # resolution. On the host they sit in graphical.target doing nothing. The
+    # client side is virt-viewer/virt-manager, below.
+    #
+    # package is not set: pkgs.virt-manager is already the module default.
+    programs.virt-manager.enable = true;
+  };
 
   den.aspects.virtualisation.libvirt.persist.directories = [
     "/var/cache/libvirt"

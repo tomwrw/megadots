@@ -1,12 +1,8 @@
 _: {
-  den.aspects.hardware.bluetooth.nixos =
-    { pkgs, ... }:
-    {
-      hardware.bluetooth = {
-        enable = true;
-        package = pkgs.bluez;
-      };
-    };
+  # package is not set: pkgs.bluez is already the module default.
+  den.aspects.hardware.bluetooth.nixos = _: {
+    hardware.bluetooth.enable = true;
+  };
 
   den.aspects.hardware.bluetooth.persist.directories = [ "/var/lib/bluetooth" ];
 }

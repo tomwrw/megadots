@@ -5,7 +5,8 @@ _: {
       {
         programs.dconf.enable = true;
 
-        xdg.portal.enable = true;
+        # xdg.portal.enable and services.libinput.enable are not set here:
+        # nixpkgs' GNOME module already turns both on.
 
         # avahi.openFirewall defaults to true upstream (same as openssh) - must
         # be explicit false, or its own default reopens 5353 globally alongside
@@ -13,7 +14,6 @@ _: {
         services.avahi.openFirewall = false;
 
         services = {
-          libinput.enable = true;
           # gcr's agent handles sk-* (FIDO2) keys poorly, so the plain OpenSSH
           # agent is used instead - see core/ssh-agent.nix, which must be
           # included by any user who needs one. Turning this off without a
@@ -64,10 +64,17 @@ _: {
     provides.to-users.homeManager =
       { pkgs, ... }:
       {
-        home.packages = [
-          pkgs.gnomeExtensions.appindicator
-          pkgs.gnomeExtensions.user-themes
-        ];
+        # programs.gnome-shell does exactly what the hand-rolled version did -
+        # installs each extension's package AND sets disable-user-extensions =
+        # false plus enabled-extensions from the same list - so the package
+        # list and the UUID list can no longer drift apart.
+        programs.gnome-shell = {
+          enable = true;
+          extensions = [
+            { package = pkgs.gnomeExtensions.appindicator; }
+            { package = pkgs.gnomeExtensions.user-themes; }
+          ];
+        };
 
         dconf.settings = {
           # Don't try to suspend while on AC.
@@ -89,13 +96,6 @@ _: {
           "org/gnome/desktop/peripherals/touchpad" = {
             tap-to-click = true;
             natural-scroll = true;
-          };
-          "org/gnome/shell" = {
-            disable-user-extensions = false;
-            enabled-extensions = [
-              pkgs.gnomeExtensions.appindicator.extensionUuid
-              pkgs.gnomeExtensions.user-themes.extensionUuid
-            ];
           };
         };
 
