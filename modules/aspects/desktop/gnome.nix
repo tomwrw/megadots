@@ -101,6 +101,15 @@ _: {
         };
       };
 
-    persist.directories = [ "/var/lib/AccountsService" ];
+    persist.directories = [
+      # Per-account desktop settings (language, session, avatar).
+      "/var/lib/AccountsService"
+      # colord and power-profiles-daemon are pulled in by the GNOME module,
+      # not by hardware/, so their state belongs here. Without them, ICC
+      # display profiles are lost and the power profile resets to balanced
+      # on every boot.
+      "/var/lib/colord"
+      "/var/lib/power-profiles-daemon"
+    ];
   };
 }

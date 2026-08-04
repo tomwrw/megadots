@@ -110,6 +110,10 @@ let
         message = "${name}: security.sudo.execWheelOnly must stay true - only wheel should be able to execute the setuid binary";
       }
       {
+        assertion = lib.all (k: lib.hasPrefix "/persist/" k.path) cfg.services.openssh.hostKeys;
+        message = "${name}: every ssh host key must live under /persist - / is a tmpfs, so anything else regenerates host identity on each boot";
+      }
+      {
         assertion = missingHardening == [ ];
         message = "${name}: hardening kernel params missing from boot.kernelParams: ${toString missingHardening} - a lower-priority definition of a list option is discarded wholesale, see hardware/surface-pro.nix";
       }

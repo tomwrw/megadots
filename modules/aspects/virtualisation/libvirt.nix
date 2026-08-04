@@ -19,7 +19,13 @@ _: {
   den.aspects.virtualisation.libvirt.persist.directories = [
     "/var/cache/libvirt"
     "/var/lib/libvirt"
-    "/var/lib/qemu"
+    # The local CA that issues vTPM endorsement certificates. Per-VM swtpm
+    # state lives under /var/lib/libvirt, but this CA does not - without it
+    # every vTPM gets a fresh EK certificate on each boot.
+    "/var/lib/swtpm-localca"
+    # Deliberately NOT /var/lib/qemu: nixpkgs' libvirtd module repopulates it
+    # with 'L+' tmpfiles symlinks into the store on every boot, so persisting
+    # it only accumulates dangling links as the store garbage-collects.
   ];
 
   # The aspect that creates the libvirtd group grants it. Only hosts

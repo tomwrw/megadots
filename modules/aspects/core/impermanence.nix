@@ -24,8 +24,16 @@
               directory = "/var/lib/nixos";
               inInitrd = true;
             }
-            "/var/lib/systemd"
-            "/etc/NetworkManager/system-connections"
+            {
+              # inInitrd so random-seed is in place before systemd seeds the
+              # kernel RNG. The whole tree is preserved rather than the
+              # individual coredump/rfkill/timers/random-seed entries upstream's
+              # example lists - that example does not persist the parent, this
+              # does, and nesting children under a bind-mounted parent is
+              # redundant at best.
+              directory = "/var/lib/systemd";
+              inInitrd = true;
+            }
             {
               # preservation's default directory mode is 0755; sudo creates
               # this one 0700 and it records which accounts have been lectured.
@@ -47,12 +55,5 @@
       };
 
       systemd.services.systemd-machine-id-commit.enable = false;
-
-      services.openssh.hostKeys = [
-        {
-          type = "ed25519";
-          path = "/persist/etc/ssh/ssh_host_ed25519_key";
-        }
-      ];
     };
 }

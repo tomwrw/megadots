@@ -24,5 +24,14 @@ _: {
           # 5353 globally alongside the interface-scoped rule above.
           services.avahi.openFirewall = false;
         };
+
+      # NetworkManager's own state, owned by the aspect that enables it.
+      # secret_key is what derives stable per-SSID MAC addresses and the DHCP
+      # DUID, so discarding it means a new hardware identity on every boot -
+      # new DHCP leases, and any address reservations stop matching.
+      persist.directories = [
+        "/etc/NetworkManager/system-connections"
+        "/var/lib/NetworkManager"
+      ];
     };
 }

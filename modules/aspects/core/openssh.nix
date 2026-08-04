@@ -19,6 +19,18 @@ _: {
             ClientAliveInterval = 300;
             ClientAliveCountMax = 2;
           };
+
+          # Host identity lives on /persist because / is a tmpfs. Stating it
+          # here rather than in the preservation aspect means a host that takes
+          # this aspect cannot end up silently regenerating its host key (and
+          # tripping every client's known_hosts) just because it skipped the
+          # state aspect. Listing only ed25519 also drops the default RSA key.
+          hostKeys = [
+            {
+              type = "ed25519";
+              path = "/persist/etc/ssh/ssh_host_ed25519_key";
+            }
+          ];
         };
 
         # LAN-scoped instead of openFirewall's global allow - see core.networking
