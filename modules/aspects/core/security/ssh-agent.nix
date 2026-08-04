@@ -3,7 +3,7 @@ _: {
   #
   # gcr-ssh-agent is disabled there because its FIDO2/sk-* support is poor, but
   # nothing took its place: SSH_AUTH_SOCK was unset fleet-wide. Combined with
-  # git's commit.gpgsign (apps/git.nix) and a passphrase-protected signing key,
+  # git's commit.gpgsign (apps/dev/git.nix) and a passphrase-protected signing key,
   # that made 'git commit' fail outright in any non-interactive context with
   # "failed to write commit object" - OpenSSH could neither reach an agent nor
   # ask for the passphrase.
@@ -12,7 +12,13 @@ _: {
   # host-scope aspect is silently dropped by den.
   den.aspects.core.security.ssh-agent = {
     nixos = _: {
-      # NixOS already computes a working askpass (seahorse) but leaves this
+      # NOTE: the askpass this ends up using is seahorse's, which comes from
+      # the GNOME desktop (nixos/modules/programs/seahorse.nix mkDefaults it).
+      # NixOS's own default is x11_ssh_askpass - so a non-GNOME host taking
+      # this aspect gets an X11 askpass in its closure and should set
+      # programs.ssh.askPassword explicitly.
+      #
+      # NixOS already computes a working askpass but leaves this
       # false unless services.xserver.enable is set - and this fleet is
       # GNOME-on-Wayland. With it false, SSH_ASKPASS is never exported and
       # OpenSSH falls back to its compiled-in $out/libexec/ssh-askpass, which

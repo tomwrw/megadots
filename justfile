@@ -5,8 +5,36 @@ user := "tomwrw"
 default:
     @just --list
 
+# Verify every file `deploy HOST` needs is on the USB before it formats a disk.
+check-bootstrap HOST:
+    #!/usr/bin/env bash
+    set -uo pipefail
+    missing=0
+    check() { if [[ -r "$1" ]]; then echo "  ok   $1"; else echo "  MISS $1"; missing=1; fi; }
+    echo "USB key material:"
+    check "{{ usb }}/hosts/{{ HOST }}/age.txt"
+    check "{{ usb }}/users/{{ user }}/age.txt"
+    for k in id_ed25519 id_ed25519_sk_primary id_ed25519_sk_backup; do
+      check "{{ usb }}/users/{{ user }}/$k"
+      check "{{ usb }}/users/{{ user }}/$k.pub"
+    done
+    echo "Repo state:"
+    check "secrets/hosts/{{ HOST }}.yaml"
+    check "secrets/users/{{ user }}.yaml"
+    if grep -q "secrets/hosts/{{ HOST }}" .sops.yaml; then
+      echo "  ok   .sops.yaml has a creation_rules entry for {{ HOST }}"
+    else
+      echo "  MISS .sops.yaml creation_rules entry for secrets/hosts/{{ HOST }}.yaml"
+      missing=1
+    fi
+    if [[ $missing -ne 0 ]]; then
+      echo >&2 "refusing to call this ready - deploy would abort part-way, after partitioning"
+      exit 1
+    fi
+    echo "ready to deploy {{ HOST }}"
+
 # Install HOST from scratch over SSH with nixos-anywhere. FORMATS ITS DISKS.
-deploy HOST:
+deploy HOST: (check-bootstrap HOST)
     #!/usr/bin/env bash
     set -euo pipefail
     staging=$(mktemp -d)

@@ -2,27 +2,60 @@ name: check
 
 on:
   push:
-    branches: [main]
+    branches: ["**"]
   pull_request:
   workflow_dispatch:
 
 jobs:
-  flake-check:
+  # Evaluation-only: the fleet invariants and roster checks are runCommands with
+  # no build dependencies, so this is fast and catches most regressions. Kept
+  # separate from the host builds below so a broken invariant reports in a
+  # minute rather than after two multi-gigabyte closures.
+  eval:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: cachix/install-nix-action@v31
+        with:
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+      - run: |
+          nix build --print-build-logs --no-link \
+            .#checks.x86_64-linux.invariants \
+            .#checks.x86_64-linux.roster \
+            .#checks.x86_64-linux.treefmt \
+            .#checks.x86_64-linux.check-flake-file
+
+  # One host per job: each toplevel closure is ~20 GiB and a hosted runner has
+  # roughly 14 GB free on /, where /nix lives. Building both in one job dies
+  # with ENOSPC.
+  host:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        host: [endgame, flatmate]
+    steps:
+      - uses: actions/checkout@v4
+
+      # Reclaim ~25 GB of preinstalled toolchains we do not use. Done inline
+      # rather than via a third-party action to keep CI's supply chain to
+      # actions/checkout and the Nix installer.
+      - name: Free disk space
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc \
+                      /usr/local/share/boost "$AGENT_TOOLSDIRECTORY"
+          df -h /
 
       - uses: cachix/install-nix-action@v31
         with:
           # The lantian cache is declared in core/linux-kernel.nix as a NixOS
           # setting, which applies to the built hosts and not to this runner.
-          # Without it here, checking endgame compiles a zen4 LTO CachyOS
-          # kernel from source and the job times out.
+          # Without it here, endgame compiles a zen4 LTO CachyOS kernel from
+          # source and the job times out.
           extra_nix_config: |
             experimental-features = nix-command flakes
             extra-substituters = https://attic.xuyh0120.win/lantian
             extra-trusted-public-keys = lantian:EeAUQ+W+6r7EtwnmYjeVwx5kOGEBpjlBfPlzGlTNvHc=
 
-      # Builds both hosts' toplevels, evaluates the fleet invariants and the
-      # roster checks, and runs treefmt. See modules/flake/checks.nix.
-      - run: nix flake check --print-build-logs
+      - run: nix build --print-build-logs --no-link .#checks.x86_64-linux.${{ matrix.host }}

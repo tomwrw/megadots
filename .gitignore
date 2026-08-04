@@ -1,7 +1,8 @@
 .claude*
 CLAUDE*
 PLAN.md
-*result*
+result
+result-*
 *.qcow2
 *age.txt
 key.txt

@@ -25,35 +25,31 @@
             "root"
             "@wheel"
           ];
-          # Deduplicate and optimise nix store.
+          # Hard-links identical store paths on every write, rather than
+          # out-of-band via nix.optimise. Costs a little latency per build in
+          # exchange for never needing to remember to run it.
           auto-optimise-store = true;
-          # Stop telling me there are uncommited changes!
-          warn-dirty = false;
+
           # Import-from-derivation must stay enabled: stylix's base16 scheme
           # reader readFiles a yaml from the base16-schemes derivation at eval
           # time, which is IFD. (Was the den default; do not disable.)
           allow-import-from-derivation = true;
-          # Enable experimental features.
+
+          warn-dirty = false;
           experimental-features = [
             "nix-command"
             "flakes"
           ];
-          # Build performance.
           max-jobs = "auto";
-          # Use all cores if set to zero.
           cores = 0;
-          # Better error messages.
           show-trace = true;
-          # Sandbox builds for security.
           sandbox = true;
-          # Keep build logs for debugging.
           keep-build-log = true;
-          # Fallback to building if binary cache fails.
           fallback = true;
-          # Prevent builds from eating all disk space.
-          # 512MB min-free.
+
+          # Free space automatically mid-build once under 512MB, up to 1GB.
+          # mkDefault so a host with a small disk can lower them.
           min-free = lib.mkDefault 536870912;
-          # 1GB max-free.
           max-free = lib.mkDefault 1073741824;
         };
         # Garbage collection settings to automate the process

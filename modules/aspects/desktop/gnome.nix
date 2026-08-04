@@ -15,7 +15,7 @@ _: {
 
         services = {
           # gcr's agent handles sk-* (FIDO2) keys poorly, so the plain OpenSSH
-          # agent is used instead - see core/ssh-agent.nix, which must be
+          # agent is used instead - see core/security/ssh-agent.nix, which must be
           # included by any user who needs one. Turning this off without a
           # replacement previously left the fleet with no agent at all.
           gnome.gcr-ssh-agent.enable = false;
@@ -98,6 +98,14 @@ _: {
             natural-scroll = true;
           };
         };
+
+        # This session is Wayland, but Electron/CEF apps default to XWayland
+        # unless told otherwise, which costs them fractional scaling and leaves
+        # them blurry on HiDPI (the Surface especially). Roughly a dozen apps in
+        # this profile are Electron - element, signal, vesktop, obsidian,
+        # joplin, code-cursor, vscodium, bitwarden, ente, filen, proton-pass -
+        # so it is set once here rather than per app.
+        home.sessionVariables.NIXOS_OZONE_WL = "1";
 
         xdg = {
           enable = true;

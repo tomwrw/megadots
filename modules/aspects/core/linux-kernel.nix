@@ -9,6 +9,11 @@
         { pkgs, ... }:
         let
           inherit (host.linux-kernel) channel optimization;
+          # NOTE: "server" is the one value that ignores `channel` - upstream
+          # ships a single linuxPackages-cachyos-server-lto with no per-channel
+          # variant. The schema documents the two options independently, so the
+          # assertion below makes that interaction fail loudly instead of
+          # silently handing a host the latest kernel it did not ask for.
           kernelName =
             if optimization == "server" then
               "linuxPackages-cachyos-server-lto"
@@ -18,6 +23,13 @@
               "linuxPackages-cachyos-${channel}-${optimization}";
         in
         {
+          assertions = [
+            {
+              assertion = optimization != "server" || channel == "latest";
+              message = "host ${host.name}: linux-kernel.optimization = \"server\" ignores linux-kernel.channel (there is only linuxPackages-cachyos-server-lto), but channel is set to \"${channel}\". Drop the channel setting or pick a different optimization.";
+            }
+          ];
+
           nixpkgs.overlays = [
             inputs.nix-cachyos-kernel.overlays.pinned
           ];

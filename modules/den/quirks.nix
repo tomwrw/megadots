@@ -22,12 +22,6 @@
     in
     [ (pipe.from "persist" [ pipe.expose ]) ];
 
-  # Every quirk consumed at host scope needs an expose policy registered here,
-  # or the same quirk emitted from a USER-scope aspect is silently discarded -
-  # no error, no warning, just missing config. All current 'persist' producers
-  # happen to be host-scope, so adding this changes nothing today; it exists so
-  # that persisting a path from an app aspect (which are all user-scope) works
-  # the first time rather than failing mysteriously.
   den.quirks.firewall = {
     description = ''
       LAN-scoped firewall ports an aspect needs: { tcp = [ ... ]; udp = [ ... ]; }.

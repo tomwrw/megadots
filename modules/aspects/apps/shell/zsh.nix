@@ -22,7 +22,7 @@ _: {
               nix-b = "nixos-rebuild build --flake .#${host.name} --sudo";
               nix-clean = "nix-collect-garbage -d --delete-old && sudo nix-collect-garbage -d --delete-old";
               hstat = "curl -o /dev/null --silent --head --write-out '%{http_code}\n' $1";
-              # ls/l/la come from programs.eza (apps/cli-apps.nix) - eza was
+              # ls/l/la come from programs.eza (apps/shell/cli-apps.nix) - eza was
               # installed but never actually used while these aliased coreutils.
               psf = "ps -aux | grep";
               lsf = "ls | grep";

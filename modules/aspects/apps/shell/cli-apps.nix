@@ -3,7 +3,7 @@ _: {
     { pkgs, ... }:
     {
       # eza and nh go through their Home Manager modules rather than
-      # home.packages: programs.eza wires up the ls aliases (see apps/zsh.nix,
+      # home.packages: programs.eza wires up the ls aliases (see apps/shell/zsh.nix,
       # which no longer hand-rolls them) and programs.nh carries the
       # flake/config plumbing.
       #

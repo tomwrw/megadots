@@ -6,7 +6,7 @@
   };
 
   den.aspects.desktop.stylix.homeManager =
-    { pkgs, ... }:
+    { config, pkgs, ... }:
     {
       imports = [ inputs.stylix.homeModules.stylix ];
 
@@ -23,7 +23,10 @@
             profileNames = [ "default" ];
           };
           obsidian = {
-            vaultNames = [ "/home/tomwrw/Sync/Notes" ];
+            # Stylix wants the vault's absolute path so it can drop a CSS
+            # snippet into it. Derived from homeDirectory rather than
+            # hardcoded, so this aspect stays free of any username.
+            vaultNames = [ "${config.home.homeDirectory}/Sync/Notes" ];
           };
           qt.enable = false;
         };

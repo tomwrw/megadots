@@ -31,6 +31,11 @@ let
   #
   # Grown alongside the config: a new invariant lands in the same commit as the
   # change that makes it true, so 'nix flake check' is green at every commit.
+
+  # Deliberately hand-copied from core/security/hardening.nix rather than
+  # imported from it: a check that reads the same value it is checking asserts
+  # only that Nix can compare a list to itself. Written out here, deleting a
+  # param from hardening.nix makes this list disagree and the check fails.
   hardeningParams = [
     "init_on_alloc=1"
     "init_on_free=1"
@@ -56,6 +61,16 @@ let
       # Syncthing is configured per-user through Home Manager, so its ports
       # only reach the host firewall via den.policies.firewall's pipe.expose.
       syncthingUsers = lib.filterAttrs (_: u: u.services.syncthing.enable) cfg.home-manager.users;
+
+      # Options that only EXIST because roles.base imports the module declaring
+      # them (preservation, disko's /persist, sops-nix). Reading them bare on a
+      # host that skipped roles.base aborts the whole check during EVALUATION
+      # with "attribute 'preservation' missing", printing none of the messages
+      # below - the opposite of what this file is for. Defaulting instead lets
+      # the assertion fail properly and say which host and why.
+      hasPreservation = cfg.preservation.enable or false;
+      persistNeededForBoot = cfg.fileSystems."/persist".neededForBoot or false;
+      sopsSshKeyPaths = cfg.sops.age.sshKeyPaths or [ ];
     in
     [
       {
@@ -71,11 +86,11 @@ let
         message = "${name}: firewall UDP ports must be interface-scoped, not global (found ${toString cfg.networking.firewall.allowedUDPPorts})";
       }
       {
-        assertion = !cfg.services.openssh.openFirewall;
+        assertion = !cfg.services.openssh.enable || !cfg.services.openssh.openFirewall;
         message = "${name}: services.openssh.openFirewall opens port 22 on every interface - keep it false and scope the port";
       }
       {
-        assertion = !cfg.services.avahi.openFirewall;
+        assertion = !cfg.services.avahi.enable || !cfg.services.avahi.openFirewall;
         message = "${name}: services.avahi.openFirewall opens 5353 on every interface - keep it false and scope the port";
       }
       {
@@ -83,11 +98,11 @@ let
         message = "${name}: users.mutableUsers must stay false (declarative users only)";
       }
       {
-        assertion = cfg.preservation.enable;
+        assertion = hasPreservation;
         message = "${name}: preservation.enable is false - root is a tmpfs, so this host would lose all state on reboot";
       }
       {
-        assertion = cfg.fileSystems."/persist".neededForBoot;
+        assertion = persistNeededForBoot;
         message = "${name}: /persist must be neededForBoot - activation reads the sops age key from it before systemd starts";
       }
       {
@@ -107,7 +122,7 @@ let
         message = "${name}: boot.lanzaboote.allowUnsigned must be pinned false - it defaults to autoGenerateKeys.enable";
       }
       {
-        assertion = cfg.sops.age.sshKeyPaths == [ ];
+        assertion = sopsSshKeyPaths == [ ];
         message = "${name}: sops.age.sshKeyPaths must stay empty - the dedicated age key in /persist is the only decryption identity";
       }
       {
@@ -115,7 +130,12 @@ let
         message = "${name}: security.sudo.execWheelOnly must stay true - only wheel should be able to execute the setuid binary";
       }
       {
-        assertion = lib.all (k: lib.hasPrefix "/persist/" k.path) cfg.services.openssh.hostKeys;
+        assertion =
+          !cfg.services.openssh.enable
+          || (
+            cfg.services.openssh.hostKeys != [ ]
+            && lib.all (k: lib.hasPrefix "/persist/" k.path) cfg.services.openssh.hostKeys
+          );
         message = "${name}: every ssh host key must live under /persist - / is a tmpfs, so anything else regenerates host identity on each boot";
       }
       {
@@ -170,11 +190,39 @@ in
       checks =
         # Build every host for this system. Without this 'nix flake check' only
         # ran treefmt and never noticed that a host stopped evaluating.
+        #
+        # Host-named attrs come first so a host called "invariants" or "roster"
+        # cannot silently replace the check of the same name - the meta
+        # assertion below refuses that outright rather than leaving a green
+        # check that verifies nothing.
         (lib.mapAttrs (_: nixos: nixos.config.system.build.toplevel) hosts) // {
           invariants = mkAssertions pkgs "invariants" (
-            lib.concatLists (lib.mapAttrsToList hostInvariants hosts)
+            [
+              {
+                # Guards against this system having no hosts at all: mapAttrs
+                # over {} yields no assertions, mkAssertions emits `touch $out`,
+                # and the check passes having verified nothing. den falls back
+                # to lib.systems.flakeExposed when den.systems is empty, so this
+                # is one roster edit away rather than hypothetical.
+                assertion = hosts != { };
+                message = "checks.${system}: no hosts evaluate for this system, so every fleet invariant would pass vacuously";
+              }
+              {
+                assertion = !(hosts ? invariants) && !(hosts ? roster);
+                message = "checks.${system}: a host is named 'invariants' or 'roster' and would shadow the check of that name - rename the host";
+              }
+            ]
+            ++ lib.concatLists (lib.mapAttrsToList hostInvariants hosts)
           );
-          roster = mkAssertions pkgs "roster" (lib.concatLists (lib.mapAttrsToList rosterAssertions roster));
+          roster = mkAssertions pkgs "roster" (
+            [
+              {
+                assertion = roster != { };
+                message = "checks.${system}: flake.roster is empty for this system, so every roster assertion would pass vacuously";
+              }
+            ]
+            ++ lib.concatLists (lib.mapAttrsToList rosterAssertions roster)
+          );
         };
     };
 }

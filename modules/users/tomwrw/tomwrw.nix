@@ -119,6 +119,14 @@ in
       programs.git.settings.user.name = "tomwrw";
       programs.git.settings.user.email = email;
 
+      # A literal key, not a path to one. git only passes -U (meaning "this
+      # identity is held by an agent") to `ssh-keygen -Y sign` when signingkey
+      # is a literal key or key::-prefixed; given a PATH it hands the file
+      # straight to ssh-keygen, which does not read ssh_config at all. So with
+      # a path, AddKeysToAgent never applies and a passphrase-protected key
+      # prompts on every single signed commit, agent or no agent.
+      programs.git.settings.user.signingkey = "key::${sshKeys.plain}";
+
       xdg.configFile."git/allowed_signers".text = lib.concatMapStrings (k: "${email} ${k}\n") (
         lib.attrValues sshKeys
       );
