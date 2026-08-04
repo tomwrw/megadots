@@ -30,7 +30,7 @@
         id = "/dev/disk/by-id/nvme-Sabrent_SB-RKT5-2TB_48836385600606";
         swapSize = "48G";
       };
-      # Verify via `ip -br addr` on host.
+      # Verify via 'ip -br addr' on host.
       network.lanInterface = "enp8s0";
       users = {
         tomwrw = { };
@@ -43,7 +43,7 @@
         id = "/dev/disk/by-id/nvme-KBG40ZPZ512G_TOSHIBA_MEMORY_89R201INNLAP";
         swapSize = "24G";
       };
-      # Verify via `ip -br addr` on host.
+      # Verify via 'ip -br addr' on host.
       network.lanInterface = "wlp0s20f3";
       users = {
         tomwrw = { };

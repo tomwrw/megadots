@@ -3,6 +3,12 @@ _: {
     { host, ... }:
     {
       nixos = _: {
+        # Sunshine's virtual gamepad/keyboard needs uinput. This is its only
+        # consumer in the fleet, so it lives here rather than in
+        # hardware/hardware.nix, where it was loading the module and creating a
+        # uinput group on hosts that have no use for either.
+        hardware.uinput.enable = true;
+
         services.sunshine = {
           enable = true;
           autoStart = true;

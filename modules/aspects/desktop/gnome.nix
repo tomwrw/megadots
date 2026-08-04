@@ -9,6 +9,10 @@ _: {
 
         services = {
           libinput.enable = true;
+          # gcr's agent handles sk-* (FIDO2) keys poorly, so the plain OpenSSH
+          # agent is used instead - see core/ssh-agent.nix, which must be
+          # included by any user who needs one. Turning this off without a
+          # replacement previously left the fleet with no agent at all.
           gnome.gcr-ssh-agent.enable = false;
           desktopManager.gnome = {
             enable = true;

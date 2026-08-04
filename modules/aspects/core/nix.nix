@@ -4,20 +4,22 @@
     { lib, ... }:
     {
       nix = {
-        # Make `nix run nixpkgs#…` etc. resolve flake refs to the same inputs
-        # this system was built from (pinned, consistent nix3 commands).
-        # Filtered to actual flakes: a `flake = false` input has no `outputs`
-        # and would produce a broken registry entry.
-        registry = lib.mapAttrs (_: flake: { inherit flake; }) (
-          lib.filterAttrs (_: input: input ? outputs) inputs
-        );
+        # Make 'nix run nixpkgs#…' etc. resolve to the same nixpkgs this system
+        # was built from (pinned, consistent nix3 commands).
+        #
+        # Deliberately ONLY nixpkgs. Mapping every input pins each one's source
+        # into the system closure, which is then pushed in full on every
+        # 'nixos-rebuild --target-host' deploy and retained against the GC's
+        # 30-day window - several hundred MB to register flake refs nobody
+        # types. Add a second entry here only when you actually want it.
+        registry.nixpkgs.flake = inputs.nixpkgs;
 
         settings = {
           # See https://jackson.dev/post/nix-reasonable-defaults/ for
           # explanation of sensible defaults.
           connect-timeout = 5;
           log-lines = 25;
-          # Trust the wheel group so `nixos-rebuild --target-host` can push
+          # Trust the wheel group so 'nixos-rebuild --target-host' can push
           # locally-built closures to the fleet (single-admin LAN).
           trusted-users = [
             "root"

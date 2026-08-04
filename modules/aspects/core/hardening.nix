@@ -18,7 +18,7 @@ _: {
     # CONFIG_SECURITY_LOCKDOWN_LSM, so the parameter was silently inert -
     # /sys/kernel/security/lsm never listed it and /sys/kernel/security/lockdown
     # did not exist. Re-adding it needs both a kernel that builds the LSM and
-    # `security.lsm = [ "lockdown" ];`, since NixOS emits an explicit lsm= list.
+    # 'security.lsm = [ "lockdown" ];', since NixOS emits an explicit lsm= list.
     boot.kernelParams = [
       "init_on_alloc=1"
       "init_on_free=1"

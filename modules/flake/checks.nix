@@ -102,6 +102,14 @@ let
         message = "${name}: boot.lanzaboote.allowUnsigned must be pinned false - it defaults to autoGenerateKeys.enable";
       }
       {
+        assertion = cfg.sops.age.sshKeyPaths == [ ];
+        message = "${name}: sops.age.sshKeyPaths must stay empty - the dedicated age key in /persist is the only decryption identity";
+      }
+      {
+        assertion = cfg.security.sudo.execWheelOnly;
+        message = "${name}: security.sudo.execWheelOnly must stay true - only wheel should be able to execute the setuid binary";
+      }
+      {
         assertion = missingHardening == [ ];
         message = "${name}: hardening kernel params missing from boot.kernelParams: ${toString missingHardening} - a lower-priority definition of a list option is discarded wholesale, see hardware/surface-pro.nix";
       }

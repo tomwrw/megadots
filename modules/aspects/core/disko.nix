@@ -44,13 +44,13 @@
                     content = {
                       type = "luks";
                       name = "crypted";
-                      # Everything must go through `settings`, not
-                      # `extraOpenArgs`: disko passes settings straight to
+                      # Everything must go through 'settings', not
+                      # 'extraOpenArgs': disko passes settings straight to
                       # boot.initrd.luks.devices.<name>, whereas extraOpenArgs
-                      # is only used by its install-time `cryptsetup open`. The
+                      # is only used by its install-time 'cryptsetup open'. The
                       # perf flags used to live there and so were applied
                       # exactly once, during nixos-anywhere, and never again at
-                      # boot - the generated crypttab read `crypted <dev> - discard`.
+                      # boot - the generated crypttab read 'crypted <dev> - discard'.
                       settings = {
                         # TRIM leaks unused-block patterns on SSDs, which can
                         # reveal filesystem structure. Accepted trade-off for

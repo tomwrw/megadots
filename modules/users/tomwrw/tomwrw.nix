@@ -21,6 +21,7 @@ in
       den.batteries.primary-user
       (den.batteries.user-shell "zsh")
       den.aspects.core.security.sops
+      den.aspects.core.security.ssh-agent
       den.aspects.core.syncthing
       den.aspects.desktop.stylix
       den.aspects.apps.browsers.firefox
@@ -48,8 +49,6 @@ in
     ];
 
     nixos = _: {
-      users.mutableUsers = false;
-
       sops.secrets."users/tomwrw/password".neededForUsers = true;
 
       # 'd' fixes ownership/mode even when nixos-anywhere --extra-files

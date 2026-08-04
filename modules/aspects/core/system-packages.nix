@@ -11,7 +11,6 @@ _: {
         pkgs.just
         pkgs.pciutils
         pkgs.ripgrep
-        pkgs.ssh-to-age
         pkgs.sops
         pkgs.unzip
       ];

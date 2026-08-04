@@ -1,9 +1,6 @@
 _: {
   den.aspects.hardware.nixos = _: {
-    hardware = {
-      enableRedistributableFirmware = true;
-      uinput.enable = true;
-    };
+    hardware.enableRedistributableFirmware = true;
 
     services.devmon.enable = true;
     services.fwupd.enable = true;
