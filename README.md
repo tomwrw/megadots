@@ -12,7 +12,7 @@ My NixOS configuration, built on the den framework + Home Manager + Flakes. This
 
 This is the fourth iteration of my NixOS configuration. I've been daily driving NixOS for nearly 2 years. Most recently, I have dabbled with the dendritic pattern and with the den framework, I have found a suitable home for my configs.
 
-You can find my other configs archived in named branches for review if you want to check out other management styles, like nix-classic and nix-dendritic.
+You can find my other configs archived in named branches for review if you want to check out other management styles, like megadots-classic and megadots-dendritic.
 
 I'm not a developer. I'm a tinkerer with a consultancy job in a technical field who got curious about declarative system management and fell down the NixOS rabbit hole. This project has genuinely brought some fun back into computing for me.
 
