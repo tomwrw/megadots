@@ -22,6 +22,9 @@
             firefoxGnomeTheme.enable = true;
             profileNames = [ "default" ];
           };
+          obsidian = {
+            vaultNames = [ "/home/tomwrw/Sync/Notes" ];
+          };
           qt.enable = false;
         };
       };
