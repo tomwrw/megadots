@@ -8,7 +8,7 @@ _: {
     };
 
     # State owned by the services enabled above. Emitted here rather than
-    # centrally in the preservation aspect so that a host which does not
+    # centrally in the impermanence aspect so that a host which does not
     # include this aspect does not persist directories nothing will create.
     persist.directories = [
       # Device history and the downloaded LVFS metadata. Without these,

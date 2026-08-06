@@ -12,7 +12,8 @@
     den.aspects.core.security.hardening
     den.aspects.core.security.fido2
     den.aspects.core.system-packages
-    den.aspects.core.preservation
+    den.aspects.core.impermanence
+    den.aspects.core.ephemeral-btrfs
     den.aspects.core.security.sops
     den.aspects.core.disko
     den.aspects.hardware

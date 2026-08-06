@@ -15,7 +15,7 @@
   flake.roster = lib.mapAttrs (
     _: hosts:
     lib.mapAttrs (_: host: {
-      inherit (host.disk) id swapSize tmpfsSize;
+      inherit (host.disk) id swapSize;
       lanInterface = host.network.lanInterface;
       syncthing = { inherit (host.syncthing) enable id; };
     }) hosts

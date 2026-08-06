@@ -10,7 +10,7 @@ _: {
     # Fleet policy, not per-user policy: users come from the config or not at
     # all. Lived in the tomwrw aspect before, which meant a host without that
     # user would silently fall back to mutable users. It is also what makes
-    # persisting /var/lib/nixos matter - see core/preservation.nix.
+    # persisting /var/lib/nixos matter - see core/impermanence.nix.
     users.mutableUsers = false;
 
     security.pam.loginLimits = [

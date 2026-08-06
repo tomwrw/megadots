@@ -6,6 +6,14 @@ on:
   pull_request:
   workflow_dispatch:
 
+# Neither job writes anything back to the repository.
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   # Evaluation-only: the fleet invariants and roster checks are runCommands with
   # no build dependencies, so this is fast and catches most regressions. Kept
@@ -13,6 +21,9 @@ jobs:
   # minute rather than after two multi-gigabyte closures.
   eval:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
+    outputs:
+      hosts: ${{ steps.hosts.outputs.hosts }}
     steps:
       - uses: actions/checkout@v4
       - uses: cachix/install-nix-action@v31
@@ -26,21 +37,49 @@ jobs:
             .#checks.x86_64-linux.treefmt \
             .#checks.x86_64-linux.check-flake-file
 
-  # One host per job: each toplevel closure is ~20 GiB and a hosted runner has
+      # Derived, not hardcoded: a hardcoded matrix means a newly added host is
+      # silently never built - the same vacuous-pass failure mode that
+      # modules/flake/checks.nix asserts against. flake.roster is the JSON-safe
+      # projection of the host list (modules/den/hosts.nix). It is keyed by
+      # system, so an aarch64 host would need its own runner and its own matrix.
+      - id: hosts
+        run: |
+          hosts=$(nix eval --json '.#roster.x86_64-linux' --apply builtins.attrNames)
+          echo "hosts=$hosts" >> "$GITHUB_OUTPUT"
+          echo "building: $hosts"
+
+  # One host per job: flatmate's closure alone is ~15 GB and a hosted runner has
   # roughly 14 GB free on /, where /nix lives. Building both in one job dies
   # with ENOSPC.
   host:
+    # Gated on eval so a formatting or invariant failure does not also pay for a
+    # kernel build that is going to be thrown away.
+    needs: eval
+
+    # Not on every feature-branch push. Actions caches are only readable by the
+    # branch that wrote them and its PRs, whereas caches written on the default
+    # branch are readable everywhere - so building on main is what seeds the
+    # kernel cache below for everything else.
+    if: >-
+      github.ref == 'refs/heads/main'
+      || github.event_name == 'pull_request'
+      || github.event_name == 'workflow_dispatch'
+
     runs-on: ubuntu-latest
+    # A cold surface-kernel build (see the cache step) takes upwards of an hour
+    # on a 4-vCPU runner. Bounded explicitly so a genuine hang fails here rather
+    # than at GitHub's six-hour default.
+    timeout-minutes: 150
     strategy:
       fail-fast: false
       matrix:
-        host: [endgame, flatmate]
+        host: ${{ fromJSON(needs.eval.outputs.hosts) }}
     steps:
       - uses: actions/checkout@v4
 
       # Reclaim ~25 GB of preinstalled toolchains we do not use. Done inline
       # rather than via a third-party action to keep CI's supply chain to
-      # actions/checkout and the Nix installer.
+      # actions/checkout, actions/cache and the Nix installer.
       - name: Free disk space
         run: |
           sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc \
@@ -53,9 +92,47 @@ jobs:
           # setting, which applies to the built hosts and not to this runner.
           # Without it here, endgame compiles a zen4 LTO CachyOS kernel from
           # source and the job times out.
+          #
+          # require-sigs is for the local file:// cache below, which this job
+          # writes itself and which therefore holds unsigned paths.
           extra_nix_config: |
             experimental-features = nix-command flakes
+            require-sigs = false
             extra-substituters = https://attic.xuyh0120.win/lantian
             extra-trusted-public-keys = lantian:EeAUQ+W+6r7EtwnmYjeVwx5kOGEBpjlBfPlzGlTNvHc=
 
-      - run: nix build --print-build-logs --no-link .#checks.x86_64-linux.${{ matrix.host }}
+      # flatmate has no upstream cache for its kernel: hardware/surface-pro.nix
+      # pulls in nixos-hardware's linux-surface patch series, so the derivation
+      # hashes over this flake's own nixpkgs pin and cache.nixos.org has never
+      # seen it. Uncached, every single run recompiles a full kernel.
+      #
+      # The outputs are only ~170 MiB, well inside the free 10 GB per-repo
+      # Actions cache, so they are stashed under a drvPath-derived key: a
+      # nixpkgs bump or a patch-series change invalidates it correctly, and
+      # everything else reuses it. The whole toplevel is deliberately NOT cached
+      # - at ~15 GB it exceeds the limit on its own.
+      - name: Kernel cache key
+        id: kern
+        run: |
+          drv=$(nix eval --raw ".#nixosConfigurations.${{ matrix.host }}.config.boot.kernelPackages.kernel.drvPath")
+          echo "key=$(basename "$drv")" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/cache@v4
+        with:
+          path: ~/kernel-cache
+          key: kernel-${{ steps.kern.outputs.key }}
+
+      - run: |
+          nix build --print-build-logs --no-link \
+            --extra-substituters "file://$HOME/kernel-cache" \
+            .#checks.x86_64-linux.${{ matrix.host }}
+
+      # 'out,modules' and not '^*': the toplevel closure needs both of those, so
+      # copying only the default output would leave half the kernel to rebuild
+      # next run - but '^*' would also drag in the 'dev' output, which is not in
+      # the closure at all and whose own closure pulls rustc and the full kernel
+      # source tree (measured: >570 MB and still climbing, versus ~170 MiB here).
+      - name: Save kernel to cache
+        run: |
+          nix copy --to "file://$HOME/kernel-cache" \
+            ".#nixosConfigurations.${{ matrix.host }}.config.boot.kernelPackages.kernel^out,modules"

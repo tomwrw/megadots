@@ -26,7 +26,7 @@ let
   # Fleet-wide invariants. These encode decisions that are easy to undo by
   # accident and expensive to notice: a firewall port opened globally instead of
   # on the LAN interface, a host that forgot 'roles.base' and therefore has no
-  # preservation or bootloader, a hardening kernel param silently dropped by the
+  # persistence or bootloader, a hardening kernel param silently dropped by the
   # module system's list-priority rules (see hardware/surface-pro.nix).
   #
   # Grown alongside the config: a new invariant lands in the same commit as the
@@ -63,14 +63,36 @@ let
       syncthingUsers = lib.filterAttrs (_: u: u.services.syncthing.enable) cfg.home-manager.users;
 
       # Options that only EXIST because roles.base imports the module declaring
-      # them (preservation, disko's /persist, sops-nix). Reading them bare on a
+      # them (impermanence, disko's /persist, sops-nix). Reading them bare on a
       # host that skipped roles.base aborts the whole check during EVALUATION
-      # with "attribute 'preservation' missing", printing none of the messages
+      # with "attribute 'persistence' missing", printing none of the messages
       # below - the opposite of what this file is for. Defaulting instead lets
       # the assertion fail properly and say which host and why.
-      hasPreservation = cfg.preservation.enable or false;
+      hasPersistence = cfg.environment.persistence."/persist".enable or false;
       persistNeededForBoot = cfg.fileSystems."/persist".neededForBoot or false;
       sopsSshKeyPaths = cfg.sops.age.sshKeyPaths or [ ];
+
+      # The two halves of the ephemeral root live in separate aspects
+      # (core.ephemeral-btrfs restores the snapshot, core.disko creates it and
+      # mounts subvol=root). Either one alone boots perfectly happily and simply
+      # never rolls anything back, so both are asserted.
+      hasRollback = cfg.boot.initrd.systemd.services ? restore-root;
+      # Matched loosely on purpose: core/disko.nix states 'subvol=root' in
+      # mountOptions and disko appends its own 'subvol=/root' from the subvolume
+      # name, so both spellings are present and either alone is correct.
+      rootOnSubvol = lib.any (o: o == "subvol=root" || o == "subvol=/root") (
+        cfg.fileSystems."/".options or [ ]
+      );
+
+      # impermanence creates /var/lib/private 0755, but DynamicUser=true services
+      # require 0700 (nix-community/impermanence#254, still open). No service in
+      # this fleet uses DynamicUser today, so rather than carry Foundry's
+      # workaround - two tmpfiles rules plus an mkForce on systemd-tmpfiles-resetup
+      # - for a problem that does not exist here, this fires the day one appears.
+      dynamicUserServices = lib.attrNames (
+        lib.filterAttrs (_: s: s.serviceConfig.DynamicUser or false) cfg.systemd.services
+      );
+      privateHandled = lib.any (r: lib.hasInfix "/var/lib/private" r) (cfg.systemd.tmpfiles.rules or [ ]);
     in
     [
       {
@@ -98,12 +120,28 @@ let
         message = "${name}: users.mutableUsers must stay false (declarative users only)";
       }
       {
-        assertion = hasPreservation;
-        message = "${name}: preservation.enable is false - root is a tmpfs, so this host would lose all state on reboot";
+        assertion = hasPersistence;
+        message = "${name}: environment.persistence.\"/persist\" is not enabled - root is rolled back to a blank snapshot on every boot, so this host would lose all state on reboot";
       }
       {
         assertion = persistNeededForBoot;
         message = "${name}: /persist must be neededForBoot - activation reads the sops age key from it before systemd starts";
+      }
+      {
+        assertion = cfg.boot.initrd.systemd.enable;
+        message = "${name}: boot.initrd.systemd.enable must stay true - impermanence's initrd bind mounts and the restore-root rollback service both depend on it, and both fail silently without it";
+      }
+      {
+        assertion = hasRollback;
+        message = "${name}: the restore-root rollback service is missing - the root subvolume would accumulate state forever, with nothing to indicate it, check core.ephemeral-btrfs";
+      }
+      {
+        assertion = rootOnSubvol;
+        message = "${name}: / must be the btrfs 'root' subvolume (subvol=root) - core.ephemeral-btrfs restores root-blank over it, and disko's postCreateHook is what creates that snapshot";
+      }
+      {
+        assertion = dynamicUserServices == [ ] || privateHandled;
+        message = "${name}: ${toString dynamicUserServices} use DynamicUser, which needs /var/lib/private at 0700, but impermanence creates it 0755 (nix-community/impermanence#254) - add tmpfiles rules for /persist/var/lib/private and /var/lib/private plus systemd-tmpfiles-resetup.serviceConfig.RemainAfterExit = false";
       }
       {
         assertion = lib.count lib.id bootloaders == 1;
@@ -136,7 +174,7 @@ let
             cfg.services.openssh.hostKeys != [ ]
             && lib.all (k: lib.hasPrefix "/persist/" k.path) cfg.services.openssh.hostKeys
           );
-        message = "${name}: every ssh host key must live under /persist - / is a tmpfs, so anything else regenerates host identity on each boot";
+        message = "${name}: every ssh host key must live under /persist - / is rolled back to a blank snapshot each boot, so anything else regenerates host identity every time";
       }
       {
         assertion = lib.length scoped == 1 && lib.elem 22 scopedTCP;

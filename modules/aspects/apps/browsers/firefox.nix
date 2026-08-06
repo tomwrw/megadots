@@ -144,5 +144,16 @@
         "text/html" = [ "firefox.desktop" ];
         "application/pdf" = [ "firefox.desktop" ];
       };
+
+      # The profile itself: cookies, history, container assignments and the
+      # extensions' own storage. Home Manager writes the declarative half of
+      # profiles.default in here on every activation, so this only needs to
+      # carry what Firefox writes at runtime - but they share a directory.
+      #
+      # This is the DEFAULT location. Do not copy the '.config/mozilla/firefox'
+      # path from the megadots-classic branch: that config sets
+      # programs.firefox.configPath to relocate the profile, and this one does
+      # not.
+      home.persistence."/persist".directories = [ ".mozilla/firefox" ];
     };
 }

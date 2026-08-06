@@ -39,13 +39,16 @@ deploy HOST: (check-bootstrap HOST)
     set -euo pipefail
     staging=$(mktemp -d)
     trap 'rm -rf "$staging"' EXIT
+    # Everything user-owned is seeded under /persist, not /home: / (and so
+    # /home) is a btrfs subvolume rolled back to a blank snapshot on every boot,
+    # and impermanence bind-mounts these back into the live home.
     install -Dm600 {{ usb }}/hosts/{{ HOST }}/age.txt "$staging/persist/var/lib/sops-nix/key.txt"
-    install -Dm600 {{ usb }}/users/{{ user }}/age.txt "$staging/home/{{ user }}/.config/sops/age/keys.txt"
+    install -Dm600 {{ usb }}/users/{{ user }}/age.txt "$staging/persist/home/{{ user }}/.config/sops/age/keys.txt"
     # FIDO2 sk key handles (useless without the physical token); seeding them
     # avoids a post-deploy `ssh-keygen -K`.
     for k in id_ed25519 id_ed25519_sk_primary id_ed25519_sk_backup; do
-      install -Dm600 {{ usb }}/users/{{ user }}/$k "$staging/home/{{ user }}/.ssh/$k"
-      install -Dm644 {{ usb }}/users/{{ user }}/$k.pub "$staging/home/{{ user }}/.ssh/$k.pub"
+      install -Dm600 {{ usb }}/users/{{ user }}/$k "$staging/persist/home/{{ user }}/.ssh/$k"
+      install -Dm644 {{ usb }}/users/{{ user }}/$k.pub "$staging/persist/home/{{ user }}/.ssh/$k.pub"
     done
     # Pinned by this flake's own lock - see modules/flake/deploy.nix.
     nix run .#nixos-anywhere -- \

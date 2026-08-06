@@ -82,6 +82,13 @@ _: {
               username.show_always = true;
             };
           };
+
+          # Shell history. Everything else here - the zshrc, the aliases, the
+          # starship config - is regenerated on activation, but this is the one
+          # thing zsh writes at runtime, and .local/share is inside the home
+          # that gets rolled back. Path taken from programs.zsh.history.path
+          # rather than assumed: dotDir moves it off the ~/.zsh_history default.
+          home.persistence."/persist".files = [ ".local/share/zsh/.zsh_history" ];
         };
     };
 }

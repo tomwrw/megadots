@@ -43,6 +43,25 @@ _: {
           ForwardAgent = false;
         };
       };
+
+      # Everything `just deploy` seeds into /persist/home/<user> via
+      # nixos-anywhere --extra-files, plus known_hosts. This list must stay in
+      # step with that recipe's key loop: a seeded file with no entry here lands
+      # in /persist and is never bind-mounted into the home, which looks exactly
+      # like the deploy having silently skipped it.
+      #
+      # The sk_* pairs are FIDO2 handle stubs - useless without the physical
+      # token, but regenerating them means an `ssh-keygen -K` round trip. The
+      # tomwrw aspect owns their permissions.
+      home.persistence."/persist".files = [
+        ".ssh/known_hosts"
+        ".ssh/id_ed25519"
+        ".ssh/id_ed25519.pub"
+        ".ssh/id_ed25519_sk_primary"
+        ".ssh/id_ed25519_sk_primary.pub"
+        ".ssh/id_ed25519_sk_backup"
+        ".ssh/id_ed25519_sk_backup.pub"
+      ];
     };
   };
 }

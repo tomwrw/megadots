@@ -23,11 +23,6 @@
         default = "8G";
         description = "btrfs swapfile size.";
       };
-      tmpfsSize = lib.mkOption {
-        type = lib.types.str;
-        default = "4G";
-        description = "Size of the tmpfs mounted at / (impermanence root).";
-      };
     };
 
     options.network = {

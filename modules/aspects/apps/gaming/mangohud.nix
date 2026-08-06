@@ -4,5 +4,8 @@ _: {
   # would silently forfeit the theming.
   den.aspects.apps.gaming.mangohud.homeManager = _: {
     programs.mangohud.enable = true;
+
+    # Nothing to persist: settings are written on activation and mangohud keeps
+    # no runtime state of its own.
   };
 }

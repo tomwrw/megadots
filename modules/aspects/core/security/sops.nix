@@ -33,6 +33,13 @@
           age.generateKey = false;
         };
 
+        # The only identity that can decrypt this user's secrets, seeded by
+        # `just deploy` via nixos-anywhere --extra-files. It survived on its own
+        # while /home was a persistent subvolume; now it needs stating. Kept
+        # beside age.keyFile above rather than with the ssh keys, so the path
+        # and the thing that persists it cannot drift.
+        home.persistence."/persist".files = [ ".config/sops/age/keys.txt" ];
+
         systemd.user.services.sops-nix = {
           Unit = {
             DefaultDependencies = false;

@@ -112,6 +112,19 @@ _: {
           mime.enable = true;
           mimeApps.enable = true;
         };
+
+        home.persistence."/persist".directories = [
+          # The dconf database. Everything set declaratively above is rewritten
+          # on activation, so this carries the rest: window positions, per-app
+          # preferences, the favourites in the dash, and anything changed
+          # through Settings rather than through this file.
+          ".config/dconf"
+          # gnome-keyring's secret store. The GNOME module enables the daemon,
+          # so without this every boot starts with no keyring at all: GNOME
+          # prompts to create one, and anything any app stored through libsecret
+          # is gone.
+          ".local/share/keyrings"
+        ];
       };
 
     # mDNS. avahi is not enabled by anything of mine - the GNOME desktop module
@@ -128,6 +141,10 @@ _: {
       # on every boot.
       "/var/lib/colord"
       "/var/lib/power-profiles-daemon"
+      # Same story: services.udisks2 is enabled by the GNOME desktop module
+      # (nixos/modules/services/desktop-managers/gnome.nix), not by anything of
+      # mine. Holds per-device mount preferences for removable media.
+      "/var/lib/udisks2"
     ];
   };
 }

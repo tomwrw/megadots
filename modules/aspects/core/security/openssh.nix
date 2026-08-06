@@ -19,7 +19,7 @@ _: {
         };
 
         # Host identity lives on /persist because / is a tmpfs. Stating it
-        # here rather than in the preservation aspect means a host that takes
+        # here rather than in the impermanence aspect means a host that takes
         # this aspect cannot end up silently regenerating its host key (and
         # tripping every client's known_hosts) just because it skipped the
         # state aspect. Listing only ed25519 also drops the default RSA key.

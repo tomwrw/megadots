@@ -3,5 +3,8 @@ _: {
     { pkgs, ... }:
     {
       home.packages = [ pkgs.gemini-cli ];
+
+      # Credentials and config.
+      home.persistence."/persist".directories = [ ".gemini" ];
     };
 }

@@ -24,7 +24,8 @@ I'm not a developer. I'm a tinkerer with a consultancy job in a technical field 
 - :house: **Home Manager** as a NixOS module.
 - :ghost: **sops-nix** for secrets management, with dedicated age key support for hosts and users.
 - :key: **FIDO2 hardware keys** (Token2 PIN+) for SSH, with an optional extra LUKS unlock keyslot alongside the passphrase.
-- :camera_flash: **Preservation** with root on tmpfs for declarative impermanence.
+- :camera_flash: **Impermanence** on an ephemeral btrfs root — `/` is restored from a blank
+  snapshot on every boot, and state is opt-in per aspect.
 - :cop: **Secure Boot** via lanzaboote with automatic key generation and enrollment.
 - :snowflake: **Flake** with the den framework for modular, composable host and user aspects.
 - :floppy_disk: **Disko** for declarative disk partitioning.
@@ -39,7 +40,13 @@ I'm not a developer. I'm a tinkerer with a consultancy job in a technical field 
 | `endgame` | AMD desktop (zen4) | lanzaboote (Secure Boot) | CachyOS `latest-zen4` | base, workstation, gaming, dev |
 | `flatmate` | Microsoft Surface Pro (Intel) | systemd-boot | nixpkgs default | base, workstation |
 
-Both run root-on-tmpfs with btrfs + LUKS, GNOME, and the same user.
+Both run an ephemeral btrfs root on LUKS, GNOME, and the same user. `/` is its own
+subvolume, deleted and restored from a read-only `root-blank` snapshot by an initrd
+service on every boot; `/nix`, `/persist` and swap are separate subvolumes that survive.
+`/home` deliberately sits *inside* the rolled-back root, so user state is opt-in through
+`home.persistence` in the aspect that owns it, exactly as system state is opt-in through
+`core.impermanence`. Touch `dont-wipe` at the top of the btrfs volume to skip the wipe for
+a boot.
 
 ## What den gives you.
 
@@ -86,7 +93,7 @@ modules/
 │   ├── endgame/
 │   └── flatmate/
 ├── aspects/              # the reusable aspect library, organised by concern:
-│   ├── core/             #   always-on baseline (nix, networking, boot, preservation, …)
+│   ├── core/             #   always-on baseline (nix, networking, boot, impermanence, …)
 │   │   └── security/     #     sops, openssh, hardening, fido2, ssh-agent
 │   ├── hardware/         #   graphics/audio/bluetooth + per-model support
 │   ├── desktop/          #   gnome, stylix, fonts
@@ -204,9 +211,15 @@ just secrets-updatekeys   # re-sync sops recipients after editing .sops.yaml
 
 `just check` is the one worth knowing about: it builds both hosts, then asserts a set of
 fleet invariants - no globally-open firewall ports, `/persist` marked `neededForBoot`,
-host keys under `/persist`, the bootloader bounded and its editor disabled, hardening
-kernel params actually present, and user-scope firewall quirks reaching the host. It is
-what CI runs.
+host keys under `/persist`, `/` actually on the rolled-back `root` subvolume with its
+rollback service present, the bootloader bounded and its editor disabled, hardening
+kernel params actually present, and user-scope firewall quirks reaching the host.
+
+CI runs the same checks, but splits them: the evaluation-only ones run on every push,
+while the full host builds run on `main`, pull requests and manual dispatch. `flatmate`
+compiles a patched linux-surface kernel that no public cache serves, so its build is
+cached across runs by store path rather than repeated — see
+[check.yml](.github/workflows/check.yml).
 
 ### Bootstrapping a host from scratch.
 
@@ -220,7 +233,7 @@ through.
 
    ```
    <usb>/hosts/<hostname>/age.txt          # host age key  -> /persist/var/lib/sops-nix/key.txt
-   <usb>/users/<username>/age.txt          # user age key  -> ~/.config/sops/age/keys.txt
+   <usb>/users/<username>/age.txt          # user age key  -> /persist/home/<user>/.config/sops/age/keys.txt
    <usb>/users/<username>/id_ed25519{,.pub}
    <usb>/users/<username>/id_ed25519_sk_primary{,.pub}    # FIDO2 handles; useless without
    <usb>/users/<username>/id_ed25519_sk_backup{,.pub}     # the physical token

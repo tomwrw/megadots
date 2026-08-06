@@ -54,42 +54,60 @@ in
       # 'd' fixes ownership/mode even when nixos-anywhere --extra-files
       # already created these as root; 'z' does the same for the seeded
       # files themselves and is a no-op if a path is absent (unlike the
-      # oneshot chown it replaces, no '|| true' needed). tmpfiles-setup
-      # runs at sysinit, well before home-manager-tomwrw.service, so no
-      # explicit ordering is needed either.
-      systemd.tmpfiles.settings."10-tomwrw-seed" = {
-        "/home/tomwrw/.ssh".d = {
-          user = "tomwrw";
-          group = "users";
-          mode = "0700";
-        };
-        "/home/tomwrw/.config".d = {
-          user = "tomwrw";
-          group = "users";
-          mode = "0755";
-        };
-        "/home/tomwrw/.config/sops".d = {
-          user = "tomwrw";
-          group = "users";
-          mode = "0700";
-        };
-        "/home/tomwrw/.config/sops/age".d = {
-          user = "tomwrw";
-          group = "users";
-          mode = "0700";
-        };
-
-        # Mode is left alone here - justfile's 'install -Dm600/-m644'
-        # already sets it; this only adopts ownership.
-        "/home/tomwrw/.config/sops/age/keys.txt".z = {
-          user = "tomwrw";
-          group = "users";
-        };
-        "/home/tomwrw/.ssh/id_ed25519*".z = {
-          user = "tomwrw";
-          group = "users";
-        };
-      };
+      # oneshot chown it replaces, no '|| true' needed).
+      #
+      # BOTH sides are listed, deliberately, and dropping either one breaks a
+      # different boot:
+      #
+      # - /persist/... is where `just deploy` seeds these as root, and where
+      #   they survive the rollback. impermanence never repairs an existing
+      #   persist directory; when one is already there it copies that
+      #   directory's owner and mode ONTO the live path
+      #   (create-directories.bash, chown/chmod --reference). So an unowned
+      #   /persist entry keeps re-infecting the live home on every activation.
+      #
+      # - /home/... is needed because that copy happens during
+      #   system.activationScripts, which on this fleet runs in the INITRD
+      #   (initrd-nixos-activation), while tmpfiles run at sysinit in stage 2 -
+      #   afterwards. Fixing only /persist therefore leaves the live tree wrong
+      #   for the whole of the first boot after a deploy. Note ~/.ssh is a plain
+      #   directory, not a bind mount: only the individual files under it are
+      #   bind-mounted, so correcting /persist does NOT reach it through a
+      #   shared inode.
+      #
+      # Getting this wrong is what previously broke home-manager (cannot write
+      # ~/.ssh/config as uid 1000) and ssh (cannot read root-owned private
+      # keys), twice. tmpfiles-setup is part of sysinit.target and
+      # home-manager-tomwrw.service is wantedBy multi-user.target, so the live
+      # fixes land before home-manager runs with no explicit ordering.
+      systemd.tmpfiles.settings."10-tomwrw-seed" =
+        let
+          owned = mode: {
+            d = {
+              user = "tomwrw";
+              group = "users";
+              inherit mode;
+            };
+          };
+          # Mode is left alone - justfile's 'install -Dm600/-m644' already sets
+          # it; this only adopts ownership.
+          adopted = {
+            z = {
+              user = "tomwrw";
+              group = "users";
+            };
+          };
+          entries = prefix: {
+            "${prefix}/home/tomwrw" = owned "0700";
+            "${prefix}/home/tomwrw/.ssh" = owned "0700";
+            "${prefix}/home/tomwrw/.config" = owned "0755";
+            "${prefix}/home/tomwrw/.config/sops" = owned "0700";
+            "${prefix}/home/tomwrw/.config/sops/age" = owned "0700";
+            "${prefix}/home/tomwrw/.config/sops/age/keys.txt" = adopted;
+            "${prefix}/home/tomwrw/.ssh/id_ed25519*" = adopted;
+          };
+        in
+        entries "/persist" // entries "";
     };
 
     # den's 'user' class forwards these fields directly onto
@@ -115,6 +133,25 @@ in
       systemd.user.startServices = "sd-switch";
       programs.home-manager.enable = true;
       home.sessionPath = [ "$HOME/.local/bin" ];
+
+      # / is rolled back to a blank snapshot on every boot and /home lives
+      # inside it, so a home directory keeps only what is listed here or in an
+      # app aspect's own home.persistence block.
+      #
+      # hideMounts is per-STORE: the same option on
+      # environment.persistence."/persist" (core/impermanence.nix) does NOT
+      # cover these entries, so it has to be set again here. Setting it here
+      # covers every aspect's entries, since they all share this store.
+      home.persistence."/persist" = {
+        hideMounts = true;
+        directories = [
+          "Documents"
+          "Downloads"
+          "Pictures"
+          "Videos"
+          "Music"
+        ];
+      };
 
       programs.git.settings.user.name = "tomwrw";
       programs.git.settings.user.email = email;

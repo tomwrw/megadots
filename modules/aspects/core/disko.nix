@@ -7,21 +7,20 @@
 
   den.aspects.core.disko =
     { host, ... }:
+    let
+      # The name disko gives the opened LUKS mapping below. Bound once so the
+      # postCreateHook and the 'content.name' cannot drift apart.
+      luksName = "crypted";
+    in
     {
       nixos = _: {
         imports = [ inputs.disko.nixosModules.disko ];
 
-        boot.tmp.cleanOnBoot = true;
+        # No boot.tmp.cleanOnBoot: / is restored from a blank snapshot on every
+        # boot (core.ephemeral-btrfs), so /tmp is already empty by the time
+        # anything could clean it.
 
         disko.devices = {
-          nodev."/" = {
-            fsType = "tmpfs";
-            mountOptions = [
-              "defaults"
-              "size=${host.disk.tmpfsSize}"
-              "mode=755"
-            ];
-          };
           disk = {
             main = {
               type = "disk";
@@ -43,7 +42,7 @@
                     size = "100%";
                     content = {
                       type = "luks";
-                      name = "crypted";
+                      name = luksName;
                       # Everything must go through 'settings', not
                       # 'extraOpenArgs': disko passes settings straight to
                       # boot.initrd.luks.devices.<name>, whereas extraOpenArgs
@@ -63,7 +62,30 @@
                       content = {
                         type = "btrfs";
                         extraArgs = [ "-f" ];
+
+                        # Snapshot the volume read-only while it is still empty.
+                        # core.ephemeral-btrfs restores this on every boot, so it
+                        # has to be taken here, at format time - a snapshot taken
+                        # any later already contains the installed system.
+                        postCreateHook = ''
+                          mount -t btrfs /dev/mapper/${luksName} /mnt
+                          btrfs subvolume snapshot -r /mnt /mnt/root-blank
+                          umount /mnt
+                        '';
+
                         subvolumes = {
+                          # Rolled back to root-blank on every boot. /home lives
+                          # inside it deliberately: user state is opt-in through
+                          # home.persistence, the same way system state is opt-in
+                          # through core.impermanence.
+                          "/root" = {
+                            mountpoint = "/";
+                            mountOptions = [
+                              "subvol=root"
+                              "compress=zstd"
+                              "noatime"
+                            ];
+                          };
                           "/nix" = {
                             mountpoint = "/nix";
                             mountOptions = [
@@ -76,14 +98,6 @@
                             mountpoint = "/persist";
                             mountOptions = [
                               "subvol=persist"
-                              "compress=zstd"
-                              "noatime"
-                            ];
-                          };
-                          "/home" = {
-                            mountpoint = "/home";
-                            mountOptions = [
-                              "subvol=home"
                               "compress=zstd"
                               "noatime"
                             ];
@@ -105,8 +119,10 @@
           };
         };
 
+        # impermanence asserts this itself, but state it here too: this is where
+        # the mount is declared, and activation reads the sops age key from
+        # /persist before systemd starts.
         fileSystems."/persist".neededForBoot = true;
-        fileSystems."/home".neededForBoot = true;
       };
     };
 }
