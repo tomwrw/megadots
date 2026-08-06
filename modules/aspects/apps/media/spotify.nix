@@ -37,7 +37,6 @@
         ];
       };
 
-      # Login session only - low urgency, a wrong path costs a re-login.
       home.persistence."/persist".directories = [ ".config/spotify" ];
     };
 }

@@ -59,7 +59,7 @@ in
       # BOTH sides are listed, deliberately, and dropping either one breaks a
       # different boot:
       #
-      # - /persist/... is where `just deploy` seeds these as root, and where
+      # - /persist/... is where 'just deploy' seeds these as root, and where
       #   they survive the rollback. impermanence never repairs an existing
       #   persist directory; when one is already there it copies that
       #   directory's owner and mode ONTO the live path

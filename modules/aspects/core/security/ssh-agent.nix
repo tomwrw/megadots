@@ -44,7 +44,7 @@ _: {
         };
       };
 
-      # Everything `just deploy` seeds into /persist/home/<user> via
+      # Everything 'just deploy' seeds into /persist/home/<user> via
       # nixos-anywhere --extra-files, plus known_hosts. This list must stay in
       # step with that recipe's key loop: a seeded file with no entry here lands
       # in /persist and is never bind-mounted into the home, which looks exactly

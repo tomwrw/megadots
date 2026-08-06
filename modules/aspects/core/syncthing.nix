@@ -78,10 +78,6 @@
           # come from sops and devices/folders are overridden declaratively, so
           # losing that costs a full rescan and re-index rather than data - but
           # on a large folder that is not cheap.
-          #
-          # UNVERIFIED: syncthing 2.x defaults its config and database to
-          # $XDG_STATE_HOME, and no --home is passed here so this follows the
-          # package default. Confirm with `ls ~/.local/state` after first start.
           home.persistence."/persist".directories = [
             "Syncthing"
             ".local/state/syncthing"

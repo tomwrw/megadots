@@ -22,9 +22,6 @@ _: {
     # home, not /var/lib. Delivered through provides.to-users because this
     # aspect is host-scope and den drops a bare homeManager key there.
     provides.to-users.homeManager = _: {
-      # UNVERIFIED: holds the paired-client certificates. Losing it does not
-      # break anything visibly - Sunshine just comes up with no clients paired
-      # and every device has to re-enter its PIN.
       home.persistence."/persist".directories = [ ".config/sunshine" ];
     };
 

@@ -218,18 +218,18 @@ kernel params actually present, and user-scope firewall quirks reaching the host
 CI runs the same checks, but splits them: the evaluation-only ones run on every push,
 while the full host builds run on `main`, pull requests and manual dispatch. `flatmate`
 compiles a patched linux-surface kernel that no public cache serves, so its build is
-cached across runs by store path rather than repeated — see
+cached across runs by store path rather than repeated - see
 [check.yml](.github/workflows/check.yml).
 
 ### Bootstrapping a host from scratch.
 
-Run `just check-bootstrap <name>` at any point — it verifies every one of the following
+Run `just check-bootstrap <name>` at any point - it verifies every one of the following
 and refuses to call the host ready until they are all in place. `just deploy` runs it
 first, so a missing file fails *before* anything is partitioned rather than half way
 through.
 
 1. **USB key material**, at the layout the `deploy` recipe expects. Note the SSH keys as
-   well as the age keys — `deploy` seeds all of them and aborts on any that is missing:
+   well as the age keys - `deploy` seeds all of them and aborts on any that is missing:
 
    ```
    <usb>/hosts/<hostname>/age.txt          # host age key  -> /persist/var/lib/sops-nix/key.txt
@@ -241,13 +241,13 @@ through.
 
    The `usb` path itself is a variable at the top of the [justfile](justfile).
 
-2. **A `creation_rules` block for the new host** in [.sops.yaml](.sops.yaml) — one per
+2. **A `creation_rules` block for the new host** in [.sops.yaml](.sops.yaml) - one per
    secrets file, listing its recipients. Adding a key to the recipient list is not enough;
    without its own rule the host's secrets are encrypted to nobody. Then run
    `just secrets-updatekeys`.
 3. **`secrets/hosts/<name>.yaml`** with at least `users/<user>/password`. Evaluation
    interpolates this filename from the hostname, so a missing file fails the build.
-4. **`syncthing/<name>/{key,cert,guiPassword}` in `secrets/users/<user>.yaml`** — the
+4. **`syncthing/<name>/{key,cert,guiPassword}` in `secrets/users/<user>.yaml`** - the
    syncthing secrets are keyed by *host* but live in the *user* file
    ([core/syncthing.nix](modules/aspects/core/syncthing.nix)). Miss these and the host
    builds fine, then Home Manager activation fails on the new machine.
@@ -267,7 +267,7 @@ Fork it, then: replace `modules/users/` and `modules/hosts/` with your own, empt
 roster in `modules/den/hosts.nix`, regenerate `.sops.yaml` with your own age keys, and
 replace `assets/` (the wallpapers are not covered by this repo's licence - see
 [LICENSE](LICENSE)). The parts worth keeping are `modules/aspects/`,
-`modules/den/quirks.nix` and `modules/flake/checks.nix` — no aspect names a host or a
+`modules/den/quirks.nix` and `modules/flake/checks.nix` - no aspect names a host or a
 user, so they port across unchanged.
 
 ## Community.
