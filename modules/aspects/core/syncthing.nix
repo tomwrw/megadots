@@ -3,12 +3,12 @@
   den.aspects.core.syncthing =
     { host, ... }:
     {
-      # 22000 is sync traffic (TCP + QUIC), 21027 is local discovery. LAN-only
-      # by construction: relays and global announce are disabled below.
+      # 22000 is sync traffic, 21027 is local discovery. LAN only, since I've
+      # turned off relays and global announce below.
       #
-      # This aspect is included at USER scope, so these ports only reach
-      # core.networking because den.policies.firewall exposes the quirk upward
-      # (modules/den/quirks.nix). Without that policy they vanish silently.
+      # This aspect comes in at user scope, so these ports only reach
+      # core.networking because den.policies.firewall exposes the quirk
+      # upward. Without that policy they just vanish.
       firewall = {
         tcp = [ 22000 ];
         udp = [
@@ -24,10 +24,8 @@
           ...
         }:
         let
-          # '//' would silently drop same-named hosts across two different
-          # 'system' values (e.g. a same-named host added under
-          # aarch64-linux) - purely theoretical with only x86_64-linux in
-          # the fleet today.
+          # '//' would drop a host that shared a name across two 'system'
+          # values. Only theoretical while everything I own is x86_64.
           meshHosts = lib.filterAttrs (_: h: h.syncthing.enable && h.syncthing.id != "") (
             lib.foldl' (acc: sys: acc // den.hosts.${sys}) { } (builtins.attrNames den.hosts)
           );
@@ -73,11 +71,9 @@
             };
           };
 
-          # The replicated tree is real user data and has to outlive the boot
-          # rollback. The state directory holds the index database: key and cert
-          # come from sops and devices/folders are overridden declaratively, so
-          # losing that costs a full rescan and re-index rather than data - but
-          # on a large folder that is not cheap.
+          # The synced tree is real data and has to survive the rollback. The
+          # state dir is just the index database, so losing that costs a
+          # rescan rather than data, but that's slow on a big folder.
           home.persistence."/persist".directories = [
             "Syncthing"
             ".local/state/syncthing"

@@ -5,14 +5,14 @@ _: {
       homeManager =
         { config, ... }:
         {
-          # Shell integration is on by default via
-          # home.shell.enableShellIntegration, so it is not restated here.
+          # Shell integration is already on through
+          # home.shell.enableShellIntegration, so I don't repeat it here.
           programs.fzf.enable = true;
 
           programs.zsh = {
-            # programs.zsh.enable is not set here: den.batteries.user-shell
-            # "zsh" (see users/tomwrw) already enables it at both the NixOS and
-            # Home Manager level. Setting it again just hides where it comes
+            # No programs.zsh.enable here. den.batteries.user-shell "zsh" in
+            # users/tomwrw already turns it on at both the NixOS and Home
+            # Manager level, and setting it again just hides where it comes
             # from.
             dotDir = "${config.xdg.configHome}/zsh";
             autosuggestion.enable = true;
@@ -22,8 +22,8 @@ _: {
               nix-b = "nixos-rebuild build --flake .#${host.name} --sudo";
               nix-clean = "nix-collect-garbage -d --delete-old && sudo nix-collect-garbage -d --delete-old";
               hstat = "curl -o /dev/null --silent --head --write-out '%{http_code}\n' $1";
-              # ls/l/la come from programs.eza (apps/shell/cli-apps.nix) - eza was
-              # installed but never actually used while these aliased coreutils.
+              # ls, l and la come from programs.eza in apps/shell/cli-apps.nix.
+              # eza was installed but never used while these aliased coreutils.
               psf = "ps -aux | grep";
               lsf = "ls | grep";
               nsp = "nix search nixpkgs";
@@ -58,9 +58,9 @@ _: {
               gstp = "git stash pop";
             };
             history = {
-              # Same path as before, expressed through xdg.dataHome to match
-              # dotDir above. Filename keeps its leading dot deliberately -
-              # renaming it would orphan the existing history file.
+              # Same path as before, written through xdg.dataHome to match
+              # dotDir above. The filename keeps its leading dot on purpose,
+              # renaming it would orphan my existing history.
               path = "${config.xdg.dataHome}/zsh/.zsh_history";
               size = 8000;
             };
@@ -83,11 +83,11 @@ _: {
             };
           };
 
-          # Shell history. Everything else here - the zshrc, the aliases, the
-          # starship config - is regenerated on activation, but this is the one
-          # thing zsh writes at runtime, and .local/share is inside the home
-          # that gets rolled back. Path taken from programs.zsh.history.path
-          # rather than assumed: dotDir moves it off the ~/.zsh_history default.
+          # Shell history. Everything else here, the zshrc, the aliases, the
+          # starship config, gets rewritten on activation, but this is the one
+          # thing zsh writes at runtime and .local/share is inside the home
+          # that gets rolled back. Path read off programs.zsh.history.path
+          # rather than guessed, since dotDir moves it off ~/.zsh_history.
           home.persistence."/persist".files = [ ".local/share/zsh/.zsh_history" ];
         };
     };

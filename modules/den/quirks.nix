@@ -27,10 +27,10 @@
       LAN-scoped firewall ports an aspect needs: { tcp = [ ... ]; udp = [ ... ]; }.
       Aggregated by core.networking onto host.network.lanInterface.
 
-      There is deliberately no per-entry interface or "global" escape hatch:
-      LAN-scoping is the invariant this quirk exists to encode. Aspects must
-      never set networking.firewall.* directly, nor a module's own
-      openFirewall option, which opens the port on every interface.
+      There is no per-entry interface and no "global" escape hatch, because
+      LAN-only is the whole point of this quirk. Aspects should never set
+      networking.firewall.* themselves, or a module's own openFirewall option,
+      which opens the port on every interface.
     '';
   };
 
@@ -41,13 +41,12 @@
     in
     [ (pipe.from "firewall" [ pipe.expose ]) ];
 
-  # Every quirk consumed at host scope needs an expose policy registered here,
-  # or the same quirk emitted from a USER-scope aspect is silently discarded -
-  # no error, no warning, just missing config. All current 'persist' producers
-  # happen to be host-scope, so adding that one changes nothing today; it exists
-  # so persisting a path from an app aspect (which are all user-scope) works the
-  # first time rather than failing mysteriously. 'firewall' genuinely needs it:
-  # core.syncthing is included from the user aspect and opens ports 22000/21027.
+  # Any quirk I consume at host scope needs an expose policy here, or the same
+  # quirk coming from a user-scope aspect just vanishes. No error, no warning,
+  # just missing config. All the 'persist' producers are host-scope today so
+  # that one changes nothing yet, it's there so persisting from an app aspect
+  # works first time. 'firewall' really does need it, since core.syncthing
+  # comes in from the user aspect and opens 22000 and 21027.
   den.schema.user.includes = [
     den.policies.unfree
     den.policies.persist

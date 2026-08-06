@@ -7,8 +7,8 @@ _: {
         pkgs.proton-vpn
       ];
 
-      # UNVERIFIED: session/login state for both apps. Confirm with
-      # `ls ~/.config` after first run.
+      # UNVERIFIED: session and login state for both apps. Check 'ls ~/.config'
+      # after first run.
       home.persistence."/persist".directories = [
         ".config/Proton"
       ];

@@ -8,17 +8,16 @@
   den.aspects.core.disko =
     { host, ... }:
     let
-      # The name disko gives the opened LUKS mapping below. Bound once so the
-      # postCreateHook and the 'content.name' cannot drift apart.
+      # Name of the opened LUKS mapping. Bound once so the postCreateHook and
+      # content.name below can't drift apart.
       luksName = "crypted";
     in
     {
       nixos = _: {
         imports = [ inputs.disko.nixosModules.disko ];
 
-        # No boot.tmp.cleanOnBoot: / is restored from a blank snapshot on every
-        # boot (core.ephemeral-btrfs), so /tmp is already empty by the time
-        # anything could clean it.
+        # No boot.tmp.cleanOnBoot. / comes back blank every boot anyway, so
+        # there's nothing for it to clean.
 
         disko.devices = {
           disk = {
@@ -43,30 +42,28 @@
                     content = {
                       type = "luks";
                       name = luksName;
-                      # Everything must go through 'settings', not
-                      # 'extraOpenArgs': disko passes settings straight to
-                      # boot.initrd.luks.devices.<name>, whereas extraOpenArgs
-                      # is only used by its install-time 'cryptsetup open'. The
-                      # perf flags used to live there and so were applied
-                      # exactly once, during nixos-anywhere, and never again at
-                      # boot - the generated crypttab read 'crypted <dev> - discard'.
+                      # These go in 'settings', not 'extraOpenArgs'. disko
+                      # passes settings through to boot.initrd.luks.devices,
+                      # but extraOpenArgs only applies to its install-time
+                      # cryptsetup open. The perf flags were in the wrong one,
+                      # so they applied during the deploy and never again.
                       settings = {
-                        # TRIM leaks unused-block patterns on SSDs, which can
-                        # reveal filesystem structure. Accepted trade-off for
-                        # SSD longevity and performance.
+                        # TRIM leaks which blocks are unused, which gives away
+                        # something about the filesystem. Worth it for SSD
+                        # life and speed.
                         allowDiscards = true;
-                        # Skip dm-crypt's read/write queues. On NVMe the queues
-                        # cost more in latency than they buy in throughput.
+                        # Skip dm-crypt's queues. On NVMe they cost more in
+                        # latency than they buy in throughput.
                         bypassWorkqueues = true;
                       };
                       content = {
                         type = "btrfs";
                         extraArgs = [ "-f" ];
 
-                        # Snapshot the volume read-only while it is still empty.
-                        # core.ephemeral-btrfs restores this on every boot, so it
-                        # has to be taken here, at format time - a snapshot taken
-                        # any later already contains the installed system.
+                        # Snapshot the volume read-only while it's still empty.
+                        # core.ephemeral-btrfs restores this every boot, so it
+                        # has to be taken at format time. Any later and it
+                        # already has the system in it.
                         postCreateHook = ''
                           mount -t btrfs /dev/mapper/${luksName} /mnt
                           btrfs subvolume snapshot -r /mnt /mnt/root-blank
@@ -74,10 +71,10 @@
                         '';
 
                         subvolumes = {
-                          # Rolled back to root-blank on every boot. /home lives
-                          # inside it deliberately: user state is opt-in through
-                          # home.persistence, the same way system state is opt-in
-                          # through core.impermanence.
+                          # Rolled back to root-blank every boot. /home sits
+                          # inside it on purpose, so user state is opt-in
+                          # through home.persistence the same way system state
+                          # is through core.impermanence.
                           "/root" = {
                             mountpoint = "/";
                             mountOptions = [
@@ -119,9 +116,9 @@
           };
         };
 
-        # impermanence asserts this itself, but state it here too: this is where
-        # the mount is declared, and activation reads the sops age key from
-        # /persist before systemd starts.
+        # impermanence asserts this too, but it belongs here where the mount is
+        # declared. Activation reads the sops age key off /persist, so it has
+        # to be mounted in the initrd.
         fileSystems."/persist".neededForBoot = true;
       };
     };

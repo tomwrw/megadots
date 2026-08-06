@@ -5,12 +5,12 @@ _: {
       qemu.swtpm.enable = true;
     };
 
-    # No spice-vdagentd / spice-autorandr here: those are SPICE *guest* agents,
-    # meant to run inside a VM so the SPICE client can drive its clipboard and
-    # resolution. On the host they sit in graphical.target doing nothing. The
-    # client side is virt-viewer/virt-manager, below.
+    # No spice-vdagentd or spice-autorandr. Those are SPICE guest agents, they
+    # belong inside a VM so the client can drive its clipboard and resolution.
+    # On the host they just sit in graphical.target doing nothing. The client
+    # side is virt-manager, below.
     #
-    # package is not set: pkgs.virt-manager is already the module default.
+    # No package set, pkgs.virt-manager is already the module default.
     programs.virt-manager.enable = true;
   };
 
@@ -18,17 +18,16 @@ _: {
     "/var/cache/libvirt"
     "/var/lib/libvirt"
     # The local CA that issues vTPM endorsement certificates. Per-VM swtpm
-    # state lives under /var/lib/libvirt, but this CA does not - without it
-    # every vTPM gets a fresh EK certificate on each boot.
+    # state sits under /var/lib/libvirt but this CA doesn't, and without it
+    # every vTPM gets a fresh EK certificate each boot.
     "/var/lib/swtpm-localca"
-    # Deliberately NOT /var/lib/qemu: nixpkgs' libvirtd module repopulates it
-    # with 'L+' tmpfiles symlinks into the store on every boot, so persisting
-    # it only accumulates dangling links as the store garbage-collects.
+    # Not /var/lib/qemu. The libvirtd module refills it with tmpfiles symlinks
+    # into the store every boot, so persisting it just collects dangling links
+    # as the store gets collected.
   ];
 
-  # The aspect that creates the libvirtd group grants it. Only hosts
-  # including `virtualisation.libvirt` deliver this, so no host-existence
-  # guard is needed at the user site.
+  # The aspect that makes the libvirtd group is the one that grants it. Only
+  # hosts including this aspect deliver it, so the user side needs no guard.
   den.aspects.virtualisation.libvirt.provides.to-users =
     { host, user, ... }:
     {

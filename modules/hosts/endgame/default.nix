@@ -11,10 +11,10 @@
       den.aspects.core.linux-kernel
     ];
 
-    # nixos-generate-config output for this machine. Imported directly rather
-    # than through a wrapper aspect in aspects/hardware/: it is not reusable,
-    # it belongs to this host, and it sits right next to this file. The '_'
-    # prefix is what keeps import-tree from picking it up as a module of its own.
+    # nixos-generate-config output for this machine. Imported straight in
+    # rather than wrapped in an aspect under aspects/hardware/, because it
+    # isn't reusable, it belongs to this host and it sits next to this file.
+    # The '_' prefix keeps import-tree from picking it up as its own module.
     nixos.imports = [ ./_hardware.nix ];
   };
 }

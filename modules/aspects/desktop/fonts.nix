@@ -25,10 +25,9 @@ in
         fonts.packages = fontPkgs pkgs;
       };
 
-    # Opt-in only (e.g. a standalone den.homes with no system font path).
-    # Never included by 'roles.base' - a bare homeManager block on a
-    # host-scope-only aspect is inert, so this is a named sub-aspect instead
-    # of a silent no-op.
+    # Opt-in only, for something like a standalone den.homes with no system
+    # font path. roles.base never includes it. A bare homeManager block on a
+    # host-scope aspect does nothing, so this is a named sub-aspect instead.
     provides.home.homeManager =
       { pkgs, ... }:
       {

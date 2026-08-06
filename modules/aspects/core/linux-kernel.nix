@@ -9,11 +9,10 @@
         { pkgs, ... }:
         let
           inherit (host.linux-kernel) channel optimization;
-          # NOTE: "server" is the one value that ignores `channel` - upstream
-          # ships a single linuxPackages-cachyos-server-lto with no per-channel
-          # variant. The schema documents the two options independently, so the
-          # assertion below makes that interaction fail loudly instead of
-          # silently handing a host the latest kernel it did not ask for.
+          # 'server' is the one value that ignores channel, since upstream only
+          # ships linuxPackages-cachyos-server-lto. The assertion below makes
+          # that combination fail loudly instead of handing a host a kernel it
+          # didn't ask for.
           kernelName =
             if optimization == "server" then
               "linuxPackages-cachyos-server-lto"
@@ -34,12 +33,11 @@
             inputs.nix-cachyos-kernel.overlays.pinned
           ];
 
-          # Trusts attic.xuyh0120.win/lantian to supply pre-built kernel
-          # binaries. This aspect is only included on endgame - the one
-          # Secure Boot (lanzaboote) host - so a compromised cache could
-          # hand it a kernel that its own boot chain would still sign and
-          # boot without complaint. Accepted trade-off for not compiling
-          # zen4/LTO kernels locally on every kernel bump.
+          # Trusts attic.xuyh0120.win/lantian for prebuilt kernels. Only
+          # endgame takes this aspect, and endgame is my Secure Boot host, so
+          # a bad cache could hand it a kernel its own boot chain would
+          # happily sign. I'll take that over compiling a zen4 LTO kernel on
+          # every bump.
           nix.settings.substituters = [ "https://attic.xuyh0120.win/lantian" ];
           nix.settings.trusted-public-keys = [ "lantian:EeAUQ+W+6r7EtwnmYjeVwx5kOGEBpjlBfPlzGlTNvHc=" ];
 

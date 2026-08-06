@@ -1,10 +1,10 @@
 _: {
   den.aspects.apps.gaming.sunshine = {
     nixos = _: {
-      # Sunshine's virtual gamepad/keyboard needs uinput. This is its only
-      # consumer in the fleet, so it lives here rather than in
-      # hardware/hardware.nix, where it was loading the module and creating a
-      # uinput group on hosts that have no use for either.
+      # Sunshine's virtual gamepad and keyboard need uinput, and nothing else
+      # of mine does, so it lives here and not in hardware/hardware.nix where
+      # it was loading the module and making a uinput group on hosts with no
+      # use for either.
       hardware.uinput.enable = true;
 
       services.sunshine = {
@@ -18,15 +18,15 @@ _: {
 
     };
 
-    # services.sunshine is a systemd USER service, so its state lives in the
-    # home, not /var/lib. Delivered through provides.to-users because this
-    # aspect is host-scope and den drops a bare homeManager key there.
+    # services.sunshine is a systemd user service, so its state is in my home
+    # and not /var/lib. Delivered through provides.to-users because this aspect
+    # is host scope and den drops a bare homeManager block there.
     provides.to-users.homeManager = _: {
       home.persistence."/persist".directories = [ ".config/sunshine" ];
     };
 
-    # LAN-scoped instead of openFirewall's global allow. Ports are
-    # sunshine's own fixed set, matching what openFirewall = true opens.
+    # LAN only, instead of openFirewall opening these everywhere. Same fixed
+    # set of ports openFirewall = true would have opened.
     firewall = {
       tcp = [
         47984

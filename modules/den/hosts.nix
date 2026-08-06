@@ -1,17 +1,17 @@
 { config, lib, ... }:
 {
-  # Exposed so out-of-band tooling (my justfile) can read per-host data
-  # (e.g. disk.id) without duplicating it or evaluating a full nixosConfiguration.
+  # Exposed so my justfile can read per-host data like disk.id without
+  # duplicating it or evaluating a whole nixosConfiguration.
   #
-  # NOTE: this is NOT serialisable - the host submodule carries den's resolved
-  # aspect functors, so 'nix eval --json .#den.hosts' fails with "cannot convert
-  # a function to JSON". Fine for 'nix repl' and for reading a single leaf with
-  # 'nix eval --raw', but anything that needs JSON must read 'flake.roster' below.
+  # Not serialisable. The host submodule carries den's resolved aspect
+  # functors, so 'nix eval --json' on it fails. Fine in 'nix repl' or for a
+  # single leaf with --raw, but anything wanting JSON should read the roster
+  # below.
   flake.den.hosts = config.den.hosts;
 
-  # A narrowed, JSON-safe projection of the roster: plain scalars only. This is
-  # the tooling contract (justfile recipes, flake checks) - keeping it explicit
-  # means adding a schema option never silently changes what tooling sees.
+  # The same roster narrowed to plain scalars, which is what my justfile and
+  # the flake checks actually read. Listing the fields by hand means adding a
+  # schema option never quietly changes what tooling sees.
   flake.roster = lib.mapAttrs (
     _: hosts:
     lib.mapAttrs (_: host: {

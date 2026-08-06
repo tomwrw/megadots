@@ -18,10 +18,9 @@ _: {
         environment.systemPackages = [ pkgs.game-devices-udev-rules ];
       };
 
-    # Steam's state is user-owned, but this aspect is included at HOST scope
-    # (roles/gaming.nix), and a bare homeManager key on a host-scope aspect is
-    # silently dropped by den. provides.to-users is the delivery path that
-    # actually reaches the user.
+    # Steam's state belongs to me, but roles/gaming.nix includes this aspect at
+    # host scope, and den drops a bare homeManager block there.
+    # provides.to-users is the path that actually reaches my home.
     provides.to-users.homeManager = _: {
       home.persistence."/persist".directories = [
         ".steam"

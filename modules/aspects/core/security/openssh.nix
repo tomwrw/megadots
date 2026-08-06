@@ -3,8 +3,8 @@ _: {
     nixos = _: {
       services.openssh = {
         enable = true;
-        # Defaults to true upstream - must be explicit false, not just
-        # omitted, or sshd's own default reopens port 22 globally.
+        # Upstream defaults this to true, so it has to be an explicit false or
+        # sshd reopens port 22 on every interface.
         openFirewall = false;
         settings = {
           PasswordAuthentication = false;
@@ -18,11 +18,10 @@ _: {
           ClientAliveCountMax = 2;
         };
 
-        # Host identity lives on /persist because / is a tmpfs. Stating it
-        # here rather than in the impermanence aspect means a host that takes
-        # this aspect cannot end up silently regenerating its host key (and
-        # tripping every client's known_hosts) just because it skipped the
-        # state aspect. Listing only ed25519 also drops the default RSA key.
+        # Host keys live on /persist because / gets wiped every boot. Setting
+        # the path here and not in the impermanence aspect means a host can't
+        # lose its identity, and break every known_hosts, just by skipping that
+        # aspect. Only listing ed25519 also drops the default RSA key.
         hostKeys = [
           {
             type = "ed25519";
@@ -32,8 +31,8 @@ _: {
       };
     };
 
-    # LAN-scoped instead of openFirewall's global allow. core.networking
-    # aggregates this onto the host's LAN interface.
+    # LAN only, instead of openFirewall opening it everywhere. core.networking
+    # puts it on the right interface.
     firewall.tcp = [ 22 ];
   };
 }

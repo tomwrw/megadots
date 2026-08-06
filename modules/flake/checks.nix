@@ -1,10 +1,10 @@
 { config, lib, ... }:
 let
-  # Turn a list of NixOS-style { assertion; message; } into a derivation that
-  # fails at BUILD time rather than at eval time. Throwing during eval would
-  # make every flake command unusable (including 'nix eval' on the thing you are
-  # trying to debug); this way a broken invariant surfaces in 'nix flake check'
-  # only, with all failures reported at once instead of the first one.
+  # Turns a list of { assertion; message; } into a derivation that fails at
+  # build time instead of eval time. Throwing during eval breaks every flake
+  # command, including the 'nix eval' I'd be using to debug it. This way a
+  # broken invariant only shows up in 'nix flake check', and I get all the
+  # failures at once instead of just the first.
   mkAssertions =
     pkgs: name: assertions:
     let
@@ -23,19 +23,19 @@ let
         ''
     );
 
-  # Fleet-wide invariants. These encode decisions that are easy to undo by
-  # accident and expensive to notice: a firewall port opened globally instead of
-  # on the LAN interface, a host that forgot 'roles.base' and therefore has no
-  # persistence or bootloader, a hardening kernel param silently dropped by the
-  # module system's list-priority rules (see hardware/surface-pro.nix).
+  # Invariants across both my hosts. These are the decisions that are easy to
+  # undo by accident and expensive to notice: a firewall port opened globally
+  # instead of on the LAN interface, a host that forgot 'roles.base' and so has
+  # no persistence or bootloader, a hardening kernel param dropped by the
+  # module system's list priority rules (see hardware/surface-pro.nix).
   #
-  # Grown alongside the config: a new invariant lands in the same commit as the
+  # These grow with the config. A new invariant goes in the same commit as the
   # change that makes it true, so 'nix flake check' is green at every commit.
 
-  # Deliberately hand-copied from core/security/hardening.nix rather than
-  # imported from it: a check that reads the same value it is checking asserts
-  # only that Nix can compare a list to itself. Written out here, deleting a
-  # param from hardening.nix makes this list disagree and the check fails.
+  # Copied out of hardening.nix by hand, not imported. A check that reads the
+  # same value it's checking only proves Nix can compare a list to itself.
+  # Written out here, dropping a param from hardening.nix makes the two
+  # disagree and the check fails.
   hardeningParams = [
     "init_on_alloc=1"
     "init_on_free=1"
@@ -51,24 +51,23 @@ let
       bootloaders = [
         cfg.boot.loader.systemd-boot.enable
         cfg.boot.loader.grub.enable
-        # 'or false': the lanzaboote module is only imported by the host that
-        # includes core.boot.lanzaboote, so the option does not exist elsewhere.
+        # 'or false' because only the host including core.boot.lanzaboote
+        # imports that module, so the option doesn't exist anywhere else.
         (cfg.boot.lanzaboote.enable or false)
       ];
       missingHardening = lib.subtractLists cfg.boot.kernelParams hardeningParams;
       scoped = lib.attrValues cfg.networking.firewall.interfaces;
       scopedTCP = lib.concatMap (i: i.allowedTCPPorts) scoped;
-      # Syncthing is configured per-user through Home Manager, so its ports
-      # only reach the host firewall via den.policies.firewall's pipe.expose.
+      # Syncthing is set up per user through Home Manager, so its ports only
+      # reach the host firewall through den.policies.firewall.
       syncthingUsers = lib.filterAttrs (_: u: u.services.syncthing.enable) cfg.home-manager.users;
 
-      # A home.persistence path that no longer matches where the app actually
-      # writes fails completely silently - the state is simply gone after every
-      # boot, with no error anywhere. Firefox is the case where the path is not
-      # a constant we can eyeball: Home Manager derives programs.firefox.configPath
-      # (currently the XDG '.config/mozilla/firefox', historically '.mozilla/firefox')
-      # and nothing in this repo sets it, so an upstream change moves the profile
-      # out from under the persistence entry. Assert the two agree.
+      # A home.persistence path that no longer matches where the app writes
+      # gives no error at all, the state is just gone after every boot.
+      # Firefox is the one where I can't eyeball the path: Home Manager works
+      # out programs.firefox.configPath itself and nothing here sets it, so an
+      # upstream change moves my profile out from under the entry. Caught me
+      # once already, hence this.
       firefoxUsersMissingPersist = lib.attrNames (
         lib.filterAttrs (
           _: u:
@@ -79,33 +78,31 @@ let
         ) cfg.home-manager.users
       );
 
-      # Options that only EXIST because roles.base imports the module declaring
-      # them (impermanence, disko's /persist, sops-nix). Reading them bare on a
-      # host that skipped roles.base aborts the whole check during EVALUATION
-      # with "attribute 'persistence' missing", printing none of the messages
-      # below - the opposite of what this file is for. Defaulting instead lets
-      # the assertion fail properly and say which host and why.
+      # These options only exist because roles.base imports the module that
+      # declares them. Read bare on a host that skipped roles.base, the whole
+      # check dies during eval with "attribute 'persistence' missing" and
+      # prints none of the messages below, which is the opposite of what I
+      # want. Defaulting lets the assertion fail properly and name the host.
       hasPersistence = cfg.environment.persistence."/persist".enable or false;
       persistNeededForBoot = cfg.fileSystems."/persist".neededForBoot or false;
       sopsSshKeyPaths = cfg.sops.age.sshKeyPaths or [ ];
 
-      # The two halves of the ephemeral root live in separate aspects
-      # (core.ephemeral-btrfs restores the snapshot, core.disko creates it and
-      # mounts subvol=root). Either one alone boots perfectly happily and simply
-      # never rolls anything back, so both are asserted.
+      # The ephemeral root is split across two aspects: core.ephemeral-btrfs
+      # restores the snapshot, core.disko creates it and mounts subvol=root.
+      # Either one on its own boots quite happily and never rolls back, so
+      # check for both.
       hasRollback = cfg.boot.initrd.systemd.services ? restore-root;
-      # Matched loosely on purpose: core/disko.nix states 'subvol=root' in
-      # mountOptions and disko appends its own 'subvol=/root' from the subvolume
-      # name, so both spellings are present and either alone is correct.
+      # Loose match on purpose. core/disko.nix sets 'subvol=root' in
+      # mountOptions and disko appends its own 'subvol=/root', so both
+      # spellings turn up and either one alone is correct.
       rootOnSubvol = lib.any (o: o == "subvol=root" || o == "subvol=/root") (
         cfg.fileSystems."/".options or [ ]
       );
 
-      # impermanence creates /var/lib/private 0755, but DynamicUser=true services
-      # require 0700 (nix-community/impermanence#254, still open). No service in
-      # this fleet uses DynamicUser today, so rather than carry Foundry's
-      # workaround - two tmpfiles rules plus an mkForce on systemd-tmpfiles-resetup
-      # - for a problem that does not exist here, this fires the day one appears.
+      # impermanence creates /var/lib/private 0755 but DynamicUser services
+      # need 0700 (impermanence#254, still open). Nothing I run uses
+      # DynamicUser today, so instead of carrying Foundry's workaround for a
+      # problem I don't have, this fires the day I do.
       dynamicUserServices = lib.attrNames (
         lib.filterAttrs (_: s: s.serviceConfig.DynamicUser or false) cfg.systemd.services
       );
@@ -142,15 +139,15 @@ let
       }
       {
         assertion = persistNeededForBoot;
-        message = "${name}: /persist must be neededForBoot - activation reads the sops age key from it before systemd starts";
+        message = "${name}: /persist must be neededForBoot - activation reads the sops age key off it in the initrd";
       }
       {
         assertion = cfg.boot.initrd.systemd.enable;
-        message = "${name}: boot.initrd.systemd.enable must stay true - impermanence's initrd bind mounts and the restore-root rollback service both depend on it, and both fail silently without it";
+        message = "${name}: boot.initrd.systemd.enable must stay true - impermanence's initrd bind mounts and the restore-root rollback service both depend on it, and both stop working without it";
       }
       {
         assertion = hasRollback;
-        message = "${name}: the restore-root rollback service is missing - the root subvolume would accumulate state forever, with nothing to indicate it, check core.ephemeral-btrfs";
+        message = "${name}: the restore-root rollback service is missing - the root subvolume would just keep accumulating state with nothing to show for it, check core.ephemeral-btrfs";
       }
       {
         assertion = rootOnSubvol;
@@ -198,15 +195,15 @@ let
         message = "${name}: ssh must be reachable on exactly one LAN-scoped interface - the firewall quirk consumer in core.networking is not producing rules";
       }
       {
-        # The canary for den.policies.firewall. core.syncthing is included at
-        # user scope, so if the expose policy is ever dropped these ports
-        # vanish from the host firewall silently, with no eval error.
+        # The canary for den.policies.firewall. core.syncthing comes in at
+        # user scope, so if I ever drop the expose policy these ports just
+        # disappear from the host firewall with no eval error.
         assertion = syncthingUsers == { } || lib.elem 22000 scopedTCP;
         message = "${name}: syncthing is enabled for ${toString (lib.attrNames syncthingUsers)} but port 22000 is not open - user-scope firewall quirks are not reaching the host, check den.policies.firewall";
       }
       {
         assertion = firefoxUsersMissingPersist == [ ];
-        message = "${name}: firefox is enabled for ${toString firefoxUsersMissingPersist} but programs.firefox.configPath is not in that user's home.persistence directories - the profile (Stylix theme, extensions, cookies) would be discarded on every boot, silently";
+        message = "${name}: firefox is enabled for ${toString firefoxUsersMissingPersist} but programs.firefox.configPath is not in that user's home.persistence directories - the profile (Stylix theme, extensions, cookies) would be thrown away on every boot with no error";
       }
       {
         assertion = missingHardening == [ ];
@@ -216,10 +213,10 @@ let
 
   rosterAssertions = name: host: [
     {
-      # Every LAN-scoped firewall rule hangs off this name, and a wrong one
-      # fails open-ended rather than loudly: the rules build fine and simply
-      # never match an interface. flatmate shipped with "REPLACE_ME" and had
-      # SSH, Syncthing and mDNS firewalled off as a result.
+      # Every LAN firewall rule hangs off this name, and getting it wrong
+      # fails quietly: the rules build fine and never match an interface.
+      # flatmate shipped with "REPLACE_ME" and had SSH, Syncthing and mDNS
+      # firewalled off because of it.
       assertion =
         host.lanInterface != ""
         && host.lanInterface != "REPLACE_ME"
@@ -247,24 +244,24 @@ in
     in
     {
       checks =
-        # Build every host for this system. Without this 'nix flake check' only
-        # ran treefmt and never noticed that a host stopped evaluating.
+        # Build every host for this system. Without this 'nix flake check'
+        # only ran treefmt and never noticed a host had stopped evaluating.
         #
-        # Host-named attrs come first so a host called "invariants" or "roster"
-        # cannot silently replace the check of the same name - the meta
-        # assertion below refuses that outright rather than leaving a green
-        # check that verifies nothing.
+        # Host names go first so a host called "invariants" or "roster" can't
+        # quietly replace the check of the same name. The assertion below
+        # refuses that outright instead of leaving a green check that tests
+        # nothing.
         (lib.mapAttrs (_: nixos: nixos.config.system.build.toplevel) hosts) // {
           invariants = mkAssertions pkgs "invariants" (
             [
               {
-                # Guards against this system having no hosts at all: mapAttrs
-                # over {} yields no assertions, mkAssertions emits `touch $out`,
-                # and the check passes having verified nothing. den falls back
-                # to lib.systems.flakeExposed when den.systems is empty, so this
-                # is one roster edit away rather than hypothetical.
+                # Catches this system having no hosts at all. mapAttrs over {}
+                # gives no assertions, mkAssertions just emits 'touch $out',
+                # and the check passes having tested nothing. den falls back to
+                # lib.systems.flakeExposed when den.systems is empty, so that's
+                # one roster edit away, not hypothetical.
                 assertion = hosts != { };
-                message = "checks.${system}: no hosts evaluate for this system, so every fleet invariant would pass vacuously";
+                message = "checks.${system}: no hosts evaluate for this system, so every invariant here would pass without testing anything";
               }
               {
                 assertion = !(hosts ? invariants) && !(hosts ? roster);

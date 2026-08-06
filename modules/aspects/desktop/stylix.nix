@@ -23,9 +23,9 @@
             profileNames = [ "default" ];
           };
           obsidian = {
-            # Stylix wants the vault's absolute path so it can drop a CSS
-            # snippet into it. Derived from homeDirectory rather than
-            # hardcoded, so this aspect stays free of any username.
+            # Stylix needs the vault's absolute path so it can drop a CSS
+            # snippet in. Built from homeDirectory instead of hardcoded, so
+            # there's no username in this aspect.
             vaultNames = [ "${config.home.homeDirectory}/Sync/Notes" ];
           };
           qt.enable = false;

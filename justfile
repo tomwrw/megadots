@@ -5,7 +5,7 @@ user := "tomwrw"
 default:
     @just --list
 
-# Verify every file `deploy HOST` needs is on the USB before it formats a disk.
+# Check every file 'deploy HOST' needs is on the USB before it formats a disk.
 check-bootstrap HOST:
     #!/usr/bin/env bash
     set -uo pipefail
@@ -39,13 +39,13 @@ deploy HOST: (check-bootstrap HOST)
     set -euo pipefail
     staging=$(mktemp -d)
     trap 'rm -rf "$staging"' EXIT
-    # Everything user-owned is seeded under /persist, not /home: / (and so
-    # /home) is a btrfs subvolume rolled back to a blank snapshot on every boot,
-    # and impermanence bind-mounts these back into the live home.
+    # Everything of mine is seeded under /persist and not /home, because /
+    # (and so /home) goes back to a blank snapshot every boot. impermanence
+    # bind mounts these into the live home.
     install -Dm600 {{ usb }}/hosts/{{ HOST }}/age.txt "$staging/persist/var/lib/sops-nix/key.txt"
     install -Dm600 {{ usb }}/users/{{ user }}/age.txt "$staging/persist/home/{{ user }}/.config/sops/age/keys.txt"
-    # FIDO2 sk key handles (useless without the physical token); seeding them
-    # avoids a post-deploy `ssh-keygen -K`.
+    # FIDO2 key handles, useless without the token, but seeding them saves
+    # an 'ssh-keygen -K' after the deploy.
     for k in id_ed25519 id_ed25519_sk_primary id_ed25519_sk_backup; do
       install -Dm600 {{ usb }}/users/{{ user }}/$k "$staging/persist/home/{{ user }}/.ssh/$k"
       install -Dm644 {{ usb }}/users/{{ user }}/$k.pub "$staging/persist/home/{{ user }}/.ssh/$k.pub"
@@ -69,9 +69,9 @@ rebuild HOST:
 diff HOST: (build HOST)
     nvd diff /run/current-system result
 
-# Read from the config that actually opens it at boot rather than rebuilt from
-# the disk id, so it survives repartitioning - the old version appended
-# "-part2" and would have pointed at the ESP if partition order ever changed.
+# Read from the config that actually opens it at boot instead of rebuilding it
+# from the disk id, so it survives repartitioning. The old version appended
+# "-part2" and would have pointed at the ESP if the partition order changed.
 
 # Print the LUKS device path for HOST.
 luks-device HOST:
@@ -99,7 +99,7 @@ unenroll-fido2 HOST:
 fmt:
     nix fmt
 
-# Build both hosts, the fleet invariants and the roster checks.
+# Build both hosts, the invariants and the roster checks.
 check:
     nix flake check
 
@@ -114,12 +114,12 @@ gc:
     nix-collect-garbage --delete-older-than 30d
     sudo nix-collect-garbage --delete-older-than 30d
 
-# Edit an encrypted secrets file in place, e.g. `just secrets-edit secrets/users/tomwrw.yaml`.
+# Edit an encrypted secrets file in place, e.g. 'just secrets-edit secrets/users/tomwrw.yaml'.
 secrets-edit FILE:
     sops {{ FILE }}
 
-# Left interactive (no -y) deliberately - this is exactly the moment to eyeball
-# the per-recipient diff sops prints before re-encrypting.
+# Left interactive on purpose. This is exactly the moment to look at the
+# per-recipient diff sops prints before it re-encrypts anything.
 
 # Re-sync sops recipients on every secrets file against .sops.yaml.
 secrets-updatekeys:

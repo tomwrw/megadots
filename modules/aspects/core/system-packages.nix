@@ -2,11 +2,9 @@ _: {
   den.aspects.core.system-packages.nixos =
     { pkgs, ... }:
     {
-      # Deliberately minimal: tools every host needs at the system level,
-      # available to root and before any user's Home Manager profile exists.
-      # nixfmt and fzf used to live here too, duplicating the Home Manager
-      # copies in apps/shell/cli-apps.nix and apps/shell/zsh.nix; repo tooling now lives
-      # in the devShell (modules/flake/devshell.nix) instead.
+      # Kept small. Just what every host needs at system level, available to
+      # root and before Home Manager exists. Tooling for working on this repo
+      # lives in the devShell instead.
       environment.systemPackages = [
         pkgs.age
         pkgs.fd

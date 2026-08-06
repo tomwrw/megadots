@@ -1,5 +1,5 @@
 _: {
-  # package is not set: pkgs.bluez is already the module default.
+  # No package set, pkgs.bluez is already the module default.
   den.aspects.hardware.bluetooth.nixos = _: {
     hardware.bluetooth.enable = true;
   };

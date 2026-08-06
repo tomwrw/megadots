@@ -7,13 +7,12 @@ _: {
       services.fwupd.enable = true;
     };
 
-    # State owned by the services enabled above. Emitted here rather than
-    # centrally in the impermanence aspect so that a host which does not
-    # include this aspect does not persist directories nothing will create.
+    # State belonging to the services above. Kept here and not in the
+    # impermanence aspect so a host that skips this one doesn't persist
+    # directories nothing is going to create.
     persist.directories = [
-      # Device history and the downloaded LVFS metadata. Without these,
-      # fwupd re-fetches its metadata on every boot and forgets what it has
-      # already flashed.
+      # Device history and the downloaded LVFS metadata. Without these fwupd
+      # re-fetches its metadata every boot and forgets what it has flashed.
       "/var/lib/fwupd"
       "/var/cache/fwupd"
     ];

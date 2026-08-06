@@ -11,8 +11,8 @@ _: {
           pkgs.nodejs
         ];
 
-        # Holds the OAuth credentials as well as project history, so losing it
-        # means re-authenticating rather than just losing state.
+        # Holds the OAuth credentials as well as project history, so losing
+        # it means logging in again, not just losing state.
         home.persistence."/persist".directories = [
           ".claude"
           ".config/claude"

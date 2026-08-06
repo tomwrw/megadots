@@ -2,14 +2,13 @@ _: {
   den.aspects.apps.shell.cli-apps.homeManager =
     { pkgs, ... }:
     {
-      # eza and nh go through their Home Manager modules rather than
-      # home.packages: programs.eza wires up the ls aliases (see apps/shell/zsh.nix,
-      # which no longer hand-rolls them) and programs.nh carries the
-      # flake/config plumbing.
+      # eza and nh go through their Home Manager modules and not home.packages.
+      # programs.eza sets up the ls aliases, see apps/shell/zsh.nix, and
+      # programs.nh carries the flake and config plumbing.
       #
-      # nh.clean is deliberately NOT enabled - core/nix.nix already runs nix.gc
-      # weekly, and two garbage collectors with different retention on one
-      # store is how you lose the generation you wanted.
+      # nh.clean stays off. core/nix.nix already runs nix.gc weekly, and two
+      # garbage collectors with different retention on one store is how I lose
+      # the generation I wanted.
       programs.eza.enable = true;
       programs.nh.enable = true;
 

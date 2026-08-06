@@ -1,9 +1,8 @@
 _: {
-  # Everything the justfile recipes shell out to, so a contributor (or a fresh
-  # machine that has not been deployed yet) can run them without these tools
-  # being installed system-wide. 'nix develop' is the supported entry point;
-  # core/system-packages.nix deliberately only carries what MY hosts need at
-  # runtime, not what building this repo needs.
+  # Everything my justfile recipes shell out to, so I can run them on a
+  # machine I haven't deployed yet. 'nix develop' is the way in.
+  # core/system-packages.nix only carries what my hosts need at runtime, not
+  # what working on this repo needs.
   perSystem =
     { pkgs, ... }:
     {

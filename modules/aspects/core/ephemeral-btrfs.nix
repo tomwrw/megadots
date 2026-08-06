@@ -1,25 +1,15 @@
 _: {
-  # An ephemeral root: the 'root' subvolume is deleted and restored from the
-  # read-only 'root-blank' snapshot on every boot, so anything not listed in
-  # core.impermanence is gone by the time the system is up.
+  # Deletes the 'root' subvolume every boot and restores it from the read-only
+  # 'root-blank' snapshot, so anything I haven't persisted is gone by the time
+  # I log in. Shape borrowed from Misterio77's Foundry.
   #
-  # Shape follows Misterio77/Foundry's hosts/common/optional/ephemeral-btrfs.nix.
-  # Nothing packages this - impermanence covers persistence only, not rollback -
-  # so every config in the ecosystem carries its own copy of these ~40 lines.
+  # root-blank itself is taken by disko's postCreateHook at format time, not
+  # here. It has to be, because by first boot nixos-anywhere has already
+  # written the system into 'root' and the snapshot wouldn't be blank.
+  # checks.nix asserts both halves are present.
   #
-  # This is one half of a mechanism: 'root-blank' itself is taken by disko's
-  # postCreateHook in core/disko.nix, at format time. It cannot be created here
-  # on first boot instead, tempting as that would be - by the time a host boots,
-  # nixos-anywhere has already written the installed system into 'root', so the
-  # snapshot would not be blank and every later "rollback" would restore a dirty
-  # tree. modules/flake/checks.nix asserts the two halves stay together.
-  #
-  # Only the systemd-initrd path is implemented. Foundry also carries a legacy
-  # boot.initrd.postDeviceCommands branch for hosts without it; here that branch
-  # would be unreachable, because core/initrd.nix sets boot.initrd.systemd.enable
-  # fleet-wide AND checks.nix asserts it stays true. Turning systemd-initrd off
-  # therefore fails the build, which is the same protection the dead branch was
-  # there to provide.
+  # Only the systemd-initrd path, since core/initrd.nix always turns it on and
+  # checks.nix asserts it.
   den.aspects.core.ephemeral-btrfs.nixos =
     {
       config,
@@ -30,17 +20,12 @@ _: {
     let
       root = config.fileSystems."/";
 
-      # impermanence bind-mounts a persisted directory in the initrd only when
-      # it is in utils.pathsNeededForBoot, and those mounts run before NixOS
-      # activation - so on a first boot nothing has created their sources yet
-      # and the mounts fail. Pre-create exactly that set.
+      # impermanence only bind mounts a persisted dir in the initrd if it's in
+      # pathsNeededForBoot, and those mounts run before activation, so on a
+      # first boot nothing has created the sources yet. Pre-create them here.
       #
-      # Derived rather than hand-listed (Foundry hardcodes
-      # /persist/var/{log,lib/{nixos,systemd}}): adding a persisted directory
-      # that lands in pathsNeededForBoot would silently not be covered, and the
-      # hardcoded list also names /var/lib/systemd, which is not initrd-mounted
-      # at all. Reading core.impermanence's config from here couples the two
-      # aspects, which is fine - roles.base takes both and neither works alone.
+      # Worked out from the config instead of hardcoded the way Foundry does
+      # it, so adding a persisted dir can't quietly miss one.
       initrdSources = lib.filter (
         d: lib.elem d.dirPath utils.pathsNeededForBoot
       ) config.environment.persistence."/persist".directories;
@@ -62,11 +47,9 @@ _: {
           if [ -e "$MNTPOINT/dont-wipe" ]; then
             echo "Skipping wipe"
           elif [ ! -e "$MNTPOINT/root-blank" ]; then
-            # Refuse rather than delete. The delete/restore pair is not atomic,
-            # so without this a volume that never got disko's postCreateHook
-            # would lose its root subvolume and gain nothing back - an
-            # unbootable host, and the next boot would fail identically with
-            # nothing left to recover from.
+            # Stop rather than delete. The delete and the restore aren't
+            # atomic, so on a volume that never got the postCreateHook I'd
+            # lose the root subvolume and get nothing back.
             echo "root-blank snapshot is missing - refusing to delete the root subvolume" >&2
             exit 1
           else
@@ -85,11 +68,9 @@ _: {
         systemd.services.restore-root = {
           description = "Rollback btrfs rootfs";
           wantedBy = [ "initrd.target" ];
-          # utils.escapeSystemdPath, not the hand-rolled splitString/replaceString
-          # that Foundry uses - it is the canonical helper (from the 'utils'
-          # module argument; there is no lib.escapeSystemdPath) and it escapes
-          # cases the hand-rolled version does not. For this fleet's
-          # /dev/mapper/crypted both produce dev-mapper-crypted.device.
+          # utils.escapeSystemdPath rather than the string mangling Foundry
+          # does by hand. It handles cases the hand-rolled one doesn't. Note
+          # it's on 'utils', there's no lib.escapeSystemdPath.
           requires = [ "${utils.escapeSystemdPath root.device}.device" ];
           after = [ "${utils.escapeSystemdPath root.device}.device" ];
           before = [ "sysroot.mount" ];

@@ -5,19 +5,19 @@ _: {
       {
         programs.dconf.enable = true;
 
-        # xdg.portal.enable and services.libinput.enable are not set here:
-        # nixpkgs' GNOME module already turns both on.
+        # No xdg.portal.enable or services.libinput.enable here, the GNOME
+        # module already turns both on.
 
-        # avahi.openFirewall defaults to true upstream (same as openssh) - must
-        # be explicit false, or its own default reopens 5353 globally alongside
-        # the interface-scoped rule the firewall quirk produces.
+        # avahi.openFirewall defaults to true upstream, same as openssh, so it
+        # needs an explicit false or its own default reopens 5353 everywhere
+        # alongside the interface-scoped rule from the firewall quirk.
         services.avahi.openFirewall = false;
 
         services = {
-          # gcr's agent handles sk-* (FIDO2) keys poorly, so the plain OpenSSH
-          # agent is used instead - see core/security/ssh-agent.nix, which must be
-          # included by any user who needs one. Turning this off without a
-          # replacement previously left the fleet with no agent at all.
+          # gcr's agent handles FIDO2 keys badly, so I use the plain OpenSSH
+          # agent instead. See core/security/ssh-agent.nix, which any user
+          # needing an agent has to include. Turning this off without putting
+          # something back left me with no agent at all last time.
           gnome.gcr-ssh-agent.enable = false;
           desktopManager.gnome = {
             enable = true;
@@ -52,22 +52,20 @@ _: {
           ];
         };
 
-        # Excluding orca above only stops GNOME enabling it (its module sets
-        # services.orca.enable = notExcluded pkgs.orca); orca.nix separately
-        # enables speechd itself when orca is on, so speechd still needs an
-        # explicit off switch here. Plain assignment beats the mkDefault true
-        # in nixos/modules/services/misc/graphical-desktop.nix — no mkForce
-        # needed since nothing else sets it once orca is excluded.
+        # Excluding orca above only stops GNOME enabling it. orca.nix turns on
+        # speechd itself when orca is on, so speechd still needs switching off
+        # here. Plain assignment beats the mkDefault true upstream, and no
+        # mkForce is needed since nothing else sets it once orca is gone.
         services.speechd.enable = false;
       };
 
     provides.to-users.homeManager =
       { pkgs, ... }:
       {
-        # programs.gnome-shell does exactly what the hand-rolled version did -
-        # installs each extension's package AND sets disable-user-extensions =
-        # false plus enabled-extensions from the same list - so the package
-        # list and the UUID list can no longer drift apart.
+        # programs.gnome-shell does what I was doing by hand: installs each
+        # extension's package and sets disable-user-extensions = false plus
+        # enabled-extensions from the same list, so the packages and the UUIDs
+        # can't drift apart any more.
         programs.gnome-shell = {
           enable = true;
           extensions = [
@@ -79,10 +77,10 @@ _: {
         dconf.settings = {
           # Don't try to suspend while on AC.
           "org/gnome/settings-daemon/plugins/power".sleep-inactive-ac-type = "nothing";
-          # No color-scheme here: Stylix's gnome target already writes this key
-          # from stylix.polarity, and neither side uses mkDefault. It only
-          # evaluated because both happened to emit "prefer-dark" - flipping
-          # polarity to "light" would have broken eval with a conflict.
+          # No color-scheme here. Stylix's gnome target already writes that key
+          # from stylix.polarity and neither side uses mkDefault, so it only
+          # evaluated because both happened to say "prefer-dark". Switching
+          # polarity to light would have broken eval with a conflict.
           "org/gnome/desktop/interface" = {
             show-battery-percentage = true;
             enable-hot-corners = true;
@@ -99,12 +97,10 @@ _: {
           };
         };
 
-        # This session is Wayland, but Electron/CEF apps default to XWayland
-        # unless told otherwise, which costs them fractional scaling and leaves
-        # them blurry on HiDPI (the Surface especially). Roughly a dozen apps in
-        # this profile are Electron - element, signal, vesktop, obsidian,
-        # joplin, code-cursor, vscodium, bitwarden, ente, filen, proton-pass -
-        # so it is set once here rather than per app.
+        # I'm on Wayland, but Electron apps default to XWayland unless told
+        # otherwise, which loses fractional scaling and leaves them blurry on
+        # HiDPI. The Surface especially. About a dozen apps I use are Electron,
+        # so set it once here instead of per app.
         home.sessionVariables.NIXOS_OZONE_WL = "1";
 
         xdg = {
@@ -114,36 +110,33 @@ _: {
         };
 
         home.persistence."/persist".directories = [
-          # The dconf database. Everything set declaratively above is rewritten
-          # on activation, so this carries the rest: window positions, per-app
-          # preferences, the favourites in the dash, and anything changed
-          # through Settings rather than through this file.
+          # The dconf database. Everything set above is rewritten on
+          # activation, so this is for the rest: window positions, per-app
+          # preferences, the dash favourites, anything I changed in Settings
+          # instead of in this file.
           ".config/dconf"
-          # gnome-keyring's secret store. The GNOME module enables the daemon,
-          # so without this every boot starts with no keyring at all: GNOME
-          # prompts to create one, and anything any app stored through libsecret
-          # is gone.
+          # gnome-keyring's secret store. The GNOME module runs the daemon, so
+          # without this every boot starts with no keyring, GNOME asks me to
+          # make one, and anything stored through libsecret is gone.
           ".local/share/keyrings"
         ];
       };
 
-    # mDNS. avahi is not enabled by anything of mine - the GNOME desktop module
-    # pulls it in - so the port and the openFirewall suppression above belong
-    # here, with the thing that causes them, rather than in core.networking.
+    # mDNS. I never enable avahi myself, the GNOME desktop module pulls it in,
+    # so the port and the openFirewall override above belong here next to the
+    # thing causing them and not in core.networking.
     firewall.udp = [ 5353 ];
 
     persist.directories = [
       # Per-account desktop settings (language, session, avatar).
       "/var/lib/AccountsService"
-      # colord and power-profiles-daemon are pulled in by the GNOME module,
-      # not by hardware/, so their state belongs here. Without them, ICC
-      # display profiles are lost and the power profile resets to balanced
-      # on every boot.
+      # colord and power-profiles-daemon come from the GNOME module rather
+      # than hardware/, so their state belongs here. Without them I lose ICC
+      # display profiles and the power profile resets to balanced every boot.
       "/var/lib/colord"
       "/var/lib/power-profiles-daemon"
-      # Same story: services.udisks2 is enabled by the GNOME desktop module
-      # (nixos/modules/services/desktop-managers/gnome.nix), not by anything of
-      # mine. Holds per-device mount preferences for removable media.
+      # Same story, udisks2 is turned on by the GNOME desktop module and not
+      # by me. Holds per-device mount preferences for removable media.
       "/var/lib/udisks2"
     ];
   };

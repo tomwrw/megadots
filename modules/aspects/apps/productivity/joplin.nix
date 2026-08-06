@@ -7,8 +7,8 @@ _: {
         pkgs.joplin-desktop
       ];
 
-      # UNVERIFIED: notebooks and sync state. Confirm with `ls ~/.config`
-      # after first run.
+      # UNVERIFIED: notebooks and sync state. Check 'ls ~/.config' after
+      # first run.
       home.persistence."/persist".directories = [ ".config/joplin-desktop" ];
     };
 }

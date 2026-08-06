@@ -14,11 +14,10 @@
           defaultSopsFile = ../../../../secrets/hosts/${config.networking.hostName}.yaml;
           age.keyFile = "/persist/var/lib/sops-nix/key.txt";
           age.generateKey = false;
-          # Exactly one decryption identity, stated explicitly. sops-nix
-          # otherwise defaults sshKeyPaths to the ed25519 key from
-          # services.openssh.hostKeys and converts it to an age identity at
-          # activation - a second, implicit path that would quietly change
-          # decryption behaviour if the host key were ever rotated.
+          # One decryption identity, spelled out. Otherwise sops-nix defaults
+          # sshKeyPaths to the ed25519 host key and turns it into an age
+          # identity at activation, which is a second way in that would change
+          # behaviour if I ever rotated the host key.
           age.sshKeyPaths = [ ];
         };
       };
@@ -33,11 +32,10 @@
           age.generateKey = false;
         };
 
-        # The only identity that can decrypt this user's secrets, seeded by
-        # `just deploy` via nixos-anywhere --extra-files. It survived on its own
-        # while /home was a persistent subvolume; now it needs stating. Kept
-        # beside age.keyFile above rather than with the ssh keys, so the path
-        # and the thing that persists it cannot drift.
+        # The only thing that can decrypt my secrets, seeded by 'just deploy'.
+        # It used to survive on its own while /home was a real subvolume. Kept
+        # next to age.keyFile above and not with the ssh keys, so the path and
+        # the thing persisting it can't drift apart.
         home.persistence."/persist".files = [ ".config/sops/age/keys.txt" ];
 
         systemd.user.services.sops-nix = {
@@ -49,12 +47,11 @@
             ];
             Conflicts = [ "shutdown.target" ];
           };
-          # sops-nix hardcodes Install.WantedBy = [ "default.target" ] with no
-          # option to override it (modules/home-manager/sops.nix:391-392,
-          # the 'cfg.gnupg.home == null' branch). Secrets must be on disk
-          # before dependent user services (e.g. syncthing) start, so pull
-          # this to basic.target. mkForce is the minimal correct override;
-          # revisit if sops-nix ever exposes a startup-target option.
+          # sops-nix hardcodes WantedBy = default.target with no way to
+          # override it, but my secrets have to be on disk before syncthing
+          # starts, so pull it forward to basic.target. mkForce is the
+          # smallest thing that works. Revisit if sops-nix ever gives me an
+          # option for this.
           Install.WantedBy = lib.mkForce [ "basic.target" ];
         };
       };

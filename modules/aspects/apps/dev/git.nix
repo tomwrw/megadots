@@ -23,9 +23,9 @@ _: {
           pull.rebase = false;
           commit.gpgsign = true;
           gpg.format = "ssh";
-          # user.signingkey is NOT set here: it is an identity, so it lives in
-          # the user aspect (users/tomwrw) next to the key material it comes
-          # from. This aspect only decides the signing *policy*.
+          # No user.signingkey here. That's an identity, so it lives in
+          # users/tomwrw next to the key it comes from. This aspect only sets
+          # the signing policy.
           gpg.ssh.allowedSignersFile = "${config.xdg.configHome}/git/allowed_signers";
         };
       };

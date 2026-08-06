@@ -5,9 +5,9 @@
 }:
 let
   email = "tomwrw@proton.me";
-  # Single source for tomwrw's SSH keys - consumed below both as login
-  # credentials (authorizedKeys) and as commit-signing identities
-  # (allowed_signers), which previously had to be kept in sync by hand.
+  # One place for my SSH keys, used below both as login credentials
+  # (authorizedKeys) and as commit signing identities (allowed_signers). I
+  # used to keep those two lists in sync by hand.
   sshKeys = {
     plain = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFCIJ1LhkFDBZaZU/bf8Y3XyCXb3RnVxg4gRs6i+XbSe tomwrw";
     sk-primary = "sk-ssh-ed25519@openssh.com AAAAGnNrLXNzaC1lZDI1NTE5QG9wZW5zc2guY29tAAAAIPiQIe8ejl2D9ZLBZCHYyt7Iyh9jFHZ5iMYydq57DnDSAAAACnNzaDp0b213cnc= tomwrw-primary";
@@ -51,35 +51,24 @@ in
     nixos = _: {
       sops.secrets."users/tomwrw/password".neededForUsers = true;
 
-      # 'd' fixes ownership/mode even when nixos-anywhere --extra-files
-      # already created these as root; 'z' does the same for the seeded
-      # files themselves and is a no-op if a path is absent (unlike the
-      # oneshot chown it replaces, no '|| true' needed).
+      # 'd' fixes ownership and mode even though nixos-anywhere seeded these
+      # as root. Both sides are listed on purpose, and dropping either one
+      # breaks a different boot:
       #
-      # BOTH sides are listed, deliberately, and dropping either one breaks a
-      # different boot:
+      # - /persist is where 'just deploy' seeds them. impermanence never
+      #   repairs an existing persist directory, it copies that directory's
+      #   owner and mode onto the live path, so a root-owned /persist entry
+      #   keeps re-infecting my home on every activation.
       #
-      # - /persist/... is where 'just deploy' seeds these as root, and where
-      #   they survive the rollback. impermanence never repairs an existing
-      #   persist directory; when one is already there it copies that
-      #   directory's owner and mode ONTO the live path
-      #   (create-directories.bash, chown/chmod --reference). So an unowned
-      #   /persist entry keeps re-infecting the live home on every activation.
+      # - /home is needed because that copy runs during activation, which here
+      #   happens in the initrd, while tmpfiles run at sysinit in stage 2
+      #   afterwards. Fix only /persist and the live tree stays wrong for the
+      #   whole first boot after a deploy. ~/.ssh is a plain directory, not a
+      #   bind mount, so correcting /persist doesn't reach it.
       #
-      # - /home/... is needed because that copy happens during
-      #   system.activationScripts, which on this fleet runs in the INITRD
-      #   (initrd-nixos-activation), while tmpfiles run at sysinit in stage 2 -
-      #   afterwards. Fixing only /persist therefore leaves the live tree wrong
-      #   for the whole of the first boot after a deploy. Note ~/.ssh is a plain
-      #   directory, not a bind mount: only the individual files under it are
-      #   bind-mounted, so correcting /persist does NOT reach it through a
-      #   shared inode.
-      #
-      # Getting this wrong is what previously broke home-manager (cannot write
-      # ~/.ssh/config as uid 1000) and ssh (cannot read root-owned private
-      # keys), twice. tmpfiles-setup is part of sysinit.target and
-      # home-manager-tomwrw.service is wantedBy multi-user.target, so the live
-      # fixes land before home-manager runs with no explicit ordering.
+      # Getting this wrong broke home-manager and ssh twice. tmpfiles run at
+      # sysinit and home-manager-tomwrw is wantedBy multi-user.target, so the
+      # live fixes land first without any explicit ordering.
       systemd.tmpfiles.settings."10-tomwrw-seed" =
         let
           owned = mode: {
@@ -89,8 +78,8 @@ in
               inherit mode;
             };
           };
-          # Directories only. The seeded FILES are deliberately not listed here
-          # - see systemd.services.tomwrw-seeded-keys below.
+          # Directories only. The seeded files are handled by
+          # systemd.services.tomwrw-seeded-keys below.
           entries = prefix: {
             "${prefix}/home/tomwrw" = owned "0700";
             "${prefix}/home/tomwrw/.ssh" = owned "0700";
@@ -101,24 +90,23 @@ in
         in
         entries "/persist" // entries "";
 
-      # tmpfiles owns the seeded DIRECTORIES; it cannot own the seeded FILES.
+      # tmpfiles can own the seeded directories but not the seeded files.
       # systemd-tmpfiles refuses to 'z' a file whose path runs through
-      # user-owned directories - its safe-path protection against symlink
-      # attacks - so the rules silently do nothing and the keys stay root:root
-      # 0600. Home Manager's user sops-nix.service then dies with
-      # "cannot read keyfile '~/.config/sops/age/keys.txt': permission denied",
-      # which takes syncthing down with it (its copy-keys ExecStartPre reads the
-      # decrypted cert). Both look like a deploy that silently skipped the keys.
+      # user-owned directories, which is its protection against symlink
+      # attacks, so the rules do nothing and the keys stay root:root 0600.
+      # sops-nix then dies with "cannot read keyfile
+      # '~/.config/sops/age/keys.txt': permission denied" and takes syncthing
+      # with it, since copy-keys needs the decrypted cert. It all looks like a
+      # deploy that skipped the keys.
       #
-      # This is why the chown happens from root, in a oneshot, and NOT as
-      # tmpfiles 'z' entries. A commit once replaced this with 'z' rules on the
-      # grounds that they were more declarative; they are, and they do not work.
-      # Verified the hard way on a flatmate deploy, twice.
+      # So the chown happens from root in a oneshot, not as tmpfiles 'z'
+      # entries. I replaced this with 'z' rules once because they were more
+      # declarative. They are, and they don't work. Found out on a flatmate
+      # deploy.
       #
-      # The /persist path is the one chowned: it is the source of impermanence's
-      # bind mount, so the live ~/... path is the same inode and is fixed with
-      # it. The two globs mirror what `just deploy` seeds - keep them in step
-      # with that recipe's key loop.
+      # /persist is the side that gets chowned, since it's the source of the
+      # bind mount and the live path is the same inode. The globs mirror what
+      # 'just deploy' seeds, so keep them in step with that recipe.
       systemd.services.tomwrw-seeded-keys = {
         description = "Own tomwrw's deploy-seeded key files";
         wantedBy = [ "multi-user.target" ];
@@ -128,9 +116,9 @@ in
           Type = "oneshot";
           RemainAfterExit = true;
         };
-        # Globbed and guarded rather than a blanket '|| true': a missing key is
-        # normal (not every host seeds every key), but a chown that genuinely
-        # fails should still fail the unit rather than be swallowed.
+        # Globbed and guarded instead of a blanket ignore. A missing key is
+        # normal, not every host seeds every key, but a chown that actually
+        # fails should still fail the unit.
         script = ''
           shopt -s nullglob
           files=(
@@ -144,9 +132,9 @@ in
       };
     };
 
-    # den's 'user' class forwards these fields directly onto
-    # users.users.tomwrw (os-user battery); osConfig is the injected parent
-    # NixOS config, since this module's own 'config' is the user-class's.
+    # den's 'user' class puts these straight onto users.users.tomwrw. osConfig
+    # is the parent NixOS config, since this module's own 'config' belongs to
+    # the user class.
     user =
       { osConfig, ... }:
       {
@@ -168,13 +156,12 @@ in
       programs.home-manager.enable = true;
       home.sessionPath = [ "$HOME/.local/bin" ];
 
-      # / is rolled back to a blank snapshot on every boot and /home lives
-      # inside it, so a home directory keeps only what is listed here or in an
-      # app aspect's own home.persistence block.
+      # / goes back to a blank snapshot every boot and /home is inside it, so
+      # my home keeps only what's listed here or in an app aspect's own
+      # home.persistence block.
       #
-      # hideMounts is per-STORE: the same option on
-      # environment.persistence."/persist" (core/impermanence.nix) does NOT
-      # cover these entries, so it has to be set again here. Setting it here
+      # hideMounts is per store. The same option in core/impermanence.nix
+      # doesn't cover these, so it needs setting again here. Setting it here
       # covers every aspect's entries, since they all share this store.
       home.persistence."/persist" = {
         hideMounts = true;
@@ -190,12 +177,11 @@ in
       programs.git.settings.user.name = "tomwrw";
       programs.git.settings.user.email = email;
 
-      # A literal key, not a path to one. git only passes -U (meaning "this
-      # identity is held by an agent") to `ssh-keygen -Y sign` when signingkey
-      # is a literal key or key::-prefixed; given a PATH it hands the file
-      # straight to ssh-keygen, which does not read ssh_config at all. So with
-      # a path, AddKeysToAgent never applies and a passphrase-protected key
-      # prompts on every single signed commit, agent or no agent.
+      # A literal key, not a path to one. git only passes -U to 'ssh-keygen -Y
+      # sign', meaning the identity is held by an agent, when signingkey is a
+      # literal key or key:: prefixed. Given a path it hands the file straight
+      # to ssh-keygen, which doesn't read ssh_config at all, so AddKeysToAgent
+      # never applies and a passphrased key prompts on every signed commit.
       programs.git.settings.user.signingkey = "key::${sshKeys.plain}";
 
       xdg.configFile."git/allowed_signers".text = lib.concatMapStrings (k: "${email} ${k}\n") (
@@ -203,9 +189,9 @@ in
       );
     };
 
-    # Host-specific extras are NOT listed here. They come from the roles a host
-    # takes (roles/gaming.nix, roles/dev.nix) via provides.to-users, so this
-    # file never mentions a host by name - renaming a host cannot silently
-    # change what a user gets.
+    # No host-specific extras here. They come from the roles a host takes,
+    # roles/gaming.nix and roles/dev.nix, through provides.to-users. That way
+    # this file never names a host, and renaming one can't quietly change what
+    # I get.
   };
 }

@@ -123,8 +123,8 @@
             };
           };
 
-          # Extensions. Install extensions from firefox-addons
-          # which are more secure, verified, than previous xpi method.
+          # Extensions from firefox-addons, which is safer than the xpi
+          # method I used before.
           extensions.packages = with inputs.firefox-addons.packages.${pkgs.stdenv.hostPlatform.system}; [
             proton-pass
             multi-account-containers
@@ -133,10 +133,10 @@
         };
       };
 
-      # Home Manager gates the whole mimeapps.list write on xdg.mimeApps.enable,
-      # so without this the defaults below are silently a no-op. It used to work
-      # only because desktop/gnome.nix happens to enable it - an invisible
-      # dependency on an unrelated aspect being present.
+      # Home Manager only writes mimeapps.list if xdg.mimeApps.enable is set,
+      # so without this the defaults below do nothing. It used to work purely
+      # because desktop/gnome.nix happens to enable it, which is an invisible
+      # dependency on an unrelated aspect being there.
       xdg.mimeApps.enable = true;
       xdg.mimeApps.defaultApplications = {
         "x-scheme-handler/http" = [ "firefox.desktop" ];
@@ -145,19 +145,18 @@
         "application/pdf" = [ "firefox.desktop" ];
       };
 
-      # The profile itself: cookies, history, container assignments and the
-      # extensions' own storage. Home Manager writes the declarative half of
-      # profiles.default in here on every activation, so this only needs to
-      # carry what Firefox writes at runtime - but they share a directory.
+      # The profile: cookies, history, container assignments and whatever the
+      # extensions store. Home Manager rewrites its own half on activation, so
+      # this is really for what Firefox writes at runtime, but they share a
+      # directory.
       #
-      # This path is NOT ~/.mozilla/firefox. Home Manager defaults
-      # programs.firefox.configPath to the XDG location for current Firefox, so
-      # profiles.ini, user.js, chrome/ (where Stylix writes) and extensions/ all
-      # land here - confirmed by evaluating configPath rather than by reading
-      # this file, which never sets it. Persisting ~/.mozilla/firefox instead
-      # both loses the real profile AND creates an empty legacy directory that
-      # Firefox then prefers, so it opens an unmanaged profile with no theme and
-      # no add-ons.
+      # This is NOT ~/.mozilla/firefox. Home Manager defaults configPath to
+      # the XDG location for current Firefox, so profiles.ini, user.js,
+      # chrome/ (where Stylix writes) and extensions/ all land here. Check it
+      # by evaluating configPath, not by reading this file, which never sets
+      # it. Persisting ~/.mozilla/firefox loses the real profile and leaves an
+      # empty legacy directory that Firefox prefers, so it opens an unmanaged
+      # profile with no theme and no add-ons. Did exactly that to myself once.
       home.persistence."/persist".directories = [ ".config/mozilla/firefox" ];
     };
 }

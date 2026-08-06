@@ -1,29 +1,24 @@
 _: {
   # An SSH agent, replacing the one desktop/gnome.nix turns off.
   #
-  # gcr-ssh-agent is disabled there because its FIDO2/sk-* support is poor, but
-  # nothing took its place: SSH_AUTH_SOCK was unset fleet-wide. Combined with
-  # git's commit.gpgsign (apps/dev/git.nix) and a passphrase-protected signing key,
-  # that made 'git commit' fail outright in any non-interactive context with
-  # "failed to write commit object" - OpenSSH could neither reach an agent nor
-  # ask for the passphrase.
+  # gcr-ssh-agent is off there because its FIDO2 support is poor, but nothing
+  # took its place, so SSH_AUTH_SOCK was unset everywhere. Together with git's
+  # commit.gpgsign and a passphrased signing key, that made 'git commit' fail
+  # with "failed to write commit object" any time I wasn't at a terminal.
   #
-  # Included from the user aspect, not a role: a bare homeManager key on a
-  # host-scope aspect is silently dropped by den.
+  # Included from the user aspect and not a role, because den drops a bare
+  # homeManager block on a host-scope aspect.
   den.aspects.core.security.ssh-agent = {
     nixos = _: {
-      # NOTE: the askpass this ends up using is seahorse's, which comes from
-      # the GNOME desktop (nixos/modules/programs/seahorse.nix mkDefaults it).
-      # NixOS's own default is x11_ssh_askpass - so a non-GNOME host taking
-      # this aspect gets an X11 askpass in its closure and should set
-      # programs.ssh.askPassword explicitly.
+      # The askpass I end up with is seahorse's, pulled in by the GNOME
+      # desktop. NixOS defaults to x11_ssh_askpass, so a non-GNOME host taking
+      # this aspect should set programs.ssh.askPassword itself.
       #
-      # NixOS already computes a working askpass but leaves this
-      # false unless services.xserver.enable is set - and this fleet is
-      # GNOME-on-Wayland. With it false, SSH_ASKPASS is never exported and
-      # OpenSSH falls back to its compiled-in $out/libexec/ssh-askpass, which
-      # nixpkgs does not build. Hence the confusing "ssh_askpass: exec(...):
-      # No such file or directory" rather than a passphrase prompt.
+      # NixOS works out a usable askpass but leaves this off unless
+      # services.xserver.enable is set, and I'm on GNOME under Wayland. Off,
+      # SSH_ASKPASS never gets exported and OpenSSH falls back to a binary
+      # nixpkgs doesn't build, which is where the baffling "ssh_askpass:
+      # exec(...): No such file or directory" comes from.
       programs.ssh.enableAskPassword = true;
     };
 
@@ -32,27 +27,26 @@ _: {
 
       programs.ssh = {
         enable = true;
-        # Home Manager warns that the legacy programs.ssh defaults are going
-        # away; opt out now and state only what we actually want.
+        # Home Manager warns the legacy programs.ssh defaults are going away,
+        # so opt out now and set only what I want.
         enableDefaultConfig = false;
         settings."*" = {
-          # Load a key into the agent the first time it is used, so the
-          # passphrase is asked for once per session rather than per operation.
+          # Add a key to the agent the first time I use it, so I get one
+          # passphrase prompt a session instead of one per operation.
           AddKeysToAgent = "yes";
-          # Never let a remote host reach back through our agent.
+          # Never let a remote host reach back through my agent.
           ForwardAgent = false;
         };
       };
 
-      # Everything 'just deploy' seeds into /persist/home/<user> via
-      # nixos-anywhere --extra-files, plus known_hosts. This list must stay in
-      # step with that recipe's key loop: a seeded file with no entry here lands
-      # in /persist and is never bind-mounted into the home, which looks exactly
-      # like the deploy having silently skipped it.
+      # Everything 'just deploy' seeds into /persist/home/<user>, plus
+      # known_hosts. Keep this in step with that recipe's key loop. A seeded
+      # file with no entry here sits in /persist and never gets mounted into
+      # my home, which looks just like the deploy having skipped it.
       #
-      # The sk_* pairs are FIDO2 handle stubs - useless without the physical
-      # token, but regenerating them means an `ssh-keygen -K` round trip. The
-      # tomwrw aspect owns their permissions.
+      # The sk_* pairs are FIDO2 handle stubs, useless without the token, but
+      # regenerating them means an 'ssh-keygen -K' round trip. The tomwrw
+      # aspect owns their permissions.
       home.persistence."/persist".files = [
         ".ssh/known_hosts"
         ".ssh/id_ed25519"

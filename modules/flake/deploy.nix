@@ -1,9 +1,8 @@
 _: {
-  # Exposed so the justfile can call `nix run .#nixos-anywhere` instead of
-  # `nix run github:nix-community/nixos-anywhere`, which resolved at HEAD on
-  # every invocation. Deploying is the one step that formats disks, so it
-  # should be the least improvised thing here - this pins it to the same
-  # nixpkgs as everything else, recorded in flake.lock.
+  # Exposed so my justfile can run 'nix run .#nixos-anywhere' instead of
+  # pulling github:nix-community/nixos-anywhere at HEAD every time. Deploying
+  # is the one thing that formats disks, so it should be the least improvised
+  # step I have. This pins it to the same nixpkgs as everything else.
   perSystem =
     { pkgs, ... }:
     {
