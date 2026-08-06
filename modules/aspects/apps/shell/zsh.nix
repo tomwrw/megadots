@@ -86,9 +86,19 @@ _: {
           # Shell history. Everything else here, the zshrc, the aliases, the
           # starship config, gets rewritten on activation, but this is the one
           # thing zsh writes at runtime and .local/share is inside the home
-          # that gets rolled back. Path read off programs.zsh.history.path
-          # rather than guessed, since dotDir moves it off ~/.zsh_history.
-          home.persistence."/persist".files = [ ".local/share/zsh/.zsh_history" ];
+          # that gets rolled back.
+          #
+          # The directory, NOT the .zsh_history file inside it. impermanence
+          # only bind mounts a persisted file once the /persist copy exists;
+          # until then it leaves a symlink pointing at it. zsh saves history by
+          # writing a temp file and renaming it over the target, which replaces
+          # that symlink with a real file, so the history never reaches
+          # /persist and the next activation dies with "A file already exists
+          # at ...". A directory entry is a real bind mount from the start, so
+          # the rename happens inside /persist where it belongs. Home Manager
+          # writes nothing else into .local/share/zsh, so nothing else is
+          # dragged along with it.
+          home.persistence."/persist".directories = [ ".local/share/zsh" ];
         };
     };
 }
