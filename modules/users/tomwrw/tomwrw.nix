@@ -89,25 +89,59 @@ in
               inherit mode;
             };
           };
-          # Mode is left alone - justfile's 'install -Dm600/-m644' already sets
-          # it; this only adopts ownership.
-          adopted = {
-            z = {
-              user = "tomwrw";
-              group = "users";
-            };
-          };
+          # Directories only. The seeded FILES are deliberately not listed here
+          # - see systemd.services.tomwrw-seeded-keys below.
           entries = prefix: {
             "${prefix}/home/tomwrw" = owned "0700";
             "${prefix}/home/tomwrw/.ssh" = owned "0700";
             "${prefix}/home/tomwrw/.config" = owned "0755";
             "${prefix}/home/tomwrw/.config/sops" = owned "0700";
             "${prefix}/home/tomwrw/.config/sops/age" = owned "0700";
-            "${prefix}/home/tomwrw/.config/sops/age/keys.txt" = adopted;
-            "${prefix}/home/tomwrw/.ssh/id_ed25519*" = adopted;
           };
         in
         entries "/persist" // entries "";
+
+      # tmpfiles owns the seeded DIRECTORIES; it cannot own the seeded FILES.
+      # systemd-tmpfiles refuses to 'z' a file whose path runs through
+      # user-owned directories - its safe-path protection against symlink
+      # attacks - so the rules silently do nothing and the keys stay root:root
+      # 0600. Home Manager's user sops-nix.service then dies with
+      # "cannot read keyfile '~/.config/sops/age/keys.txt': permission denied",
+      # which takes syncthing down with it (its copy-keys ExecStartPre reads the
+      # decrypted cert). Both look like a deploy that silently skipped the keys.
+      #
+      # This is why the chown happens from root, in a oneshot, and NOT as
+      # tmpfiles 'z' entries. A commit once replaced this with 'z' rules on the
+      # grounds that they were more declarative; they are, and they do not work.
+      # Verified the hard way on a flatmate deploy, twice.
+      #
+      # The /persist path is the one chowned: it is the source of impermanence's
+      # bind mount, so the live ~/... path is the same inode and is fixed with
+      # it. The two globs mirror what `just deploy` seeds - keep them in step
+      # with that recipe's key loop.
+      systemd.services.tomwrw-seeded-keys = {
+        description = "Own tomwrw's deploy-seeded key files";
+        wantedBy = [ "multi-user.target" ];
+        before = [ "home-manager-tomwrw.service" ];
+        unitConfig.ConditionPathExists = "/persist/home/tomwrw";
+        serviceConfig = {
+          Type = "oneshot";
+          RemainAfterExit = true;
+        };
+        # Globbed and guarded rather than a blanket '|| true': a missing key is
+        # normal (not every host seeds every key), but a chown that genuinely
+        # fails should still fail the unit rather than be swallowed.
+        script = ''
+          shopt -s nullglob
+          files=(
+            /persist/home/tomwrw/.config/sops/age/keys.txt
+            /persist/home/tomwrw/.ssh/id_ed25519*
+          )
+          if [ ''${#files[@]} -gt 0 ]; then
+            chown tomwrw:users "''${files[@]}"
+          fi
+        '';
+      };
     };
 
     # den's 'user' class forwards these fields directly onto

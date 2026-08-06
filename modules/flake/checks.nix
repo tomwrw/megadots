@@ -62,6 +62,23 @@ let
       # only reach the host firewall via den.policies.firewall's pipe.expose.
       syncthingUsers = lib.filterAttrs (_: u: u.services.syncthing.enable) cfg.home-manager.users;
 
+      # A home.persistence path that no longer matches where the app actually
+      # writes fails completely silently - the state is simply gone after every
+      # boot, with no error anywhere. Firefox is the case where the path is not
+      # a constant we can eyeball: Home Manager derives programs.firefox.configPath
+      # (currently the XDG '.config/mozilla/firefox', historically '.mozilla/firefox')
+      # and nothing in this repo sets it, so an upstream change moves the profile
+      # out from under the persistence entry. Assert the two agree.
+      firefoxUsersMissingPersist = lib.attrNames (
+        lib.filterAttrs (
+          _: u:
+          u.programs.firefox.enable
+          && !lib.any (d: d.directory == u.programs.firefox.configPath) (
+            u.home.persistence."/persist".directories or [ ]
+          )
+        ) cfg.home-manager.users
+      );
+
       # Options that only EXIST because roles.base imports the module declaring
       # them (impermanence, disko's /persist, sops-nix). Reading them bare on a
       # host that skipped roles.base aborts the whole check during EVALUATION
@@ -186,6 +203,10 @@ let
         # vanish from the host firewall silently, with no eval error.
         assertion = syncthingUsers == { } || lib.elem 22000 scopedTCP;
         message = "${name}: syncthing is enabled for ${toString (lib.attrNames syncthingUsers)} but port 22000 is not open - user-scope firewall quirks are not reaching the host, check den.policies.firewall";
+      }
+      {
+        assertion = firefoxUsersMissingPersist == [ ];
+        message = "${name}: firefox is enabled for ${toString firefoxUsersMissingPersist} but programs.firefox.configPath is not in that user's home.persistence directories - the profile (Stylix theme, extensions, cookies) would be discarded on every boot, silently";
       }
       {
         assertion = missingHardening == [ ];

@@ -150,10 +150,14 @@
       # profiles.default in here on every activation, so this only needs to
       # carry what Firefox writes at runtime - but they share a directory.
       #
-      # This is the DEFAULT location. Do not copy the '.config/mozilla/firefox'
-      # path from the megadots-classic branch: that config sets
-      # programs.firefox.configPath to relocate the profile, and this one does
-      # not.
-      home.persistence."/persist".directories = [ ".mozilla/firefox" ];
+      # This path is NOT ~/.mozilla/firefox. Home Manager defaults
+      # programs.firefox.configPath to the XDG location for current Firefox, so
+      # profiles.ini, user.js, chrome/ (where Stylix writes) and extensions/ all
+      # land here - confirmed by evaluating configPath rather than by reading
+      # this file, which never sets it. Persisting ~/.mozilla/firefox instead
+      # both loses the real profile AND creates an empty legacy directory that
+      # Firefox then prefers, so it opens an unmanaged profile with no theme and
+      # no add-ons.
+      home.persistence."/persist".directories = [ ".config/mozilla/firefox" ];
     };
 }
