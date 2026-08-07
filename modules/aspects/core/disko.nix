@@ -60,13 +60,33 @@
                         type = "btrfs";
                         extraArgs = [ "-f" ];
 
-                        # Snapshot the volume read-only while it's still empty.
-                        # core.ephemeral-btrfs restores this every boot, so it
-                        # has to be taken at format time. Any later and it
-                        # already has the system in it.
+                        # Snapshot the 'root' subvolume read-only while it's
+                        # still empty. core.ephemeral-btrfs restores this every
+                        # boot, so it has to be taken at format time. Any later
+                        # and it already has the system in it.
+                        #
+                        # It has to be '/mnt/root' and not '/mnt'. The plain
+                        # mount lands on the top level, which by this point
+                        # already holds root, nix, persist and swap as nested
+                        # subvolumes, and btrfs snapshots don't recurse. Each
+                        # nested subvolume comes out of the snapshot as an
+                        # inode 2 placeholder (BTRFS_EMPTY_SUBVOL_DIR_OBJECTID),
+                        # which the kernel makes permanently unwritable and
+                        # fails with EPERM.
+                        #
+                        # nix, persist and swap get their real subvolumes
+                        # mounted over the placeholders so they look fine. /root
+                        # doesn't, so root's home ends up read-only, and
+                        # everything that writes there breaks: systemd-tmpfiles
+                        # can't create /root/.ssh, and nix-daemon can't create
+                        # /root/.cache/nix, which kills its binary cache disk
+                        # cache and so every substituter query with it. With
+                        # nix.settings.fallback on, that turns into nix
+                        # rebuilding stdenv from the full source bootstrap
+                        # instead of fetching it.
                         postCreateHook = ''
                           mount -t btrfs /dev/mapper/${luksName} /mnt
-                          btrfs subvolume snapshot -r /mnt /mnt/root-blank
+                          btrfs subvolume snapshot -r /mnt/root /mnt/root-blank
                           umount /mnt
                         '';
 
