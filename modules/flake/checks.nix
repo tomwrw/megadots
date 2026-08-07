@@ -62,6 +62,20 @@ let
       # reach the host firewall through den.policies.firewall.
       syncthingUsers = lib.filterAttrs (_: u: u.services.syncthing.enable) cfg.home-manager.users;
 
+      # The roster assertion below only sees den hosts. External peers live in
+      # core/syncthing.nix instead, so an unfilled placeholder or a mistyped ID
+      # there would sit in the generated config looking plausible and simply
+      # never connect. This reads the devices as actually configured, so it
+      # covers both sources.
+      badDeviceIds = lib.unique (
+        lib.concatMap (
+          u:
+          lib.attrNames (
+            lib.filterAttrs (_: d: builtins.stringLength d.id != 63) u.services.syncthing.settings.devices
+          )
+        ) (lib.attrValues syncthingUsers)
+      );
+
       # A home.persistence path that no longer matches where the app writes
       # gives no error at all, the state is just gone after every boot.
       # Firefox is the one where I can't eyeball the path: Home Manager works
@@ -200,6 +214,10 @@ let
         # disappear from the host firewall with no eval error.
         assertion = syncthingUsers == { } || lib.elem 22000 scopedTCP;
         message = "${name}: syncthing is enabled for ${toString (lib.attrNames syncthingUsers)} but port 22000 is not open - user-scope firewall quirks are not reaching the host, check den.policies.firewall";
+      }
+      {
+        assertion = badDeviceIds == [ ];
+        message = "${name}: syncthing devices ${toString badDeviceIds} do not have a 63-character device ID - external peers are set in modules/aspects/core/syncthing.nix, mesh hosts in modules/den/hosts.nix";
       }
       {
         assertion = firefoxUsersMissingPersist == [ ];

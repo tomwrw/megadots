@@ -1,4 +1,24 @@
 { den, ... }:
+let
+  # Syncthing peers that this config doesn't build. They can't come from
+  # den.hosts, which describes whole machines (disk, LAN interface, users) and
+  # turns each entry into a nixosConfiguration. The TrueNAS box is just a
+  # device ID to trust, and the other half of the pairing is done by hand in
+  # its own Syncthing GUI.
+  #
+  # Addresses are pinned rather than left dynamic. Relays and global discovery
+  # are off below, so the only thing that could locate a peer is a local
+  # announce on 21027, and an appliance running Syncthing in a container often
+  # can't broadcast onto the LAN at all. A static lease on the NAS makes this
+  # the more reliable half of the trade anyway.
+  externalPeers = {
+    nas = {
+      # TrueNAS Syncthing GUI: Actions > Show ID.
+      id = "F7JXVJN-DXADY4D-OGQGPUG-ENDQEDW-5PROBMK-E37HIYE-6OJ4HKW-25W4YQX";
+      addresses = [ "tcp://10.20.1.3:20978" ];
+    };
+  };
+in
 {
   den.aspects.core.syncthing =
     { host, ... }:
@@ -29,6 +49,14 @@
           meshHosts = lib.filterAttrs (_: h: h.syncthing.enable && h.syncthing.id != "") (
             lib.foldl' (acc: sys: acc // den.hosts.${sys}) { } (builtins.attrNames den.hosts)
           );
+
+          meshDevices = lib.mapAttrs (_: h: { id = h.syncthing.id; }) meshHosts;
+
+          # Everything this host peers with, mesh and external alike. Plain
+          # '//' would let an external peer shadow a mesh host that shared its
+          # name, and the only symptom would be a machine that quietly stops
+          # syncing; unionOfDisjoint refuses instead.
+          allDevices = lib.attrsets.unionOfDisjoint meshDevices externalPeers;
         in
         {
           sops.secrets = {
@@ -48,7 +76,7 @@
             overrideDevices = true;
             overrideFolders = true;
             settings = {
-              devices = lib.mapAttrs (_: h: { id = h.syncthing.id; }) meshHosts;
+              devices = allDevices;
               options = {
                 relaysEnabled = false;
                 globalAnnounceEnabled = false;
@@ -59,7 +87,7 @@
 
               folders.Syncthing = {
                 path = "${config.home.homeDirectory}/Syncthing";
-                devices = builtins.attrNames meshHosts;
+                devices = builtins.attrNames allDevices;
                 versioning = {
                   type = "staggered";
                   params = {
