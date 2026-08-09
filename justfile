@@ -1,3 +1,4 @@
+cachyos-cache := "--option allow-import-from-derivation true --option extra-substituters 'https://attic.xuyh0120.win/lantian' --option extra-trusted-public-keys 'lantian:EeAUQ+W+6r7EtwnmYjeVwx5kOGEBpjlBfPlzGlTNvHc='"
 usb := "/run/media/tomwrw/SURVIVOR/keys"
 user := "tomwrw"
 
@@ -59,7 +60,7 @@ deploy HOST: (check-bootstrap HOST)
 
 # Build HOST's closure locally, no activation.
 build HOST:
-    nixos-rebuild build --flake .#{{ HOST }}
+    nixos-rebuild build --flake .#{{ HOST }} {{ cachyos-cache }}
 
 # Switch HOST to a locally-built closure over SSH.
 rebuild HOST:
