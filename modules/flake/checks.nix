@@ -184,8 +184,9 @@ let
         message = "${name}: boot.loader.systemd-boot.configurationLimit must be bounded - the 1G ESP holds whole UKIs";
       }
       {
-        assertion = !(cfg.boot.lanzaboote.enable or false) || !cfg.boot.lanzaboote.allowUnsigned;
-        message = "${name}: boot.lanzaboote.allowUnsigned must be pinned false - it defaults to autoGenerateKeys.enable";
+        assertion =
+          !(cfg.boot.lanzaboote.autoGenerateKeys.enable or false) || cfg.boot.lanzaboote.allowUnsigned;
+        message = "${name}: boot.lanzaboote.allowUnsigned must stay true while autoGenerateKeys is on - lzbt runs inside nixos-install, but the keys are only generated on the first boot, so pinning it false makes a from-scratch deploy impossible";
       }
       {
         assertion = sopsSshKeyPaths == [ ];
