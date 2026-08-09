@@ -9,7 +9,6 @@ _: {
       programs.obsidian.enable = true;
 
       home.persistence."/persist".directories = [
-        "Sync"
         ".config/obsidian"
       ];
     };

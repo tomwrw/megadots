@@ -26,7 +26,7 @@
             # Stylix needs the vault's absolute path so it can drop a CSS
             # snippet in. Built from homeDirectory instead of hardcoded, so
             # there's no username in this aspect.
-            vaultNames = [ "${config.home.homeDirectory}/Sync/Notes" ];
+            vaultNames = [ "${config.home.homeDirectory}/Syncthing/02 Area/Notes" ];
           };
           qt.enable = false;
         };
