@@ -151,43 +151,55 @@ in
         ];
       };
 
-    homeManager = _: {
-      systemd.user.startServices = "sd-switch";
-      programs.home-manager.enable = true;
-      home.sessionPath = [ "$HOME/.local/bin" ];
+    homeManager =
+      { config, ... }:
+      {
+        systemd.user.startServices = "sd-switch";
+        programs.home-manager.enable = true;
+        home.sessionPath = [ "$HOME/.local/bin" ];
 
-      # / goes back to a blank snapshot every boot and /home is inside it, so
-      # my home keeps only what's listed here or in an app aspect's own
-      # home.persistence block.
-      #
-      # hideMounts is per store. The same option in core/impermanence.nix
-      # doesn't cover these, so it needs setting again here. Setting it here
-      # covers every aspect's entries, since they all share this store.
-      home.persistence."/persist" = {
-        hideMounts = true;
-        directories = [
-          "Documents"
-          "Downloads"
-          "Pictures"
-          "Videos"
-          "Music"
-        ];
+        # / goes back to a blank snapshot every boot and /home is inside it, so
+        # my home keeps only what's listed here or in an app aspect's own
+        # home.persistence block.
+        #
+        # hideMounts is per store. The same option in core/impermanence.nix
+        # doesn't cover these, so it needs setting again here. Setting it here
+        # covers every aspect's entries, since they all share this store.
+        home.persistence."/persist" = {
+          hideMounts = true;
+          directories = [
+            "Documents"
+            "Downloads"
+            "Pictures"
+            "Videos"
+            "Music"
+          ];
+        };
+
+        programs.git.settings.user.name = "tomwrw";
+        programs.git.settings.user.email = email;
+
+        # A path to the private key, not the key:: literal this used to be.
+        #
+        # git only adds -U to 'ssh-keygen -Y sign' for a literal, and -U means
+        # "this identity lives in an agent". Nothing here ever puts it in one:
+        # core/security/ssh-agent.nix starts an empty agent, and AddKeysToAgent
+        # is an ssh(1) option, so it fires on an SSH connection and never on a
+        # signature. Every first commit of a fresh login died with "Couldn't
+        # find key in agent" until I'd happened to ssh somewhere first.
+        #
+        # The earlier note here said a path prompts on every signed commit. It
+        # only prompts when the agent doesn't already hold the key: ssh-keygen
+        # checks the agent for the matching public key before it falls back to
+        # reading the file. So this form always completes - silently once the
+        # key is loaded, after one passphrase prompt when it isn't - where the
+        # literal had no fallback at all and simply failed.
+        programs.git.settings.user.signingkey = "${config.home.homeDirectory}/.ssh/id_ed25519";
+
+        xdg.configFile."git/allowed_signers".text = lib.concatMapStrings (k: "${email} ${k}\n") (
+          lib.attrValues sshKeys
+        );
       };
-
-      programs.git.settings.user.name = "tomwrw";
-      programs.git.settings.user.email = email;
-
-      # A literal key, not a path to one. git only passes -U to 'ssh-keygen -Y
-      # sign', meaning the identity is held by an agent, when signingkey is a
-      # literal key or key:: prefixed. Given a path it hands the file straight
-      # to ssh-keygen, which doesn't read ssh_config at all, so AddKeysToAgent
-      # never applies and a passphrased key prompts on every signed commit.
-      programs.git.settings.user.signingkey = "key::${sshKeys.plain}";
-
-      xdg.configFile."git/allowed_signers".text = lib.concatMapStrings (k: "${email} ${k}\n") (
-        lib.attrValues sshKeys
-      );
-    };
 
     # No host-specific extras here. They come from the roles a host takes,
     # roles/gaming.nix and roles/dev.nix, through provides.to-users. That way

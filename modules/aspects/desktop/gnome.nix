@@ -60,7 +60,18 @@ _: {
       };
 
     provides.to-users.homeManager =
-      { pkgs, ... }:
+      {
+        config,
+        lib,
+        pkgs,
+        ...
+      }:
+      let
+        # Where the copies live. Not a home.persistence entry, on purpose -
+        # see the comment on the two units below.
+        liveFile = "${config.home.homeDirectory}/.config/monitors.xml";
+        savedFile = "/persist/home/${config.home.username}/.config/monitors.xml";
+      in
       {
         # programs.gnome-shell does what I was doing by hand: installs each
         # extension's package and sets disable-user-extensions = false plus
@@ -107,6 +118,57 @@ _: {
           enable = true;
           mime.enable = true;
           mimeApps.enable = true;
+        };
+
+        # Display settings - resolution, refresh rate, monitor layout - are
+        # the one piece of GNOME state impermanence can't hold as a
+        # home.persistence entry, so they get copied in and out instead.
+        #
+        # mutter saves ~/.config/monitors.xml with
+        # G_FILE_CREATE_REPLACE_DESTINATION: it writes a temp file beside it
+        # and renames over the top. That defeats both forms impermanence has.
+        # A file entry is a bind mount, and rename onto a mount point is
+        # EBUSY, which surfaces as "Saving monitor configuration failed" and a
+        # revert once the confirmation dialog times out. A symlink fares no
+        # better - the flag means "replace, don't follow links", so the
+        # symlink is swapped for a plain file and the next boot loses it. Only
+        # a persisted directory would work, and monitors.xml sits directly in
+        # ~/.config, which every app aspect persists a subdirectory of.
+        #
+        # Restoring from activation rather than a tmpfiles rule keeps this
+        # inside the aspect that causes the state, and is still early enough:
+        # home-manager-<user>.service is ordered
+        # Before=systemd-user-sessions.service, so it has run before a login
+        # is possible, let alone before gnome-shell reads the file.
+        home.activation.restoreGnomeMonitors = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+          # Only when the live file is missing, so a 'nixos-rebuild switch'
+          # mid-session doesn't roll back a layout I haven't logged out of.
+          if [ ! -e ${lib.escapeShellArg liveFile} ] && [ -e ${lib.escapeShellArg savedFile} ]; then
+            run ${pkgs.coreutils}/bin/install -Dm644 \
+              ${lib.escapeShellArg savedFile} ${lib.escapeShellArg liveFile}
+          fi
+        '';
+
+        # The other half: catch whatever GNOME writes. PathChanged fires on a
+        # file moved into place, which is exactly the rename above.
+        systemd.user.paths.gnome-monitors-save = {
+          Unit.Description = "Watch GNOME's saved display configuration";
+          Path.PathChanged = liveFile;
+          # default.target and not graphical-session.target. This only needs
+          # to be watching by the time GNOME writes, and default.target is
+          # reached on any login without depending on the session manager
+          # having wired graphical-session.target up.
+          Install.WantedBy = [ "default.target" ];
+        };
+
+        systemd.user.services.gnome-monitors-save = {
+          Unit.Description = "Copy GNOME's saved display configuration to /persist";
+          Service = {
+            Type = "oneshot";
+            # install -D makes /persist/home/<user>/.config on the way past.
+            # The user owns their own /persist tree, so this needs no root.
+            ExecStart = "${pkgs.coreutils}/bin/install -Dm644 ${liveFile} ${savedFile}";
+          };
         };
 
         home.persistence."/persist".directories = [
