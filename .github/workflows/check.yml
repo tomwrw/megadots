@@ -1,0 +1,83 @@
+name: check
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+  workflow_dispatch:
+
+# Nothing here writes back to the repository.
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # Evaluation only. No host closure is ever built: the failures this repo
+  # actually fears - state silently rolled away by impermanence, firewall rules
+  # that never match an interface, a lanzaboote setting that makes a
+  # from-scratch deploy impossible - are all eval-time properties, and a green
+  # 15 GB build proves none of them. Deploys are atomic and nixos-rebuild builds
+  # before it switches, so a broken closure costs me time at the terminal rather
+  # than a broken machine.
+  eval:
+    runs-on: ubuntu-latest
+    # Instantiating both hosts adds a few minutes over the checks alone, and a
+    # cold nixpkgs fetch is most of the rest.
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: cachix/install-nix-action@v31
+        with:
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+      - run: |
+          nix build --print-build-logs --no-link \
+            .#checks.x86_64-linux.invariants \
+            .#checks.x86_64-linux.roster \
+            .#checks.x86_64-linux.treefmt \
+            .#checks.x86_64-linux.check-flake-file
+
+      # Derived, not hardcoded: a hardcoded list means a newly added host is
+      # silently never checked - the same vacuous-pass failure mode that
+      # modules/flake/checks.nix asserts against. flake.roster is the JSON-safe
+      # projection of the host list (modules/den/hosts.nix). It is keyed by
+      # system, so an aarch64 host would need its own runner and its own list.
+      - id: hosts
+        run: |
+          hosts=$(nix eval --json '.#roster.x86_64-linux' --apply builtins.attrNames)
+          echo "hosts=$hosts" >> "$GITHUB_OUTPUT"
+          echo "hosts: $hosts"
+
+      # Forcing toplevel.drvPath evaluates a host's entire module system and
+      # writes .drv files without realising a single output, so it costs eval
+      # time and nothing else.
+      #
+      # This is strictly more coverage than the invariants check above. That one
+      # reads a wide slice of config but never forces toplevel, and toplevel is
+      # where nixpkgs runs its own assertions:
+      #
+      #   nixos/modules/system/activation/top-level.nix
+      #     baseSystemAssertWarn = lib.asserts.checkAssertWarn config.assertions ...
+      #
+      # Without this step every `assertions` entry in the tree - including the
+      # channel/optimization one in aspects/core/linux-kernel.nix - passes CI
+      # untested.
+      #
+      # Stylix reads a base16 scheme out of a derivation, so this does realise
+      # one small path by IFD. That is a plain cache.nixos.org fetch; the CachyOS
+      # kernel arrives through an overlay as an ordinary derivation and is never
+      # built here, which is why this needs no extra substituter.
+      - name: Instantiate every host
+        env:
+          HOSTS: ${{ steps.hosts.outputs.hosts }}
+        run: |
+          for host in $(jq -r '.[]' <<<"$HOSTS"); do
+            echo "::group::$host"
+            nix eval --raw --print-build-logs \
+              ".#nixosConfigurations.$host.config.system.build.toplevel.drvPath"
+            echo
+            echo "::endgroup::"
+          done

@@ -1,38 +1,20 @@
 { den, ... }:
 {
-
-  den.hosts.x86_64-linux.endgame = {
-    settings = {
-      system = {
-        linux-kernel = {
-          channel = "latest";
-          optimization = "zen4";
-        };
-      };
-    };
-  };
-
   den.aspects.endgame = {
     includes = [
-      den.aspects.base
-      den.aspects.desktop
-      den.aspects.secure-boot
-      den.aspects.virtualisation
-      den.aspects.preservation
+      den.aspects.roles.base
+      den.aspects.roles.workstation
+      den.aspects.roles.gaming
+      den.aspects.roles.dev
+      den.aspects.core.boot.lanzaboote
+      den.aspects.virtualisation.libvirt
+      den.aspects.core.linux-kernel
     ];
 
-    nixos =
-      { ... }:
-      {
-        imports = [
-          ./_disko.nix
-          ./_hardware.nix
-        ];
-
-        networking = {
-          domain = "home.arpa";
-          search = [ "home.arpa" ];
-        };
-      };
+    # nixos-generate-config output for this machine. Imported straight in
+    # rather than wrapped in an aspect under aspects/hardware/, because it
+    # isn't reusable, it belongs to this host and it sits next to this file.
+    # The '_' prefix keeps import-tree from picking it up as its own module.
+    nixos.imports = [ ./_hardware.nix ];
   };
 }

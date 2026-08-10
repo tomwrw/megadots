@@ -4,6 +4,8 @@
 
 # Introduction
 
+[![check](https://github.com/tomwrw/megadots/actions/workflows/check.yml/badge.svg)](https://github.com/tomwrw/megadots/actions/workflows/check.yml)
+
 My NixOS configuration, built on the den framework + Home Manager + Flakes. This framework provides libraries that make implementing the dendritic pattern a breeze. I publish this repo to help others, as I found other people's repos extremely helpful when learning Nix/NixOS. Hopefully I can return the favour.
 
 > **Note:** This is my personal config. Any branch other than `main` should be considered a work in progress. Hardware configs, hostnames, secrets and user attributes are unique to me - you'll need to bring your own.
@@ -12,17 +14,18 @@ My NixOS configuration, built on the den framework + Home Manager + Flakes. This
 
 This is the fourth iteration of my NixOS configuration. I've been daily driving NixOS for nearly 2 years. Most recently, I have dabbled with the dendritic pattern and with the den framework, I have found a suitable home for my configs.
 
-You can find my other configs archived in named branches for review if you want to check out other management styles, like nix-classic and nix-dendritic.
+You can find my other configs archived in named branches for review if you want to check out other management styles, like megadots-classic and megadots-dendritic.
 
 I'm not a developer. I'm a tinkerer with a consultancy job in a technical field who got curious about declarative system management and fell down the NixOS rabbit hole. This project has genuinely brought some fun back into computing for me.
 
 ## Features.
 
 - :desktop_computer: **NixOS** aspects for multiple hosts.
-- :house: **Home Manager** as a NixOS module, also supporting standalone mode.
+- :house: **Home Manager** as a NixOS module.
 - :ghost: **sops-nix** for secrets management, with dedicated age key support for hosts and users.
-- :key: **FIDO2 hardware keys** (Token2 PIN+) for SSH, git commit signing, sudo and LUKS unlock.
-- :camera_flash: **Preservation** with root on tmpfs for declarative impermanence.
+- :key: **FIDO2 hardware keys** (Token2 PIN+) for SSH, with an optional extra LUKS unlock keyslot alongside the passphrase.
+- :camera_flash: **Impermanence** on an ephemeral btrfs root — `/` is restored from a blank
+  snapshot on every boot, and state is opt-in per aspect.
 - :cop: **Secure Boot** via lanzaboote with automatic key generation and enrollment.
 - :snowflake: **Flake** with the den framework for modular, composable host and user aspects.
 - :floppy_disk: **Disko** for declarative disk partitioning.
@@ -30,71 +33,242 @@ I'm not a developer. I'm a tinkerer with a consultancy job in a technical field 
 - :art: **Stylix** for consistent base16 theming across the user environment.
 - :rocket: **nixos-anywhere** for bare metal remote deployment.
 
+## The hosts.
+
+| Host | Machine | Bootloader | Kernel | Roles |
+|---|---|---|---|---|
+| `endgame` | AMD desktop (zen4) | lanzaboote (Secure Boot) | CachyOS `latest-zen4` | base, workstation, gaming, dev |
+| `flatmate` | Microsoft Surface Pro (Intel) | systemd-boot | nixpkgs default | base, workstation |
+
+Both run an ephemeral btrfs root on LUKS, GNOME, and the same user. `/` is its own
+subvolume, deleted and restored from a read-only `root-blank` snapshot by an initrd
+service on every boot; `/nix`, `/persist` and swap are separate subvolumes that survive.
+`/home` deliberately sits *inside* the rolled-back root, so user state is opt-in through
+`home.persistence` in the aspect that owns it, exactly as system state is opt-in through
+`core.impermanence`. Touch `dont-wipe` at the top of the btrfs volume to skip the wipe for
+a boot.
+
+## What den gives you.
+
+If you have not met [den](https://github.com/denful/den) before, five terms explain
+almost everything in this repo:
+
+- **aspect** - a named, self-contained feature. It can carry a `nixos` block, a
+  `homeManager` block, or both. Aspects are never split by class, only by concern:
+  [bluetooth](modules/aspects/hardware/bluetooth.nix) owns its NixOS options *and* the
+  state it needs persisted, in one file.
+- **`includes`** - how a host or user opts in. [roles/base.nix](modules/aspects/roles/base.nix)
+  is nothing but a list of aspects every host takes.
+- **`provides.to-users`** - a host-scope aspect handing configuration to every user on
+  that host. Needed because a bare `homeManager` block on a host-scope aspect is silently
+  dropped; [gnome](modules/aspects/desktop/gnome.nix) uses it to deliver dconf settings.
+- **`den.batteries.*`** - den's own prebuilt aspects (defining a user, setting a login
+  shell). Used in [den/defaults.nix](modules/den/defaults.nix) and the user aspect.
+- **quirk** + **policy** - a quirk is a named data channel an aspect writes to; a policy
+  routes it. See [den/quirks.nix](modules/den/quirks.nix) and the section below.
+
+### Start here.
+
+The shortest path through the repo, in reading order:
+
+1. [den/defaults.nix](modules/den/defaults.nix) - what every host and user gets, unasked.
+2. [den/hosts.nix](modules/den/hosts.nix) - the roster: per-host facts, and nothing else.
+3. [hosts/endgame/default.nix](modules/hosts/endgame/default.nix) - a host as a readable
+   manifest of the roles it takes.
+4. [roles/base.nix](modules/aspects/roles/base.nix) - a role is just a list of aspects.
+5. [aspects/core/networking.nix](modules/aspects/core/networking.nix) - a real aspect, and
+   the single consumer of the firewall quirk.
+6. [flake/checks.nix](modules/flake/checks.nix) - the fleet invariants that keep all of the
+   above honest.
+
 ## Layout.
 
 Everything lives under `modules/`, discovered automatically by [import-tree](https://github.com/vic/import-tree) - there are no manual import lists; dropping a file in is enough. `flake.nix` is generated by [flake-file](https://github.com/vic/flake-file) (`nix run .#write-flake`), so each module declares the flake inputs it needs right next to the code that uses them via `flake-file.inputs`.
 
 ```
 modules/
-├── inputs.nix        # core inputs + the dendritic flake-modules
-├── schema.nix        # custom den host/user options (e.g. syncthing.id)
-├── defaults.nix      # den.default - batteries and settings every host gets
-├── hosts.nix         # the host roster: den.hosts.<system>.<name>
-├── hosts/            # one directory per host: includes, disko layout, hardware
+├── flake/               # flake plumbing: inputs, treefmt, checks, devShell, deploy
+├── den/                 # den.default, host/user schema options, the host roster, quirks
+├── hosts/                # one directory per host: its roles, and its _hardware.nix
 │   ├── endgame/
 │   └── flatmate/
-├── aspects/          # the reusable aspect library - one concern per file
-└── users/tomwrw/     # the Home Manager user, itself just another aspect
+├── aspects/              # the reusable aspect library, organised by concern:
+│   ├── core/             #   always-on baseline (nix, networking, boot, impermanence, …)
+│   │   └── security/     #     sops, openssh, hardening, fido2, ssh-agent
+│   ├── hardware/         #   graphics/audio/bluetooth + per-model support
+│   ├── desktop/          #   gnome, stylix, fonts
+│   ├── virtualisation/   #   libvirt (room for docker/podman siblings later)
+│   ├── apps/             #   every user-facing app, one directory per category
+│   │   ├── dev/          #     apps.dev.*
+│   │   ├── gaming/       #     apps.gaming.*
+│   │   ├── messaging/    #     apps.messaging.*
+│   │   └── …             #     browsers, media, monitoring, productivity,
+│   │                     #     security, shell, storage, terminals
+│   └── roles/            #   composite bundles hosts include (base, workstation, gaming, dev)
+└── users/tomwrw/         # the Home Manager user, itself just another aspect
 ```
 
-The unit of composition is the **aspect**: a named, self-contained feature that can carry a NixOS side, a Home Manager side, or both. Hosts and users opt in via `includes`. For example, [fonts](modules/aspects/fonts.nix) installs its font set at the system level for every host, and offers the same set as an opt-in `home` sub-aspect for standalone Home Manager users with no system font path to fall back on:
+The directory tree mirrors the aspect namespace, with no exceptions:
+`core/security/sops.nix` declares `den.aspects.core.security.sops`, and
+`apps/messaging/signal.nix` declares `den.aspects.apps.messaging.signal`. If you know an
+aspect's name you know its path, and vice versa. Host-specific hardware is *not* an
+aspect - each host imports its own `_hardware.nix` directly, and the `_` prefix is what
+stops [import-tree](https://github.com/vic/import-tree) picking it up as a module of its own.
+
+The unit of composition is the **aspect**: a named, self-contained feature that can carry a NixOS side, a Home Manager side, or both - never split by class, only by concern. Hosts and users opt in via `includes`. For example, [fonts](modules/aspects/desktop/fonts.nix) installs its font set at the system level for every host, and offers the same set as a named `home` sub-aspect for a standalone Home Manager setup with no system font path to fall back on (nothing in this repo includes it - it is there as an opt-in, and as an illustration of naming a sub-aspect rather than leaving a silently inert `homeManager` block on a host-scope aspect):
 
 ```nix
 {
-  den.aspects.fonts = {
+  den.aspects.desktop.fonts = {
     nixos = { pkgs, ... }: { fonts.packages = fontPkgs pkgs; };
     provides.home.homeManager = { pkgs, ... }: { home.packages = fontPkgs pkgs; };
   };
 }
 ```
 
-Cross-cutting data flows through the den roster rather than hard-coding: [syncthing](modules/aspects/syncthing.nix) builds its device mesh by reading every host's `syncthing.id` from `den.hosts`, an option declared once in [schema.nix](modules/schema.nix).
+Cross-cutting data flows through the den roster rather than hard-coding: [syncthing](modules/aspects/core/syncthing.nix) builds its device mesh by reading every host's `syncthing.id` from `den.hosts`, an option declared once in [den/schema.nix](modules/den/schema.nix).
+
+Cross-cutting *configuration* flows through den quirks, declared in
+[den/quirks.nix](modules/den/quirks.nix). An aspect says what it needs and something
+else decides how to apply it:
+
+```nix
+# apps/sunshine.nix says only this...
+firewall.tcp = [ 47984 47989 47990 48010 ];
+
+# ...and core/networking.nix is the single place that turns every such
+# declaration into interface-scoped rules on host.network.lanInterface.
+```
+
+The same pattern carries `unfree` package names and `persist` paths. Note the trap: a
+quirk emitted from a **user-scope** aspect only reaches the host if an expose policy is
+registered for it in `den.schema.user.includes` - without one it is discarded silently,
+with no error. `core.syncthing` is included at user scope, so its ports depend on exactly
+that, and [modules/flake/checks.nix](modules/flake/checks.nix) asserts they arrive.
+
+### Deliberate Nix settings.
+
+[core/nix.nix](modules/aspects/core/nix.nix) sets two options that are worth calling out explicitly, as they are security concerns I have made with my config:
+
+- `nix.settings.trusted-users = [ "root" "@wheel" ]` - lets any `wheel` member build/substitute arbitrary derivations and push closures via `nixos-rebuild --target-host`. This is a single-admin-LAN trade-off: fine for me as the sole admin of the fleet, but not something you might want to carry into a multi-user or shared-admin setup without consideration.
+- `nix.settings.allow-import-from-derivation = true` - required because Stylix's base16 scheme reader does an IFD (`readFile`s a YAML out of the `base16-schemes` derivation at eval time). Without it, evaluation fails outright; it is not optional given my current Stylix setup. I may look at this in the future, but for now, Stylix theming is worth the risk to me.
+
+### Known trade-offs.
+
+Things that are deliberate rather than missed, so you can judge whether they suit you:
+
+- **Stylix is applied through Home Manager only.** The NixOS module is not imported, so
+  GDM's login screen, the TTY palette, plymouth and the system fontconfig are unthemed,
+  and `stylix.fonts`/`stylix.cursor` are unset - the desktop renders in Stylix's DejaVu
+  defaults even though [fonts.nix](modules/aspects/desktop/fonts.nix) installs rather more
+  than that. Wiring in `stylix.nixosModules.stylix` would fix all of it.
+- **LAN-scoped firewall rules are weaker on a laptop.** Every port is opened on
+  `host.network.lanInterface` rather than globally, which is a real improvement on a
+  desktop. On `flatmate`, that interface is the Wi-Fi adapter, so it is the same interface
+  at home and in a cafe - SSH and Syncthing are reachable on any network it joins. Source
+  subnet matching (which needs the nftables backend) is the actual fix.
+- **`trusted-users` includes `@wheel`, on a host that signs its own boot chain.** The two
+  entries above compose: a trusted user can get arbitrary content into the store, and
+  `endgame` is the machine that then signs whatever it boots with its Secure Boot key.
+- **A third-party binary cache supplies that host's kernel.**
+  [core/linux-kernel.nix](modules/aspects/core/linux-kernel.nix) trusts
+  `attic.xuyh0120.win/lantian` for prebuilt CachyOS kernels, and CI trusts the same key.
+  It composes with the point above: a compromised cache could hand `endgame` a kernel that
+  its own Secure Boot chain would then sign and boot without complaint. Accepted so that a
+  zen4 LTO kernel does not have to be compiled locally on every bump.
 
 ## Usage.
 
 This configuration has multiple system entry points. At the moment, I am a single user (tomwrw) managing multiple machines.
 
+### Prerequisites.
+
+- Nix with flakes enabled (`experimental-features = nix-command flakes`).
+- `just`, `sops` and `age`. `nix develop` provides these plus `nixfmt`, `nvd`,
+  `ssh-to-age` and `nixos-anywhere` - see [devshell.nix](modules/flake/devshell.nix).
+- An age keypair per host and per user, and a FIDO2 token if you want the extra LUKS
+  keyslot. The deploy recipe expects these on a removable drive at the path in the
+  `usb` variable at the top of the [justfile](justfile).
+
 ### Getting Started.
 
-Most day-to-day work goes through the `justfile`. The full deploy flow is a single recipe that stages keys for shipping to the host, deploys the host and then seeds the keys automatically.
+Everything goes through `just`. Run it bare to list the recipes.
 
 ```bash
-# Deploy the named host remotely.
-just deploy endgame
-
-# Rebuild a remote host (pushes locally-built closure).
-just rebuild endgame
-
-# Build a host's closure locally (no activation).
-just build endgame
-
-# Run flake checks.
-nix flake check
-
-# Format the tree (nixfmt + deadnix + statix via treefmt).
-nix fmt
-
-# Enroll the inserted FIDO2 key in a host's LUKS header (once per key).
-just enroll-fido2 endgame
+just                      # list recipes
+just build endgame        # build a host's closure locally (no activation)
+just diff endgame         # build, then nvd diff against the running system
+just rebuild endgame      # switch a remote host (pushes a locally-built closure)
+just deploy endgame       # bare-metal install via nixos-anywhere (formats disks)
+just check                # build both hosts + fleet invariants + roster checks
+just fmt                  # nixfmt + deadnix + statix via treefmt
+just update               # nix flake update
+just gc                   # collect garbage older than 30 days
+just enroll-fido2 endgame # add the inserted token to the LUKS header
+just secrets-edit secrets/users/tomwrw.yaml
+just secrets-updatekeys   # re-sync sops recipients after editing .sops.yaml
 ```
 
-### Updating.
+`just check` is the one worth knowing about: it builds both hosts, then asserts a set of
+fleet invariants - no globally-open firewall ports, `/persist` marked `neededForBoot`,
+host keys under `/persist`, `/` actually on the rolled-back `root` subvolume with its
+rollback service present, the bootloader bounded and its editor disabled, hardening
+kernel params actually present, and user-scope firewall quirks reaching the host.
 
-To update the flake inputs (e.g., `nixpkgs`), run the following command:
+CI runs the same checks, but splits them: the evaluation-only ones run on every push,
+while the full host builds run on `main`, pull requests and manual dispatch. `flatmate`
+compiles a patched linux-surface kernel that no public cache serves, so its build is
+cached across runs by store path rather than repeated - see
+[check.yml](.github/workflows/check.yml).
 
-```bash
-nix flake update
-```
+### Bootstrapping a host from scratch.
+
+Run `just check-bootstrap <name>` at any point - it verifies every one of the following
+and refuses to call the host ready until they are all in place. `just deploy` runs it
+first, so a missing file fails *before* anything is partitioned rather than half way
+through.
+
+1. **USB key material**, at the layout the `deploy` recipe expects. Note the SSH keys as
+   well as the age keys - `deploy` seeds all of them and aborts on any that is missing:
+
+   ```
+   <usb>/hosts/<hostname>/age.txt          # host age key  -> /persist/var/lib/sops-nix/key.txt
+   <usb>/users/<username>/age.txt          # user age key  -> /persist/home/<user>/.config/sops/age/keys.txt
+   <usb>/users/<username>/id_ed25519{,.pub}
+   <usb>/users/<username>/id_ed25519_sk_primary{,.pub}    # FIDO2 handles; useless without
+   <usb>/users/<username>/id_ed25519_sk_backup{,.pub}     # the physical token
+   ```
+
+   The `usb` path itself is a variable at the top of the [justfile](justfile).
+
+2. **A `creation_rules` block for the new host** in [.sops.yaml](.sops.yaml) - one per
+   secrets file, listing its recipients. Adding a key to the recipient list is not enough;
+   without its own rule the host's secrets are encrypted to nobody. Then run
+   `just secrets-updatekeys`.
+3. **`secrets/hosts/<name>.yaml`** with at least `users/<user>/password`. Evaluation
+   interpolates this filename from the hostname, so a missing file fails the build.
+4. **`syncthing/<name>/{key,cert,guiPassword}` in `secrets/users/<user>.yaml`** - the
+   syncthing secrets are keyed by *host* but live in the *user* file
+   ([core/syncthing.nix](modules/aspects/core/syncthing.nix)). Miss these and the host
+   builds fine, then Home Manager activation fails on the new machine.
+5. **The roster entry** in [modules/den/hosts.nix](modules/den/hosts.nix): disk id (a
+   stable `/dev/disk/by-id/` path), swap size, LAN interface name from `ip -br link`, and
+   the Syncthing device id. `just check` validates all four.
+6. **`modules/hosts/<name>/`** with a `default.nix` listing the roles it takes and a
+   `_hardware.nix` from `nixos-generate-config`.
+
+Then boot the target from a NixOS installer ISO, set a password for the `nixos` user so
+SSH works, and run `just deploy <name>`. nixos-anywhere partitions with disko, seeds the
+keys and installs.
+
+### Adapting this for yourself.
+
+Fork it, then: replace `modules/users/` and `modules/hosts/` with your own, empty the
+roster in `modules/den/hosts.nix`, regenerate `.sops.yaml` with your own age keys, and
+replace `assets/` (the wallpapers are not covered by this repo's licence - see
+[LICENSE](LICENSE)). The parts worth keeping are `modules/aspects/`,
+`modules/den/quirks.nix` and `modules/flake/checks.nix` - no aspect names a host or a
+user, so they port across unchanged.
 
 ## Community.
 
