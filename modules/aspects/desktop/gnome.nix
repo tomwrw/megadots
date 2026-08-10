@@ -177,6 +177,14 @@ _: {
           # preferences, the dash favourites, anything I changed in Settings
           # instead of in this file.
           ".config/dconf"
+          # xdg-desktop-portal's permission store, which is where "Remember
+          # This Selection" in a portal dialog actually goes - screen capture,
+          # camera, location, background. The path is a flatpak one because
+          # xdg-permission-store hardcodes it, not because anything here is a
+          # flatpak. Without it sunshine re-prompts for screen sharing on every
+          # login, since the portal has forgotten the grant even though
+          # sunshine still has its restore token in .config/sunshine.
+          ".local/share/flatpak/db"
           # gnome-keyring's secret store. The GNOME module runs the daemon, so
           # without this every boot starts with no keyring, GNOME asks me to
           # make one, and anything stored through libsecret is gone.
