@@ -90,6 +90,42 @@ in
         in
         entries "/persist" // entries "";
 
+      # GNOME sets the avatar through accountsservice, which copies the image
+      # into /var/lib/AccountsService/icons/<user> and records Icon= in
+      # users/<user>. Both sit under a path desktop/gnome.nix already persists,
+      # but with no Icon= key accountsservice falls back to ~/.face - a bare
+      # file in the home root, and only subdirectories of it are persisted. So a
+      # picture set in Settings was gone by the next boot.
+      #
+      # Declaring both ends rather than persisting them. The image can't live in
+      # my home either way: gdm draws the login screen as its own user and
+      # /home/tomwrw is 0700, so an avatar in there shows up in Settings and
+      # nowhere else.
+      #
+      # 'f+' truncates, so this owns users/tomwrw outright and the other keys
+      # accountsservice keeps there - Language, XSession - are rewritten away on
+      # every boot instead of merged. Same trade as users.mutableUsers and the
+      # VSCodium extension list: what's in this repo is the only source of
+      # truth.
+      #
+      # Real newlines below, not "\n". The tmpfiles module runs the argument
+      # through lib.strings.escapeC, so it emits the escapes itself - writing
+      # them here gets the backslash escaped a second time and lands a literal
+      # \n in the keyfile. nixpkgs warns about exactly that, which is the only
+      # reason I know.
+      systemd.tmpfiles.settings."10-tomwrw-avatar" = {
+        "/var/lib/AccountsService/icons/tomwrw"."L+".argument = "${./avatar.png}";
+        "/var/lib/AccountsService/users/tomwrw"."f+" = {
+          mode = "0600";
+          user = "root";
+          group = "root";
+          argument = ''
+            [User]
+            Icon=/var/lib/AccountsService/icons/tomwrw
+          '';
+        };
+      };
+
       # tmpfiles can own the seeded directories but not the seeded files.
       # systemd-tmpfiles refuses to 'z' a file whose path runs through
       # user-owned directories, which is its protection against symlink
