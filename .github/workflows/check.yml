@@ -6,7 +6,7 @@ on:
   pull_request:
   workflow_dispatch:
 
-# Neither job writes anything back to the repository.
+# Nothing here writes back to the repository.
 permissions:
   contents: read
 
@@ -15,15 +15,18 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # Evaluation-only: the fleet invariants and roster checks are runCommands with
-  # no build dependencies, so this is fast and catches most regressions. Kept
-  # separate from the host builds below so a broken invariant reports in a
-  # minute rather than after two multi-gigabyte closures.
+  # Evaluation only. No host closure is ever built: the failures this repo
+  # actually fears - state silently rolled away by impermanence, firewall rules
+  # that never match an interface, a lanzaboote setting that makes a
+  # from-scratch deploy impossible - are all eval-time properties, and a green
+  # 15 GB build proves none of them. Deploys are atomic and nixos-rebuild builds
+  # before it switches, so a broken closure costs me time at the terminal rather
+  # than a broken machine.
   eval:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
-    outputs:
-      hosts: ${{ steps.hosts.outputs.hosts }}
+    # Instantiating both hosts adds a few minutes over the checks alone, and a
+    # cold nixpkgs fetch is most of the rest.
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
       - uses: cachix/install-nix-action@v31
@@ -37,102 +40,44 @@ jobs:
             .#checks.x86_64-linux.treefmt \
             .#checks.x86_64-linux.check-flake-file
 
-      # Derived, not hardcoded: a hardcoded matrix means a newly added host is
-      # silently never built - the same vacuous-pass failure mode that
+      # Derived, not hardcoded: a hardcoded list means a newly added host is
+      # silently never checked - the same vacuous-pass failure mode that
       # modules/flake/checks.nix asserts against. flake.roster is the JSON-safe
       # projection of the host list (modules/den/hosts.nix). It is keyed by
-      # system, so an aarch64 host would need its own runner and its own matrix.
+      # system, so an aarch64 host would need its own runner and its own list.
       - id: hosts
         run: |
           hosts=$(nix eval --json '.#roster.x86_64-linux' --apply builtins.attrNames)
           echo "hosts=$hosts" >> "$GITHUB_OUTPUT"
-          echo "building: $hosts"
+          echo "hosts: $hosts"
 
-  # One host per job: flatmate's closure alone is ~15 GB and a hosted runner has
-  # roughly 14 GB free on /, where /nix lives. Building both in one job dies
-  # with ENOSPC.
-  host:
-    # Gated on eval so a formatting or invariant failure does not also pay for a
-    # kernel build that is going to be thrown away.
-    needs: eval
-
-    # Not on every feature-branch push. Actions caches are only readable by the
-    # branch that wrote them and its PRs, whereas caches written on the default
-    # branch are readable everywhere - so building on main is what seeds the
-    # kernel cache below for everything else.
-    if: >-
-      github.ref == 'refs/heads/main'
-      || github.event_name == 'pull_request'
-      || github.event_name == 'workflow_dispatch'
-
-    runs-on: ubuntu-latest
-    # A cold surface-kernel build (see the cache step) takes upwards of an hour
-    # on a 4-vCPU runner. Bounded explicitly so a genuine hang fails here rather
-    # than at GitHub's six-hour default.
-    timeout-minutes: 150
-    strategy:
-      fail-fast: false
-      matrix:
-        host: ${{ fromJSON(needs.eval.outputs.hosts) }}
-    steps:
-      - uses: actions/checkout@v4
-
-      # Reclaim ~25 GB of preinstalled toolchains we do not use. Done inline
-      # rather than via a third-party action to keep CI's supply chain to
-      # actions/checkout, actions/cache and the Nix installer.
-      - name: Free disk space
-        run: |
-          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc \
-                      /usr/local/share/boost "$AGENT_TOOLSDIRECTORY"
-          df -h /
-
-      - uses: cachix/install-nix-action@v31
-        with:
-          # The lantian cache is declared in core/linux-kernel.nix as a NixOS
-          # setting, which applies to the built hosts and not to this runner.
-          # Without it here, endgame compiles a zen4 LTO CachyOS kernel from
-          # source and the job times out.
-          #
-          # require-sigs is for the local file:// cache below, which this job
-          # writes itself and which therefore holds unsigned paths.
-          extra_nix_config: |
-            experimental-features = nix-command flakes
-            require-sigs = false
-            extra-substituters = https://attic.xuyh0120.win/lantian
-            extra-trusted-public-keys = lantian:EeAUQ+W+6r7EtwnmYjeVwx5kOGEBpjlBfPlzGlTNvHc=
-
-      # flatmate has no upstream cache for its kernel: hardware/surface-pro.nix
-      # pulls in nixos-hardware's linux-surface patch series, so the derivation
-      # hashes over this flake's own nixpkgs pin and cache.nixos.org has never
-      # seen it. Uncached, every single run recompiles a full kernel.
+      # Forcing toplevel.drvPath evaluates a host's entire module system and
+      # writes .drv files without realising a single output, so it costs eval
+      # time and nothing else.
       #
-      # The outputs are only ~170 MiB, well inside the free 10 GB per-repo
-      # Actions cache, so they are stashed under a drvPath-derived key: a
-      # nixpkgs bump or a patch-series change invalidates it correctly, and
-      # everything else reuses it. The whole toplevel is deliberately NOT cached
-      # - at ~15 GB it exceeds the limit on its own.
-      - name: Kernel cache key
-        id: kern
+      # This is strictly more coverage than the invariants check above. That one
+      # reads a wide slice of config but never forces toplevel, and toplevel is
+      # where nixpkgs runs its own assertions:
+      #
+      #   nixos/modules/system/activation/top-level.nix
+      #     baseSystemAssertWarn = lib.asserts.checkAssertWarn config.assertions ...
+      #
+      # Without this step every `assertions` entry in the tree - including the
+      # channel/optimization one in aspects/core/linux-kernel.nix - passes CI
+      # untested.
+      #
+      # Stylix reads a base16 scheme out of a derivation, so this does realise
+      # one small path by IFD. That is a plain cache.nixos.org fetch; the CachyOS
+      # kernel arrives through an overlay as an ordinary derivation and is never
+      # built here, which is why this needs no extra substituter.
+      - name: Instantiate every host
+        env:
+          HOSTS: ${{ steps.hosts.outputs.hosts }}
         run: |
-          drv=$(nix eval --raw ".#nixosConfigurations.${{ matrix.host }}.config.boot.kernelPackages.kernel.drvPath")
-          echo "key=$(basename "$drv")" >> "$GITHUB_OUTPUT"
-
-      - uses: actions/cache@v4
-        with:
-          path: ~/kernel-cache
-          key: kernel-${{ steps.kern.outputs.key }}
-
-      - run: |
-          nix build --print-build-logs --no-link \
-            --extra-substituters "file://$HOME/kernel-cache" \
-            .#checks.x86_64-linux.${{ matrix.host }}
-
-      # 'out,modules' and not '^*': the toplevel closure needs both of those, so
-      # copying only the default output would leave half the kernel to rebuild
-      # next run - but '^*' would also drag in the 'dev' output, which is not in
-      # the closure at all and whose own closure pulls rustc and the full kernel
-      # source tree (measured: >570 MB and still climbing, versus ~170 MiB here).
-      - name: Save kernel to cache
-        run: |
-          nix copy --to "file://$HOME/kernel-cache" \
-            ".#nixosConfigurations.${{ matrix.host }}.config.boot.kernelPackages.kernel^out,modules"
+          for host in $(jq -r '.[]' <<<"$HOSTS"); do
+            echo "::group::$host"
+            nix eval --raw --print-build-logs \
+              ".#nixosConfigurations.$host.config.system.build.toplevel.drvPath"
+            echo
+            echo "::endgroup::"
+          done
