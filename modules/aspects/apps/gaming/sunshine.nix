@@ -12,7 +12,7 @@ _: {
         autoStart = true;
         settings = {
           origin_web_ui_allowed = "lan";
-          system_tray = "disabled";
+          system_tray = "enabled";
         };
       };
 
