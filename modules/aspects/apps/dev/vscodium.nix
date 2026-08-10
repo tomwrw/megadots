@@ -11,6 +11,13 @@ _: {
         programs.vscodium = {
           enable = true;
 
+          # Same stance as users.mutableUsers: the list below is the only source
+          # of truth. Left mutable, anything installed from the UI lands in
+          # ~/.vscode-oss/extensions, which is not persisted - so it would
+          # disappear on the next boot with no error, the way a missing
+          # home.persistence entry always does.
+          mutableExtensionsDir = false;
+
           profiles.default = {
             extensions = [
               pkgs.vscode-extensions.jnoortheen.nix-ide
