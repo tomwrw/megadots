@@ -252,16 +252,6 @@ Things that are deliberate rather than missed, so you can judge whether they sui
   It composes with the point above: a compromised cache could hand `endgame` a kernel that
   its own Secure Boot chain would then sign and boot without complaint. Accepted so that a
   zen4 LTO kernel does not have to be compiled locally on every bump.
-- **Retired host keys are still in git history, and the payloads behind them are not
-  rotated.** `keys/{endgame,flatmate,spectre}.enc` were committed in `5da3b57` and removed
-  in `9ac96f5`. They are host age identities wrapped under my *user* age identity. Every
-  one of those identities has since been rotated, so the files are useless on their own -
-  but they are a chain, not a single file: the retired user key would decrypt them, those
-  host keys would decrypt the historical `secrets/*.yaml` blobs, and those still hold the
-  values in use today (my password hash and the Syncthing key/cert/GUI password). Closing
-  it properly means rotating those payloads, not the wrapping keys. I have chosen to
-  document it rather than re-pair the fleet; if you fork this pattern, rotate the payloads
-  the first time you rotate an identity.
 - **Real hardware serials are in the roster.** `disk.id` in [den/hosts.nix](modules/den/hosts.nix)
   carries the NVMe serial of each machine. `/dev/disk/by-id/` is the correct stable
   identifier - disko partitions on it, and an invariant in
