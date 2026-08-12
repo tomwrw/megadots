@@ -42,7 +42,7 @@
     nas = {
       # TrueNAS Syncthing GUI: Actions > Show ID.
       id = "F7JXVJN-DXADY4D-OGQGPUG-ENDQEDW-5PROBMK-E37HIYE-6OJ4HKW-25W4YQX";
-      addresses = [ "tcp://10.20.1.3:20978" ];
+      addresses = [ "tcp://syncthing.extranet.casa:20978" ];
     };
   };
 
