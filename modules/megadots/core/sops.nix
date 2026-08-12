@@ -1,9 +1,10 @@
 { inputs, ... }:
 let
-  # Home-relative, because that is what both quirks below deal in. The
+  # Home-relative, because that is what the home-persist quirk deals in. The
   # homeManager block turns it back into an absolute path against
   # config.home.homeDirectory rather than assuming /home/<user>.
-  ageKeyFile = ".config/sops/age/keys.txt";
+  ageKeyDir = ".config/sops/age";
+  ageKeyFile = "${ageKeyDir}/keys.txt";
 in
 {
   flake-file.inputs.sops-nix = {
@@ -12,35 +13,26 @@ in
   };
 
   megadots.core.sops = {
-    description = "sops-nix at both system and user scope, and the age key a deploy has to seed.";
+    description = "sops-nix at both system and user scope, with the user's age key directory persisted.";
 
-    # The only thing that can decrypt my secrets, seeded by 'just deploy'. It
-    # used to survive on its own while /home was a real subvolume. Named once
-    # here and consumed twice: core.impermanence persists it, core.seed owns it
-    # and tells the deploy recipe to bring it.
+    # The directory holding the only thing that can decrypt my user secrets. It
+    # used to survive on its own while /home was a real subvolume.
+    #
+    # The directory rather than the keys.txt file inside it, matching
+    # apps/security/ssh.nix: a deploy drops the key here before the machine has
+    # ever booted, and persisting the container means the file is covered
+    # however it arrives. It also sidesteps impermanence's file handling, which
+    # leaves a symlink until the /persist copy exists and breaks on writers
+    # that rename over their target - the failure apps/shell/zsh.nix documents
+    # for shell history.
     #
     # This aspect is included at host scope (roles.base) and user scope (the
-    # tomwrw aspect), so both keys below are produced twice. Only the user-scope
-    # copies are read - core.impermanence's consumer runs per user, and 'seed'
-    # is only resolvable where a user exists - which is exactly why home-persist
-    # is a separate quirk from persist. Sharing one name would push a
-    # home-relative path into environment.persistence as though it were absolute.
-    home-persist.files = [ ageKeyFile ];
-
-    # Through provides.to-users, unlike apps/security/ssh.nix which emits
-    # 'seed' bare. This aspect is in roles.base as well as the user aspect, and
-    # den decides how to resolve a quirk thunk by looking at its argument names
-    # against the scope's context: at host scope there is no 'user', so a bare
-    # { user, ... } here is classified as config-dependent and handed to the
-    # module system, which fails with "attribute 'user' missing". Delivering
-    # through to-users means it is only ever resolved in a user scope, where
-    # that argument exists.
-    provides.to-users.seed =
-      { user, ... }:
-      {
-        owner = user.userName;
-        files = [ ageKeyFile ];
-      };
+    # tomwrw aspect), so this is produced twice and only the user-scope copy is
+    # read: core.impermanence's consumer runs per user. That is exactly why
+    # home-persist is a separate quirk from persist - sharing one name would
+    # push a home-relative path into environment.persistence as though it were
+    # absolute.
+    home-persist.directories = [ ageKeyDir ];
 
     nixos =
       { config, ... }:

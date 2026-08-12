@@ -6,74 +6,51 @@ user := "tomwrw"
 default:
     @just --list
 
-# Read the seeded-file list out of the host being deployed, as 'owner<TAB>path'
-# lines. This is config.megadots.seed, built by core/seed.nix from the 'seed'
-# quirk, so the same list drives the tmpfiles ownership, the chown unit and the
-# two recipes below. It used to be written out by hand in three places.
+# Install HOST from scratch over SSH with nixos-anywhere. FORMATS ITS DISKS.
+# The USB mirrors the destination, so there is no manifest and no mapping:
 #
-# Plain builtins rather than lib, since 'nix eval --apply' has no lib in scope.
-[private]
-seed-list HOST:
-    @nix eval --raw ".#nixosConfigurations.{{ HOST }}.config.megadots.seed" \
-      --apply 's: builtins.concatStringsSep "" (builtins.concatMap (o: map (f: o + "\t" + f + "\n") s.${o}) (builtins.attrNames s))'
-
-# Check every file 'deploy HOST' needs is on the USB before it formats a disk.
-check-bootstrap HOST:
-    #!/usr/bin/env bash
-    set -uo pipefail
-    missing=0
-    check() { if [[ -r "$1" ]]; then echo "  ok   $1"; else echo "  MISS $1"; missing=1; fi; }
-    echo "USB key material:"
-    # The host's own age key is a system path, not a home-relative one, so it
-    # is not part of the seed quirk and stays spelled out here.
-    check "{{ usb }}/hosts/{{ HOST }}/age.txt"
-    while IFS=$'\t' read -r owner path; do
-      [[ -n "$path" ]] || continue
-      check "{{ usb }}/users/$owner/$(basename "$path")"
-    done < <(just seed-list {{ HOST }})
-    echo "Repo state:"
-    check "secrets/hosts/{{ HOST }}.yaml"
-    check "secrets/users/{{ user }}.yaml"
-    if grep -q "secrets/hosts/{{ HOST }}" .sops.yaml; then
-      echo "  ok   .sops.yaml has a creation_rules entry for {{ HOST }}"
-    else
-      echo "  MISS .sops.yaml creation_rules entry for secrets/hosts/{{ HOST }}.yaml"
-      missing=1
-    fi
-    if [[ $missing -ne 0 ]]; then
-      echo >&2 "refusing to call this ready - deploy would abort part-way, after partitioning"
-      exit 1
-    fi
-    echo "ready to deploy {{ HOST }}"
+#   <usb>/hosts/<host>/age.txt     -> /persist/var/lib/sops-nix/key.txt
+#   <usb>/users/<user>/**          -> /persist/home/<user>/**
+#
+# Everything lands under /persist and not /home, because / (and so /home) goes
+# back to a blank snapshot every boot; impermanence bind mounts it into the
+# live home. Whatever a user needs, put it on the USB at the path it should
+# have in their home - .ssh/id_ed25519, .config/sops/age/keys.txt - and it
+# arrives there. Adding a key is a copy on the USB and nothing in this repo.
+#
+# This replaced a 'seed' quirk, a host-scope consumer aspect that derived
+# tmpfiles ownership and a chown unit, a machine-readable option, a recipe to
+# read it and four invariants to police it - all of which existed because
+# --extra-files copies as root. --chown does that job during the install
+# instead of on every boot, which is where it belonged.
 
 # Install HOST from scratch over SSH with nixos-anywhere. FORMATS ITS DISKS.
-deploy HOST: (check-bootstrap HOST)
+deploy HOST:
     #!/usr/bin/env bash
     set -euo pipefail
     staging=$(mktemp -d)
     trap 'rm -rf "$staging"' EXIT
-    # Everything of mine is seeded under /persist and not /home, because /
-    # (and so /home) goes back to a blank snapshot every boot. impermanence
-    # bind mounts these into the live home.
     install -Dm600 {{ usb }}/hosts/{{ HOST }}/age.txt "$staging/persist/var/lib/sops-nix/key.txt"
-    # Everything else comes from config.megadots.seed. The USB is flat - one
-    # directory per user - while the destinations are nested, so the source is
-    # the basename of each path. core/seed.nix asserts those basenames are
-    # unique per owner, which is what makes that mapping safe rather than a
-    # convention I have to remember.
-    while IFS=$'\t' read -r owner path; do
-      [[ -n "$path" ]] || continue
-      case "$path" in
-        *.pub) mode=0644 ;;
-        *) mode=0600 ;;
-      esac
-      install -Dm$mode "{{ usb }}/users/$owner/$(basename "$path")" \
-        "$staging/persist/home/$owner/$path"
-    done < <(just seed-list {{ HOST }})
+    # -a keeps the modes off the USB, so a 0600 private key stays 0600 and
+    # sshd/sops do not refuse it. Check them there, not here.
+    for u in {{ usb }}/users/*/; do
+      [[ -d "$u" ]] || continue
+      install -d "$staging/persist/home/$(basename "$u")"
+      cp -a "$u." "$staging/persist/home/$(basename "$u")/"
+    done
+    # uid:gid rather than names: this runs against the installer image, which
+    # has no account for my user. 1000:100 is the first normal user and the
+    # 'users' group, which is what den.batteries.primary-user creates.
+    chown_args=()
+    for u in {{ usb }}/users/*/; do
+      [[ -d "$u" ]] || continue
+      chown_args+=(--chown "/persist/home/$(basename "$u")" 1000:100)
+    done
     # Pinned by this flake's own lock - see modules/flake/deploy.nix.
     nix run .#nixos-anywhere -- \
       --disko-mode disko \
       --extra-files "$staging" \
+      "${chown_args[@]}" \
       --flake .#{{ HOST }} \
       --target-host nixos@{{ HOST }}
 
@@ -119,9 +96,11 @@ unenroll-fido2 HOST:
 fmt:
     nix fmt
 
-# Build both hosts and the standalone home, then run every check: invariants,
-# roster, homes, namespace, secrets, treefmt and flake-file. No list to keep in
-# step - 'nix flake check' takes whatever modules/flake/checks.nix produces.
+# Builds both hosts and the standalone home, then runs invariants, roster,
+# homes, namespace, secrets, treefmt and flake-file. No list to keep in step -
+# it takes whatever modules/flake/checks.nix produces.
+
+# Run every check.
 check:
     nix flake check
 

@@ -94,6 +94,15 @@ in
     user =
       { osConfig, ... }:
       {
+        # Pinned, not left to NixOS to allocate. 'just deploy' chowns the
+        # seeded key tree to 1000:100 while the target is still running the
+        # installer, which has no account for me - so it has to pass a numeric
+        # uid, and the number has to be one this config guarantees rather than
+        # one that happened to be handed out first. Auto-allocation starts at
+        # 1000 and would be right today; it would stop being right the moment a
+        # second user were declared ahead of this one.
+        uid = 1000;
+
         hashedPasswordFile = osConfig.sops.secrets."users/tomwrw/password".path;
         openssh.authorizedKeys.keys = lib.attrValues sshKeys;
 

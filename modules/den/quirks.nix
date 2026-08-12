@@ -53,34 +53,6 @@
     '';
   };
 
-  den.quirks.seed = {
-    description = ''
-      Files 'just deploy' writes into /persist/home/<user> before the machine
-      has ever booted, home-relative and tagged with their owner:
-
-        seed = { user, ... }: { owner = user.userName; files = [ ".ssh/id_ed25519" ]; };
-
-      A function on purpose. The producers are user-scope aspects, but the
-      consumer is host scope - tmpfiles rules and a chown unit are NixOS config
-      - so this pool travels up through pipe.expose, and a flat list of paths
-      would arrive at the host with no idea whose home they belong to. den
-      resolves a quirk value that takes scope arguments at the scope that
-      produced it, so the username is captured before the data leaves.
-
-      Seeded is not the same as persisted, and neither implies the other:
-      .ssh/known_hosts is persisted but never seeded. An aspect that seeds a
-      file almost always wants it in home-persist too, and core.seed asserts
-      that rather than trusting me to remember.
-    '';
-  };
-
-  den.policies.seed =
-    _:
-    let
-      inherit (den.lib.policy) pipe;
-    in
-    [ (pipe.from "seed" [ pipe.expose ]) ];
-
   den.quirks.syncthing-peer = {
     description = ''
       One device in the Syncthing mesh: { name = "endgame"; id = "O5ZE76L-..."; }
@@ -128,6 +100,5 @@
   den.schema.user.includes = [
     den.policies.persist
     den.policies.firewall
-    den.policies.seed
   ];
 }

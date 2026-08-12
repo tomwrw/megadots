@@ -12,7 +12,6 @@
     megadots.core.fido2
     megadots.core.system-packages
     megadots.core.impermanence
-    megadots.core.seed
     megadots.core.ephemeral-btrfs
     megadots.core.sops
     megadots.core.disko

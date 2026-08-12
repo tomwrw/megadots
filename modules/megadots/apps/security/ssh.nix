@@ -1,20 +1,4 @@
-let
-  # The FIDO2 pairs are handle stubs, useless without the token, but
-  # regenerating them means an 'ssh-keygen -K' round trip, so 'just deploy'
-  # brings them over from the USB.
-  seededKeys =
-    builtins.concatMap
-      (k: [
-        ".ssh/${k}"
-        ".ssh/${k}.pub"
-      ])
-      [
-        "id_ed25519"
-        "id_ed25519_sk_primary"
-        "id_ed25519_sk_backup"
-      ];
-in
-{
+_: {
   # An SSH agent, replacing the one desktop/gnome.nix turns off.
   #
   # gcr-ssh-agent is off there because its FIDO2 support is poor, but nothing
@@ -25,27 +9,23 @@ in
   # Included from the user aspect and not a role, because den drops a bare
   # homeManager block on a host-scope aspect.
   megadots.apps.security.ssh = {
-    description = "An SSH client and agent. Names the private keys a deploy has to seed, via the seed quirk.";
+    description = "An SSH client and agent, with ~/.ssh persisted so keys put there survive the rollback.";
 
-    # The single list. It used to live here, in the justfile's key loop and in
-    # the tomwrw aspect's chown globs, bound together by comments that admitted
-    # the drift had bitten twice. core.seed now derives the tmpfiles ownership,
-    # the chown unit and what 'just deploy' copies, all from this.
-    # Bare, not through provides.to-users like core/sops.nix does,
-    # because this aspect is only ever included from the user aspect. den
-    # resolves a quirk thunk against the producing scope's context, and 'user'
-    # is in that context here.
-    seed =
-      { user, ... }:
-      {
-        owner = user.userName;
-        files = seededKeys;
-      };
-
-    # known_hosts is persisted but never seeded - the deploy has nothing to put
-    # there yet. core.seed asserts the other direction, that everything seeded
-    # is also persisted, so this only has to add what seeding doesn't cover.
-    home-persist.files = [ ".ssh/known_hosts" ] ++ seededKeys;
+    # The whole directory, not a list of files, and that is the point.
+    #
+    # This used to name every key by hand and emit them as a 'seed' quirk, so
+    # that core.seed could derive tmpfiles ownership and a chown unit, and the
+    # justfile could copy exactly those files. Three mechanisms, all to answer
+    # "which files, and who owns them". nixos-anywhere answers both itself:
+    # --extra-files puts the tree in place and --chown fixes the ownership,
+    # during the install, where the problem actually is.
+    #
+    # A directory entry also makes "seeded implies persisted" structural. The
+    # old file list needed an invariant to police it, because adding a key to
+    # the deploy and forgetting to persist it left the key working until the
+    # first reboot. Anything dropped in ~/.ssh now survives by construction,
+    # whether it arrived from a deploy, from scp, or from ssh-keygen.
+    home-persist.directories = [ ".ssh" ];
 
     nixos = _: {
       # The askpass I end up with is seahorse's, pulled in by the GNOME

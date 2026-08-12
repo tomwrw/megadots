@@ -228,37 +228,6 @@ let
         || (kernelRoster.optimization == "generic" && kernelRoster.channel == "latest");
       kernelIsCachy = lib.hasInfix "cachyos" (cfg.boot.kernelPackages.kernel.pname or "");
 
-      # core.seed derives the tmpfiles ownership, the chown unit and what
-      # 'just deploy' copies from one list per producing aspect. The rule that
-      # used to be prose - "a seeded file with no persistence entry sits in
-      # /persist and never reaches my home, which looks exactly like the deploy
-      # having skipped it" - is checkable now that both come from quirks.
-      seeded = cfg.megadots.seed or { };
-      persistedFiles = u: map (f: f.file) (u.home.persistence."/persist".files or [ ]);
-      seededNotPersisted = lib.concatLists (
-        lib.mapAttrsToList (
-          owner: files: lib.subtractLists (persistedFiles (hmUsers.${owner} or { })) files
-        ) seeded
-      );
-      absoluteSeeds = lib.concatLists (
-        lib.mapAttrsToList (_: files: lib.filter (f: lib.hasPrefix "/" f) files) seeded
-      );
-
-      # The USB is flat, one directory per user, while these destinations are
-      # nested - so 'just deploy' maps source to destination by basename. That
-      # only works while the basenames are distinct: two seeded files called
-      # 'config' in different directories would both be copied from the same
-      # place, and the deploy would look like it had worked.
-      collidingSeeds = lib.concatLists (
-        lib.mapAttrsToList (
-          _: files:
-          let
-            bases = map baseNameOf files;
-          in
-          lib.filter (b: lib.count (x: x == b) bases > 1) (lib.unique bases)
-        ) seeded
-      );
-
       # den.batteries.unfree collects these; den's own predicate builder, which
       # is in den.default, turns them into allowUnfreePredicate. Both halves are
       # invisible from here, so the checks below exercise the predicate rather
@@ -281,22 +250,6 @@ let
       {
         assertion = kernelSettingsIdle || kernelIsCachy;
         message = "${name}: den.hosts sets linux-kernel.* away from its defaults, but this host is not running a CachyOS kernel - core.linux-kernel is the aspect that reads those options and it is not in this host's includes, so the setting does nothing at all";
-      }
-      {
-        assertion = seeded != { };
-        message = "${name}: megadots.seed is empty - core.seed collected no 'seed' quirk data at all, so nothing owns the deploy-seeded keys and the first boot after a deploy leaves them root:root";
-      }
-      {
-        assertion = seededNotPersisted == [ ];
-        message = "${name}: ${toString seededNotPersisted} are seeded by 'just deploy' but not persisted - they would sit in /persist and never be mounted into the home, which looks exactly like the deploy having skipped them";
-      }
-      {
-        assertion = collidingSeeds == [ ];
-        message = "${name}: ${toString collidingSeeds} appear as the basename of more than one seeded file - 'just deploy' copies each from {{ usb }}/users/<owner>/<basename>, so the collision would silently seed the same file to both destinations";
-      }
-      {
-        assertion = absoluteSeeds == [ ];
-        message = "${name}: ${toString absoluteSeeds} are absolute paths - 'seed' entries are relative to the owner's home, and core.seed prefixes them itself";
       }
       {
         assertion = usersMissingStore == [ ];

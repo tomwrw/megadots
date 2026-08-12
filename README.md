@@ -76,7 +76,7 @@ The shortest path through the repo, in reading order:
 3. [hosts/endgame/default.nix](modules/hosts/endgame/default.nix) - a host as a readable
    manifest of the roles it takes.
 4. [roles/base.nix](modules/roles/base.nix) - a role is just a list of aspects.
-5. [aspects/core/networking.nix](modules/megadots/core/networking.nix) - a real aspect, and
+5. [megadots/core/networking.nix](modules/megadots/core/networking.nix) - a real aspect, and
    the single consumer of the firewall quirk.
 6. [flake/checks.nix](modules/flake/checks.nix) - the fleet invariants that keep all of the
    above honest.
@@ -320,21 +320,26 @@ cached across runs by store path rather than repeated - see
 
 ### Bootstrapping a host from scratch.
 
-Run `just check-bootstrap <name>` at any point - it verifies every one of the following
-and refuses to call the host ready until they are all in place. `just deploy` runs it
-first, so a missing file fails *before* anything is partitioned rather than half way
-through.
+Four things have to be in place before `just deploy <name>` will produce a working
+machine.
 
-1. **USB key material**, at the layout the `deploy` recipe expects. Note the SSH keys as
-   well as the age keys - `deploy` seeds all of them and aborts on any that is missing:
+1. **USB key material.** The USB mirrors the destination: whatever is under
+   `<usb>/users/<username>/` is copied to that user's home, at the same relative path.
+   There is no manifest anywhere in this repo, so adding a key is a copy on the USB and
+   no config change at all.
 
    ```
-   <usb>/hosts/<hostname>/age.txt          # host age key  -> /persist/var/lib/sops-nix/key.txt
-   <usb>/users/<username>/age.txt          # user age key  -> /persist/home/<user>/.config/sops/age/keys.txt
-   <usb>/users/<username>/id_ed25519{,.pub}
-   <usb>/users/<username>/id_ed25519_sk_primary{,.pub}    # FIDO2 handles; useless without
-   <usb>/users/<username>/id_ed25519_sk_backup{,.pub}     # the physical token
+   <usb>/hosts/<hostname>/age.txt                        # -> /persist/var/lib/sops-nix/key.txt
+   <usb>/users/<username>/.config/sops/age/keys.txt      # -> ~/.config/sops/age/keys.txt
+   <usb>/users/<username>/.ssh/id_ed25519{,.pub}
+   <usb>/users/<username>/.ssh/id_ed25519_sk_primary{,.pub}   # FIDO2 handles; useless
+   <usb>/users/<username>/.ssh/id_ed25519_sk_backup{,.pub}    # without the physical token
    ```
+
+   Modes are copied from the USB with `cp -a`, so a private key has to be `0600` *there*.
+   Ownership is handled by nixos-anywhere's `--chown`, which runs during the install -
+   `--extra-files` copies as root, and that single fact is what used to justify a `seed`
+   quirk, a consumer aspect deriving tmpfiles rules, a chown unit and four invariants.
 
    The `usb` path itself is a variable at the top of the [justfile](justfile).
 
@@ -355,8 +360,9 @@ through.
    `_hardware.nix` from `nixos-generate-config`.
 
 Then boot the target from a NixOS installer ISO, set a password for the `nixos` user so
-SSH works, and run `just deploy <name>`. nixos-anywhere partitions with disko, seeds the
-keys and installs.
+SSH works, and run `just deploy <name>`. nixos-anywhere partitions with disko, copies the
+USB tree into /persist, chowns it to the user, and installs. The machine comes up with its
+secrets decryptable and its keys in place - no second pass, nothing to do by hand.
 
 ### Adapting this for yourself.
 
