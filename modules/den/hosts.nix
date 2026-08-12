@@ -21,6 +21,31 @@
     }) hosts
   ) config.den.hosts;
 
+  # Syncthing peers this config doesn't build. They can't live in den.hosts,
+  # which describes whole machines - disk, LAN interface, users - and turns
+  # each entry into a nixosConfiguration. The TrueNAS box is just a device ID
+  # to trust, and the other half of the pairing is done by hand in its own
+  # Syncthing GUI.
+  #
+  # Here rather than in apps/sync/syncthing.nix because this is roster data:
+  # which machines I own and how they find each other. That aspect implements
+  # syncthing and should be as portable as any other; it had my NAS baked into
+  # it, which made it the one app aspect nobody else could reuse. den/mesh.nix
+  # declares this option and appends what's here onto the peer pipe.
+  #
+  # Addresses are pinned rather than left dynamic. Relays and global discovery
+  # are off, so the only thing that could locate a peer is a local announce on
+  # 21027, and an appliance running Syncthing in a container often can't
+  # broadcast onto the LAN at all. A record on my internal DNS makes this the
+  # more reliable half of the trade.
+  fleet.externalPeers = {
+    nas = {
+      # TrueNAS Syncthing GUI: Actions > Show ID.
+      id = "F7JXVJN-DXADY4D-OGQGPUG-ENDQEDW-5PROBMK-E37HIYE-6OJ4HKW-25W4YQX";
+      addresses = [ "tcp://syncthing.extranet.casa:20978" ];
+    };
+  };
+
   den.hosts.x86_64-linux = {
     endgame = {
       syncthing.id = "O5ZE76L-VFVTOEB-LBIKRRS-LNJKJTN-SOPSNTS-NMTNUHO-OOO453I-PXDOBAI";

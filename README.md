@@ -38,7 +38,7 @@ I'm not a developer. I'm a tinkerer with a consultancy job in a technical field 
 | Host | Machine | Bootloader | Kernel | Roles |
 |---|---|---|---|---|
 | `endgame` | AMD desktop (zen4) | lanzaboote (Secure Boot) | CachyOS `latest-zen4` | base, workstation, gaming, dev |
-| `flatmate` | Microsoft Surface Pro (Intel) | systemd-boot | nixpkgs default | base, workstation |
+| `flatmate` | Microsoft Surface Pro (Intel) | systemd-boot | nixpkgs default | base, workstation, dev |
 
 Both run an ephemeral btrfs root on LUKS, GNOME, and the same user. `/` is its own
 subvolume, deleted and restored from a read-only `root-blank` snapshot by an initrd
@@ -55,13 +55,13 @@ almost everything in this repo:
 
 - **aspect** - a named, self-contained feature. It can carry a `nixos` block, a
   `homeManager` block, or both. Aspects are never split by class, only by concern:
-  [bluetooth](modules/aspects/hardware/bluetooth.nix) owns its NixOS options *and* the
+  [bluetooth](modules/megadots/hardware/bluetooth.nix) owns its NixOS options *and* the
   state it needs persisted, in one file.
-- **`includes`** - how a host or user opts in. [roles/base.nix](modules/aspects/roles/base.nix)
+- **`includes`** - how a host or user opts in. [roles/base.nix](modules/roles/base.nix)
   is nothing but a list of aspects every host takes.
 - **`provides.to-users`** - a host-scope aspect handing configuration to every user on
   that host. Needed because a bare `homeManager` block on a host-scope aspect is silently
-  dropped; [gnome](modules/aspects/desktop/gnome.nix) uses it to deliver dconf settings.
+  dropped; [gnome](modules/megadots/desktop/gnome.nix) uses it to deliver dconf settings.
 - **`den.batteries.*`** - den's own prebuilt aspects (defining a user, setting a login
   shell). Used in [den/defaults.nix](modules/den/defaults.nix) and the user aspect.
 - **quirk** + **policy** - a quirk is a named data channel an aspect writes to; a policy
@@ -75,8 +75,8 @@ The shortest path through the repo, in reading order:
 2. [den/hosts.nix](modules/den/hosts.nix) - the roster: per-host facts, and nothing else.
 3. [hosts/endgame/default.nix](modules/hosts/endgame/default.nix) - a host as a readable
    manifest of the roles it takes.
-4. [roles/base.nix](modules/aspects/roles/base.nix) - a role is just a list of aspects.
-5. [aspects/core/networking.nix](modules/aspects/core/networking.nix) - a real aspect, and
+4. [roles/base.nix](modules/roles/base.nix) - a role is just a list of aspects.
+5. [megadots/core/networking.nix](modules/megadots/core/networking.nix) - a real aspect, and
    the single consumer of the firewall quirk.
 6. [flake/checks.nix](modules/flake/checks.nix) - the fleet invariants that keep all of the
    above honest.
@@ -87,46 +87,96 @@ Everything lives under `modules/`, discovered automatically by [import-tree](htt
 
 ```
 modules/
-├── flake/               # flake plumbing: inputs, treefmt, checks, devShell, deploy
-├── den/                 # den.default, host/user schema options, the host roster, quirks
+├── megadots/             # the exported library — everything here is denful.megadots:
+│   ├── core/             #   always-on baseline (nix, networking, boot, firmware,
+│   │                     #     impermanence, sops, openssh, hardening, fido2, …)
+│   ├── hardware/         #   opt-in hardware support: graphics, audio, bluetooth,
+│   │                     #     and per-model profiles
+│   ├── desktop/          #   gnome, stylix, fonts, networkmanager
+│   ├── virtualisation/   #   libvirt (room for docker/podman siblings later)
+│   └── apps/             #   every user-facing app, one directory per category
+│       ├── dev/          #     apps.dev.*
+│       ├── gaming/       #     apps.gaming.*
+│       ├── messaging/    #     apps.messaging.*
+│       └── …             #     browsers, media, monitoring, productivity,
+│                         #     security, shell, storage, sync, terminals
+├── den/                  # den setup: defaults, schema, the roster, quirks, the
+│                         #   syncthing mesh, the standalone home, the namespace
+├── flake/                # flake plumbing: treefmt, checks, devShell, secrets scan
 ├── hosts/                # one directory per host: its roles, and its _hardware.nix
 │   ├── endgame/
 │   └── flatmate/
-├── aspects/              # the reusable aspect library, organised by concern:
-│   ├── core/             #   always-on baseline (nix, networking, boot, impermanence, …)
-│   │   └── security/     #     sops, openssh, hardening, fido2, ssh-agent
-│   ├── hardware/         #   graphics/audio/bluetooth + per-model support
-│   ├── desktop/          #   gnome, stylix, fonts
-│   ├── virtualisation/   #   libvirt (room for docker/podman siblings later)
-│   ├── apps/             #   every user-facing app, one directory per category
-│   │   ├── dev/          #     apps.dev.*
-│   │   ├── gaming/       #     apps.gaming.*
-│   │   ├── messaging/    #     apps.messaging.*
-│   │   └── …             #     browsers, media, monitoring, productivity,
-│   │                     #     security, shell, storage, terminals
-│   └── roles/            #   composite bundles hosts include (base, workstation, gaming, dev)
+├── roles/                # composite bundles hosts include (base, workstation, gaming, dev)
 └── users/tomwrw/         # the Home Manager user, itself just another aspect
 ```
 
-The directory tree mirrors the aspect namespace, with no exceptions:
-`core/security/sops.nix` declares `den.aspects.core.security.sops`, and
-`apps/messaging/signal.nix` declares `den.aspects.apps.messaging.signal`. If you know an
-aspect's name you know its path, and vice versa. Host-specific hardware is *not* an
-aspect - each host imports its own `_hardware.nix` directly, and the `_` prefix is what
-stops [import-tree](https://github.com/vic/import-tree) picking it up as a module of its own.
+The path *is* the name, literally: `modules/megadots/core/sops.nix` declares
+`megadots.core.sops`, and `modules/megadots/apps/messaging/signal.nix` declares
+`megadots.apps.messaging.signal`. The folder is called `megadots/` for exactly that
+reason - it is the namespace, not a category, so there is no translation step between
+what you read in an `includes` list and where you go to find it. Host-specific hardware
+is *not* an aspect: each host imports its own `_hardware.nix` directly, and the `_`
+prefix is what stops [import-tree](https://github.com/vic/import-tree) picking it up as
+a module of its own.
 
-The unit of composition is the **aspect**: a named, self-contained feature that can carry a NixOS side, a Home Manager side, or both - never split by class, only by concern. Hosts and users opt in via `includes`. For example, [fonts](modules/aspects/desktop/fonts.nix) installs its font set at the system level for every host, and offers the same set as a named `home` sub-aspect for a standalone Home Manager setup with no system font path to fall back on (nothing in this repo includes it - it is there as an opt-in, and as an illustration of naming a sub-aspect rather than leaving a silently inert `homeManager` block on a host-scope aspect):
+No aspect nests below its own concern for the sake of grouping. There is no
+`core/security/` folder: `core.sops`, `core.openssh`, `core.hardening` and `core.fido2`
+sit directly in `core/`, because the extra word disambiguated nothing and cost a
+directory level. The same rule killed the last node that carried config *and* had
+children - firmware was `megadots.hardware`, a name that read as "the hardware tree"
+while meaning "fwupd and redistributable firmware". It is `megadots.core.firmware` now,
+and `hardware/` is a pure container of things you opt into.
+
+`megadots.*`, not `den.aspects.*`, and the split is the whole point of the layout.
+[namespace.nix](modules/den/namespace.nix) publishes everything under `modules/megadots/` as
+`flake.denful.megadots`, so another den config can add this repo as an input and include
+an aspect straight out of it:
+
+```nix
+# in someone else's flake
+{
+  imports = [ (inputs.den.namespace "megadots" [ inputs.megadots ]) ];
+  den.aspects.their-host.includes = [ megadots.core.impermanence megadots.apps.shell.zsh ];
+}
+```
+
+Which half a thing belongs to is a real question, answered the same way every time:
+
+| | |
+|---|---|
+| `megadots.*` | the **library** - aspects that describe an application or a subsystem and name no host, no user and no machine of mine. `modules/megadots/`. |
+| `den.aspects.*` | the **config** - my hosts, my user, my roles, the fleet plumbing in `modules/den/`. Composition is personal taste and is nobody else's starting point. |
+
+An aspect that has to move from the left column to the right is telling you it was never
+reusable. That is the check this boundary buys, and it is enforced rather than aspirational:
+the `namespace` check in [checks.nix](modules/flake/checks.nix) asserts the export contains
+exactly the five trees and nothing else, because `den.namespace` aliases the whole
+`megadots` option path - so any plain setting written under it is legal, silently published
+as though it were an aspect, and shows up in someone else's config as a broken include.
+`megadots.externalPeers` did exactly that before it became `fleet.externalPeers`.
+
+The unit of composition is the **aspect**: a named, self-contained feature that can carry a NixOS side, a Home Manager side, or both - never split by class, only by concern. Hosts and users opt in via `includes`. For example, [fonts](modules/megadots/desktop/fonts.nix) installs its font set at the system level for every host, and offers the same set as a named `home` sub-aspect for a standalone Home Manager setup with no system font path to fall back on (pulled in by `den.schema.home` in [den/homes.nix](modules/den/homes.nix), and an illustration of naming a sub-aspect rather than leaving a silently inert `homeManager` block on a host-scope aspect):
 
 ```nix
 {
-  den.aspects.desktop.fonts = {
+  megadots.desktop.fonts = {
     nixos = { pkgs, ... }: { fonts.packages = fontPkgs pkgs; };
     provides.home.homeManager = { pkgs, ... }: { home.packages = fontPkgs pkgs; };
   };
 }
 ```
 
-Cross-cutting data flows through the den roster rather than hard-coding: [syncthing](modules/aspects/core/syncthing.nix) builds its device mesh by reading every host's `syncthing.id` from `den.hosts`, an option declared once in [den/schema.nix](modules/den/schema.nix).
+Cross-cutting data flows through den pipes rather than hard-coding. The Syncthing device
+mesh is the clearest example, and it is built without the aspect knowing the fleet exists:
+[den/mesh.nix](modules/den/mesh.nix) puts a producer on `den.schema.host.includes` so every
+host announces its own `syncthing.id`, then a `pipe.collectAll` policy gathers all of them
+into the *user* scope where [apps/sync/syncthing.nix](modules/megadots/apps/sync/syncthing.nix)
+reads the pool it is handed. Peers that aren't den hosts - my NAS - are appended to the same
+pipe from `megadots.externalPeers`, so they arrive indistinguishable from a fleet host.
+
+That aspect used to fold `den.hosts` by hand and merge my NAS in, which made it the one app
+aspect nobody else could lift into their own config. It now knows how to configure Syncthing
+and nothing about which machines I own.
 
 Cross-cutting *configuration* flows through den quirks, declared in
 [den/quirks.nix](modules/den/quirks.nix). An aspect says what it needs and something
@@ -143,12 +193,38 @@ firewall.tcp = [ 47984 47989 47990 48010 ];
 The same pattern carries `unfree` package names and `persist` paths. Note the trap: a
 quirk emitted from a **user-scope** aspect only reaches the host if an expose policy is
 registered for it in `den.schema.user.includes` - without one it is discarded silently,
-with no error. `core.syncthing` is included at user scope, so its ports depend on exactly
+with no error. `apps.sync.syncthing` is included at user scope, so its ports depend on exactly
 that, and [modules/flake/checks.nix](modules/flake/checks.nix) asserts they arrive.
+
+### The standalone home, and why it exists.
+
+[den/homes.nix](modules/den/homes.nix) declares `den.homes.x86_64-linux.tomwrw`: the same
+user aspect both machines use, evaluated with no NixOS underneath it. `nix build
+.#homeConfigurations.tomwrw.activationPackage` produces a home-manager generation that
+would work on someone else's Ubuntu, and CI evaluates it on every push.
+
+It is not there because I run a non-NixOS machine today. It is there because everything
+under `modules/megadots/` claims to describe an *application* rather than my fleet, and the
+way that claim rots is silent. den drops a class module whose scope arguments it cannot
+supply, and reads a bare function at an aspect path as parametric over scope - so an aspect
+that grows a dependency on a host doesn't fail, it just stops contributing, and only in the
+context that lacks a host.
+
+That is not hypothetical; building this target found one immediately.
+[apps/shell/zsh.nix](modules/megadots/apps/shell/zsh.nix) opened with `{ host, ... }:` so two
+aliases could run `nixos-rebuild --flake .#<name>`. Thirty-odd portable aliases, `fzf`,
+completion and `dotDir` were all being discarded outside a host, silently, for the sake of
+those two. They now come from [core/nix.nix](modules/megadots/core/nix.nix) via
+`provides.to-users`, which is host scope and can name the machine honestly.
+
+The `homes` check in [checks.nix](modules/flake/checks.nix) guards the rest. Its sharpest
+assertion reads `programs.fzf.enable` rather than `programs.zsh.enable`, because zsh is
+turned on by `den.batteries.user-shell` and stays true even when the aspect that *configures*
+the shell has vanished - a check on it would have passed throughout the bug above.
 
 ### Deliberate Nix settings.
 
-[core/nix.nix](modules/aspects/core/nix.nix) sets two options that are worth calling out explicitly, as they are security concerns I have made with my config:
+[core/nix.nix](modules/megadots/core/nix.nix) sets two options that are worth calling out explicitly, as they are security concerns I have made with my config:
 
 - `nix.settings.trusted-users = [ "root" "@wheel" ]` - lets any `wheel` member build/substitute arbitrary derivations and push closures via `nixos-rebuild --target-host`. This is a single-admin-LAN trade-off: fine for me as the sole admin of the fleet, but not something you might want to carry into a multi-user or shared-admin setup without consideration.
 - `nix.settings.allow-import-from-derivation = true` - required because Stylix's base16 scheme reader does an IFD (`readFile`s a YAML out of the `base16-schemes` derivation at eval time). Without it, evaluation fails outright; it is not optional given my current Stylix setup. I may look at this in the future, but for now, Stylix theming is worth the risk to me.
@@ -160,7 +236,7 @@ Things that are deliberate rather than missed, so you can judge whether they sui
 - **Stylix is applied through Home Manager only.** The NixOS module is not imported, so
   GDM's login screen, the TTY palette, plymouth and the system fontconfig are unthemed,
   and `stylix.fonts`/`stylix.cursor` are unset - the desktop renders in Stylix's DejaVu
-  defaults even though [fonts.nix](modules/aspects/desktop/fonts.nix) installs rather more
+  defaults even though [fonts.nix](modules/megadots/desktop/fonts.nix) installs rather more
   than that. Wiring in `stylix.nixosModules.stylix` would fix all of it.
 - **LAN-scoped firewall rules are weaker on a laptop.** Every port is opened on
   `host.network.lanInterface` rather than globally, which is a real improvement on a
@@ -171,11 +247,17 @@ Things that are deliberate rather than missed, so you can judge whether they sui
   entries above compose: a trusted user can get arbitrary content into the store, and
   `endgame` is the machine that then signs whatever it boots with its Secure Boot key.
 - **A third-party binary cache supplies that host's kernel.**
-  [core/linux-kernel.nix](modules/aspects/core/linux-kernel.nix) trusts
+  [core/linux-kernel.nix](modules/megadots/core/linux-kernel.nix) trusts
   `attic.xuyh0120.win/lantian` for prebuilt CachyOS kernels, and CI trusts the same key.
   It composes with the point above: a compromised cache could hand `endgame` a kernel that
   its own Secure Boot chain would then sign and boot without complaint. Accepted so that a
   zen4 LTO kernel does not have to be compiled locally on every bump.
+- **Real hardware serials are in the roster.** `disk.id` in [den/hosts.nix](modules/den/hosts.nix)
+  carries the NVMe serial of each machine. `/dev/disk/by-id/` is the correct stable
+  identifier - disko partitions on it, and an invariant in
+  [checks.nix](modules/flake/checks.nix) enforces the prefix - so it cannot come from sops,
+  which is decrypted far too late to place a partition. A serial is an identifier, not a
+  credential; the realistic cost is that it fingerprints the hardware.
 
 ## Usage.
 
@@ -223,21 +305,26 @@ cached across runs by store path rather than repeated - see
 
 ### Bootstrapping a host from scratch.
 
-Run `just check-bootstrap <name>` at any point - it verifies every one of the following
-and refuses to call the host ready until they are all in place. `just deploy` runs it
-first, so a missing file fails *before* anything is partitioned rather than half way
-through.
+Four things have to be in place before `just deploy <name>` will produce a working
+machine.
 
-1. **USB key material**, at the layout the `deploy` recipe expects. Note the SSH keys as
-   well as the age keys - `deploy` seeds all of them and aborts on any that is missing:
+1. **USB key material.** The USB mirrors the destination: whatever is under
+   `<usb>/users/<username>/` is copied to that user's home, at the same relative path.
+   There is no manifest anywhere in this repo, so adding a key is a copy on the USB and
+   no config change at all.
 
    ```
-   <usb>/hosts/<hostname>/age.txt          # host age key  -> /persist/var/lib/sops-nix/key.txt
-   <usb>/users/<username>/age.txt          # user age key  -> /persist/home/<user>/.config/sops/age/keys.txt
-   <usb>/users/<username>/id_ed25519{,.pub}
-   <usb>/users/<username>/id_ed25519_sk_primary{,.pub}    # FIDO2 handles; useless without
-   <usb>/users/<username>/id_ed25519_sk_backup{,.pub}     # the physical token
+   <usb>/hosts/<hostname>/age.txt                        # -> /persist/var/lib/sops-nix/key.txt
+   <usb>/users/<username>/.config/sops/age/keys.txt      # -> ~/.config/sops/age/keys.txt
+   <usb>/users/<username>/.ssh/id_ed25519{,.pub}
+   <usb>/users/<username>/.ssh/id_ed25519_sk_primary{,.pub}   # FIDO2 handles; useless
+   <usb>/users/<username>/.ssh/id_ed25519_sk_backup{,.pub}    # without the physical token
    ```
+
+   Modes are copied from the USB with `cp -a`, so a private key has to be `0600` *there*.
+   Ownership is handled by nixos-anywhere's `--chown`, which runs during the install -
+   `--extra-files` copies as root, and that single fact is what used to justify a `seed`
+   quirk, a consumer aspect deriving tmpfiles rules, a chown unit and four invariants.
 
    The `usb` path itself is a variable at the top of the [justfile](justfile).
 
@@ -249,7 +336,7 @@ through.
    interpolates this filename from the hostname, so a missing file fails the build.
 4. **`syncthing/<name>/{key,cert,guiPassword}` in `secrets/users/<user>.yaml`** - the
    syncthing secrets are keyed by *host* but live in the *user* file
-   ([core/syncthing.nix](modules/aspects/core/syncthing.nix)). Miss these and the host
+   ([apps/sync/syncthing.nix](modules/megadots/apps/sync/syncthing.nix)). Miss these and the host
    builds fine, then Home Manager activation fails on the new machine.
 5. **The roster entry** in [modules/den/hosts.nix](modules/den/hosts.nix): disk id (a
    stable `/dev/disk/by-id/` path), swap size, LAN interface name from `ip -br link`, and
@@ -258,15 +345,16 @@ through.
    `_hardware.nix` from `nixos-generate-config`.
 
 Then boot the target from a NixOS installer ISO, set a password for the `nixos` user so
-SSH works, and run `just deploy <name>`. nixos-anywhere partitions with disko, seeds the
-keys and installs.
+SSH works, and run `just deploy <name>`. nixos-anywhere partitions with disko, copies the
+USB tree into /persist, chowns it to the user, and installs. The machine comes up with its
+secrets decryptable and its keys in place - no second pass, nothing to do by hand.
 
 ### Adapting this for yourself.
 
 Fork it, then: replace `modules/users/` and `modules/hosts/` with your own, empty the
 roster in `modules/den/hosts.nix`, regenerate `.sops.yaml` with your own age keys, and
 replace `assets/` (the wallpapers are not covered by this repo's licence - see
-[LICENSE](LICENSE)). The parts worth keeping are `modules/aspects/`,
+[LICENSE](LICENSE)). The parts worth keeping are `modules/megadots/`,
 `modules/den/quirks.nix` and `modules/flake/checks.nix` - no aspect names a host or a
 user, so they port across unchanged.
 

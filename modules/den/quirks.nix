@@ -1,15 +1,14 @@
 { den, ... }:
 {
-  den.quirks.unfree = {
-    description = "Unfree package names (lib.getName) an aspect requires";
-  };
-
-  den.policies.unfree =
-    _:
-    let
-      inherit (den.lib.policy) pipe;
-    in
-    [ (pipe.from "unfree" [ pipe.expose ]) ];
+  # No 'unfree' quirk here. den.batteries.unfree does the same job and more:
+  # it emits into the class being resolved *and* into the host's OS class when
+  # that class is homeManager, so an unfree package declared by a user aspect
+  # is allowed on the host too. The hand-rolled version only ever wrote a nixos
+  # block, which worked solely because home-manager.useGlobalPkgs makes Home
+  # Manager borrow the host's pkgs - and so would never have worked for a
+  # standalone home. den's predicate builder is in den.default already, so
+  # keeping a second definition of nixpkgs.config.allowUnfreePredicate here
+  # would have been a straight eval conflict the moment either one had data.
 
   den.quirks.persist = {
     description = "Extra paths to persist at /persist: { directories, files }";
@@ -21,6 +20,57 @@
       inherit (den.lib.policy) pipe;
     in
     [ (pipe.from "persist" [ pipe.expose ]) ];
+
+  den.quirks.home-persist = {
+    description = ''
+      Home-relative paths a user aspect needs to survive the rollback:
+        { directories = [ ".config/Signal" ]; files = [ ".ssh/known_hosts" ]; }
+
+      Deliberately not the same quirk as 'persist'. That one carries absolute
+      system paths and is consumed on the host; these are relative to $HOME and
+      are consumed inside the user's Home Manager evaluation. One shared name
+      would mean an aspect included at both scopes - core.sops is - pushing
+      ".config/sops/age/keys.txt" into environment.persistence as if it were an
+      absolute path.
+
+      There is no policy for this quirk, and that is the point. Producer and
+      consumer are both in the user scope, so nothing needs to travel: an
+      expose policy would push the pool up to the host, where the paths are
+      meaningless. It also means an app aspect never names impermanence or
+      /persist, so the same aspect evaluates in a standalone den.homes where
+      no consumer exists and the pool is simply never read.
+    '';
+  };
+
+  den.quirks.persist-store = {
+    description = ''
+      Announces that a persistent store exists, and where: { root = "/persist"; }
+
+      A capability, not data. It lets an aspect that has to do its own copying
+      - desktop.gnome and monitors.xml - find the store without hardcoding the
+      path or importing impermanence. An empty pool means no store, which is
+      the signal to emit nothing at all rather than units that fail every boot.
+    '';
+  };
+
+  den.quirks.syncthing-peer = {
+    description = ''
+      One device in the Syncthing mesh: { name = "endgame"; id = "O5ZE76L-..."; }
+      and optionally addresses = [ "tcp://..." ] for a peer that can't be found
+      by local discovery.
+
+      Produced once per host and consumed once per user, so it crosses both the
+      fleet (host to host) and the scope boundary (host to user). den.mesh has
+      the producer, the schema entry that makes every host emit one, and the
+      collectAll policy that gathers them; apps/sync/syncthing.nix just reads
+      the pool it is handed.
+
+      That indirection is the point. The aspect used to fold den.hosts by hand
+      and merge in my NAS, which made it the one app aspect that couldn't be
+      lifted into another config. It now knows how to configure Syncthing and
+      nothing about which machines I own.
+    '';
+  };
 
   den.quirks.firewall = {
     description = ''
@@ -45,10 +95,9 @@
   # quirk coming from a user-scope aspect just vanishes. No error, no warning,
   # just missing config. All the 'persist' producers are host-scope today so
   # that one changes nothing yet, it's there so persisting from an app aspect
-  # works first time. 'firewall' really does need it, since core.syncthing
+  # works first time. 'firewall' really does need it, since apps.sync.syncthing
   # comes in from the user aspect and opens 22000 and 21027.
   den.schema.user.includes = [
-    den.policies.unfree
     den.policies.persist
     den.policies.firewall
   ];
