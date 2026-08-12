@@ -5,7 +5,9 @@
     inputs.nixpkgs.follows = "nixpkgs";
   };
 
-  den.aspects.hardware.surface-pro.nixos =
+  megadots.hardware.surface-pro.description = "The nixos-hardware profile for a Microsoft Surface Pro, plus its suspend fix.";
+
+  megadots.hardware.surface-pro.nixos =
     { config, lib, ... }:
     {
       imports = [ inputs.nixos-hardware.nixosModules.microsoft-surface-pro-intel ];

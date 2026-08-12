@@ -1,9 +1,13 @@
 _: {
-  den.aspects.apps.storage.ente-desktop.homeManager =
-    { pkgs, ... }:
-    {
-      home.packages = [ pkgs.ente-desktop ];
+  megadots.apps.storage.ente-desktop = {
+    description = "The Ente photo storage client.";
 
-      home.persistence."/persist".directories = [ ".config/ente" ];
-    };
+    home-persist.directories = [ ".config/ente" ];
+
+    homeManager =
+      { pkgs, ... }:
+      {
+        home.packages = [ pkgs.ente-desktop ];
+      };
+  };
 }

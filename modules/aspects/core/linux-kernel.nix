@@ -2,9 +2,11 @@
 {
   flake-file.inputs.nix-cachyos-kernel.url = "github:xddxdd/nix-cachyos-kernel/release";
 
-  den.aspects.core.linux-kernel =
+  megadots.core.linux-kernel =
     { host, ... }:
     {
+      description = "A CachyOS kernel, picked from the host's declared channel and optimization target.";
+
       nixos =
         { pkgs, ... }:
         let

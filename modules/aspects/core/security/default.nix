@@ -1,5 +1,7 @@
 _: {
-  den.aspects.core.security.nixos = _: {
+  megadots.core.security.description = "Baseline system security: polkit, rtkit, immutable users and wheel-only sudo.";
+
+  megadots.core.security.nixos = _: {
     security.rtkit.enable = true;
     security.polkit.enable = true;
 

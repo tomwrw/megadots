@@ -5,7 +5,9 @@
     inputs.nixpkgs.follows = "nixpkgs";
   };
 
-  den.aspects.core.boot = {
+  megadots.core.boot = {
+    description = "EFI boot settings, with systemd-boot and lanzaboote offered as alternative sub-aspects.";
+
     # Shared by both bootloaders. lanzaboote replaces the installer but keeps
     # the systemd-boot option names, so setting these here covers both.
     nixos.boot.loader = {

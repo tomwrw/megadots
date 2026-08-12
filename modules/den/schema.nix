@@ -59,6 +59,18 @@
     };
   };
 
+  # The load-bearing line in this file, and the one with no error to guide you
+  # if it goes wrong. Every user gets both classes:
+  #
+  # - "homeManager" is the only thing that activates den's home-manager
+  #   battery. Narrow this list and every user's Home Manager config stops
+  #   being built, silently - no eval error, just a system with none of it.
+  # - "user" is the NixOS-side class. It's what makes the `user` block in
+  #   users/tomwrw/tomwrw.nix apply, which is where the account itself and its
+  #   hashedPasswordFile come from.
+  #
+  # mkDefault so an individual user can still narrow it - a service account
+  # with no home would set classes = [ "user" ].
   den.schema.user.config.classes = lib.mkDefault [
     "homeManager"
     "user"

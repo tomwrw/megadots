@@ -5,7 +5,19 @@
     inputs.nixpkgs.follows = "nixpkgs";
   };
 
-  den.aspects.apps.browsers.firefox.homeManager =
+  # This is NOT ~/.mozilla/firefox. Home Manager defaults configPath to the XDG
+  # location for current Firefox, so profiles.ini, user.js, chrome/ (where
+  # Stylix writes) and extensions/ all land here. Check it by evaluating
+  # configPath, not by reading this file, which never sets it. Persisting
+  # ~/.mozilla/firefox loses the real profile and leaves an empty legacy
+  # directory that Firefox prefers, so it opens an unmanaged profile with no
+  # theme and no add-ons. Did exactly that to myself once.
+  megadots.apps.browsers.firefox.description =
+    "Firefox, themed through Stylix and with its profile directory persisted.";
+
+  megadots.apps.browsers.firefox.home-persist.directories = [ ".config/mozilla/firefox" ];
+
+  megadots.apps.browsers.firefox.homeManager =
     { pkgs, ... }:
     {
       programs.firefox = {
@@ -150,13 +162,5 @@
       # this is really for what Firefox writes at runtime, but they share a
       # directory.
       #
-      # This is NOT ~/.mozilla/firefox. Home Manager defaults configPath to
-      # the XDG location for current Firefox, so profiles.ini, user.js,
-      # chrome/ (where Stylix writes) and extensions/ all land here. Check it
-      # by evaluating configPath, not by reading this file, which never sets
-      # it. Persisting ~/.mozilla/firefox loses the real profile and leaves an
-      # empty legacy directory that Firefox prefers, so it opens an unmanaged
-      # profile with no theme and no add-ons. Did exactly that to myself once.
-      home.persistence."/persist".directories = [ ".config/mozilla/firefox" ];
     };
 }

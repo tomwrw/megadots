@@ -1,6 +1,26 @@
 { inputs, ... }:
 {
-  den.aspects.core.nix.nixos =
+  # The two aliases that can't be portable. They rebuild *this* machine, so
+  # they need its name, and only a host scope knows it.
+  #
+  # They lived in apps/shell/zsh.nix, which had to take a host argument to
+  # write them and so evaluated to nothing at all in a standalone home. Handing
+  # them down from here means the shell aspect stays portable and these appear
+  # exactly where they mean something: on a NixOS host, in the shell of every
+  # user of that host. On someone else's Ubuntu they're simply absent, which is
+  # correct - there is nothing for nixos-rebuild to do there.
+  megadots.core.nix.description = "The nix daemon's settings, garbage collection, and the rebuild aliases that need a host name.";
+
+  megadots.core.nix.provides.to-users.homeManager =
+    { host, ... }:
+    {
+      programs.zsh.shellAliases = {
+        nix-r = "nixos-rebuild switch --flake .#${host.name} --sudo";
+        nix-b = "nixos-rebuild build --flake .#${host.name} --sudo";
+      };
+    };
+
+  megadots.core.nix.nixos =
     { lib, ... }:
     {
       nix = {

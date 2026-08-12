@@ -6,6 +6,17 @@ user := "tomwrw"
 default:
     @just --list
 
+# Read the seeded-file list out of the host being deployed, as 'owner<TAB>path'
+# lines. This is config.megadots.seed, built by core/seed.nix from the 'seed'
+# quirk, so the same list drives the tmpfiles ownership, the chown unit and the
+# two recipes below. It used to be written out by hand in three places.
+#
+# Plain builtins rather than lib, since 'nix eval --apply' has no lib in scope.
+[private]
+seed-list HOST:
+    @nix eval --raw ".#nixosConfigurations.{{ HOST }}.config.megadots.seed" \
+      --apply 's: builtins.concatStringsSep "" (builtins.concatMap (o: map (f: o + "\t" + f + "\n") s.${o}) (builtins.attrNames s))'
+
 # Check every file 'deploy HOST' needs is on the USB before it formats a disk.
 check-bootstrap HOST:
     #!/usr/bin/env bash
@@ -13,12 +24,13 @@ check-bootstrap HOST:
     missing=0
     check() { if [[ -r "$1" ]]; then echo "  ok   $1"; else echo "  MISS $1"; missing=1; fi; }
     echo "USB key material:"
+    # The host's own age key is a system path, not a home-relative one, so it
+    # is not part of the seed quirk and stays spelled out here.
     check "{{ usb }}/hosts/{{ HOST }}/age.txt"
-    check "{{ usb }}/users/{{ user }}/age.txt"
-    for k in id_ed25519 id_ed25519_sk_primary id_ed25519_sk_backup; do
-      check "{{ usb }}/users/{{ user }}/$k"
-      check "{{ usb }}/users/{{ user }}/$k.pub"
-    done
+    while IFS=$'\t' read -r owner path; do
+      [[ -n "$path" ]] || continue
+      check "{{ usb }}/users/$owner/$(basename "$path")"
+    done < <(just seed-list {{ HOST }})
     echo "Repo state:"
     check "secrets/hosts/{{ HOST }}.yaml"
     check "secrets/users/{{ user }}.yaml"
@@ -44,13 +56,20 @@ deploy HOST: (check-bootstrap HOST)
     # (and so /home) goes back to a blank snapshot every boot. impermanence
     # bind mounts these into the live home.
     install -Dm600 {{ usb }}/hosts/{{ HOST }}/age.txt "$staging/persist/var/lib/sops-nix/key.txt"
-    install -Dm600 {{ usb }}/users/{{ user }}/age.txt "$staging/persist/home/{{ user }}/.config/sops/age/keys.txt"
-    # FIDO2 key handles, useless without the token, but seeding them saves
-    # an 'ssh-keygen -K' after the deploy.
-    for k in id_ed25519 id_ed25519_sk_primary id_ed25519_sk_backup; do
-      install -Dm600 {{ usb }}/users/{{ user }}/$k "$staging/persist/home/{{ user }}/.ssh/$k"
-      install -Dm644 {{ usb }}/users/{{ user }}/$k.pub "$staging/persist/home/{{ user }}/.ssh/$k.pub"
-    done
+    # Everything else comes from config.megadots.seed. The USB is flat - one
+    # directory per user - while the destinations are nested, so the source is
+    # the basename of each path. core/seed.nix asserts those basenames are
+    # unique per owner, which is what makes that mapping safe rather than a
+    # convention I have to remember.
+    while IFS=$'\t' read -r owner path; do
+      [[ -n "$path" ]] || continue
+      case "$path" in
+        *.pub) mode=0644 ;;
+        *) mode=0600 ;;
+      esac
+      install -Dm$mode "{{ usb }}/users/$owner/$(basename "$path")" \
+        "$staging/persist/home/$owner/$path"
+    done < <(just seed-list {{ HOST }})
     # Pinned by this flake's own lock - see modules/flake/deploy.nix.
     nix run .#nixos-anywhere -- \
       --disko-mode disko \
@@ -100,7 +119,9 @@ unenroll-fido2 HOST:
 fmt:
     nix fmt
 
-# Build both hosts, the invariants and the roster checks.
+# Build both hosts and the standalone home, then run every check: invariants,
+# roster, homes, namespace, secrets, treefmt and flake-file. No list to keep in
+# step - 'nix flake check' takes whatever modules/flake/checks.nix produces.
 check:
     nix flake check
 

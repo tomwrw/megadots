@@ -1,5 +1,8 @@
 _: {
-  den.aspects.core.security.hardening.nixos = _: {
+  megadots.core.security.hardening.description =
+    "Kernel sysctls and boot parameters that narrow the default attack surface.";
+
+  megadots.core.security.hardening.nixos = _: {
     boot.kernel.sysctl = {
       "kernel.dmesg_restrict" = 1;
       "kernel.kptr_restrict" = 2;

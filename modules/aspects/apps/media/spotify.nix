@@ -1,16 +1,22 @@
-{ inputs, ... }:
+{ inputs, den, ... }:
 {
   flake-file.inputs.spicetify-nix = {
     url = "github:Gerg-L/spicetify-nix";
     inputs.nixpkgs.follows = "nixpkgs";
   };
 
-  den.aspects.apps.media.spotify.unfree = [
-    "spotify"
-    "spicetify-stylix"
+  megadots.apps.media.spotify.description = "The Spotify desktop client.";
+
+  megadots.apps.media.spotify.includes = [
+    (den.batteries.unfree [
+      "spotify"
+      "spicetify-stylix"
+    ])
   ];
 
-  den.aspects.apps.media.spotify.homeManager =
+  megadots.apps.media.spotify.home-persist.directories = [ ".config/spotify" ];
+
+  megadots.apps.media.spotify.homeManager =
     { pkgs, ... }:
     let
       spicePkgs = inputs.spicetify-nix.legacyPackages.${pkgs.stdenv.system};
@@ -37,6 +43,5 @@
         ];
       };
 
-      home.persistence."/persist".directories = [ ".config/spotify" ];
     };
 }

@@ -1,7 +1,11 @@
 _: {
-  den.aspects.apps.messaging.vesktop.homeManager = _: {
-    programs.vesktop.enable = true;
+  megadots.apps.messaging.vesktop = {
+    description = "Vesktop, an alternative Discord client.";
 
-    home.persistence."/persist".directories = [ ".config/vesktop" ];
+    home-persist.directories = [ ".config/vesktop" ];
+
+    homeManager = _: {
+      programs.vesktop.enable = true;
+    };
   };
 }

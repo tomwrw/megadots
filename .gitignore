@@ -4,7 +4,20 @@ PLAN.md
 result
 result-*
 *.qcow2
+.editorconfig
+
+# Key material. Everything here lives on the USB (see justfile) and must never
+# reach the tree, but 'git add -A' after a stray copy is one keystroke away and
+# this repo is public. The justfile names id_ed25519* by hand, so match that
+# shape too - public halves are re-allowed, since allowed_signers and
+# authorizedKeys are meant to be committed.
 *age.txt
 key.txt
 keys.txt
-.editorconfig
+id_*
+!id_*.pub
+*.pem
+*.key
+*.p12
+*.age
+.env*

@@ -1,8 +1,13 @@
-_: {
-  den.aspects.apps.gaming.steam = {
-    unfree = [
-      "steam"
-      "steam-unwrapped"
+{ den, ... }:
+{
+  megadots.apps.gaming.steam = {
+    description = "Steam, including Proton and a persisted game library.";
+
+    includes = [
+      (den.batteries.unfree [
+        "steam"
+        "steam-unwrapped"
+      ])
     ];
 
     nixos =
@@ -19,13 +24,12 @@ _: {
       };
 
     # Steam's state belongs to me, but roles/gaming.nix includes this aspect at
-    # host scope, and den drops a bare homeManager block there.
-    # provides.to-users is the path that actually reaches my home.
-    provides.to-users.homeManager = _: {
-      home.persistence."/persist".directories = [
-        ".steam"
-        ".local/share/Steam"
-      ];
-    };
+    # host scope, and the home-persist quirk is only ever read in a user scope.
+    # provides.to-users is the path that actually reaches my home - emitted
+    # bare here it would land in the host's pool, which has no consumer.
+    provides.to-users.home-persist.directories = [
+      ".steam"
+      ".local/share/Steam"
+    ];
   };
 }

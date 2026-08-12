@@ -1,9 +1,13 @@
 _: {
-  den.aspects.apps.messaging.whatsapp.homeManager =
-    { pkgs, ... }:
-    {
-      home.packages = [ pkgs.karere ];
+  megadots.apps.messaging.whatsapp = {
+    description = "A WhatsApp desktop client.";
 
-      home.persistence."/persist".directories = [ ".local/share/karere" ];
-    };
+    home-persist.directories = [ ".local/share/karere" ];
+
+    homeManager =
+      { pkgs, ... }:
+      {
+        home.packages = [ pkgs.karere ];
+      };
+  };
 }

@@ -1,9 +1,13 @@
 _: {
-  den.aspects.apps.security.bitwarden.homeManager =
-    { pkgs, ... }:
-    {
-      home.packages = [ pkgs.bitwarden-cli ];
+  megadots.apps.security.bitwarden = {
+    description = "The Bitwarden desktop client.";
 
-      home.persistence."/persist".directories = [ ".config/Bitwarden CLI" ];
-    };
+    home-persist.directories = [ ".config/Bitwarden CLI" ];
+
+    homeManager =
+      { pkgs, ... }:
+      {
+        home.packages = [ pkgs.bitwarden-cli ];
+      };
+  };
 }

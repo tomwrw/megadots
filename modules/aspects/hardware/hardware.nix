@@ -1,5 +1,7 @@
 _: {
-  den.aspects.hardware = {
+  megadots.hardware = {
+    description = "Firmware, device automounting and fwupd - the parts every physical machine wants.";
+
     nixos = _: {
       hardware.enableRedistributableFirmware = true;
 

@@ -1,5 +1,8 @@
 _: {
-  den.aspects.apps.shell.cli-apps.homeManager =
+  megadots.apps.shell.cli-apps.description =
+    "A set of command-line tools that replace or supplement the coreutils defaults.";
+
+  megadots.apps.shell.cli-apps.homeManager =
     { pkgs, ... }:
     {
       # eza and nh go through their Home Manager modules and not home.packages.

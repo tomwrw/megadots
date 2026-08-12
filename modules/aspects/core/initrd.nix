@@ -1,5 +1,7 @@
 _: {
-  den.aspects.core.initrd.nixos = _: {
+  megadots.core.initrd.description = "A systemd-based initrd.";
+
+  megadots.core.initrd.nixos = _: {
     # systemd in the initrd. impermanence's initrd bind mounts and the btrfs
     # rollback both need it, and checks.nix asserts it stays on.
     boot.initrd.systemd.enable = true;

@@ -1,9 +1,16 @@
 _: {
-  den.aspects.desktop.gnome = {
+  megadots.desktop.gnome = {
+    description = "GNOME and GDM, its keyboard layout, and the dconf and monitor state worth keeping across a rollback.";
+
     nixos =
       { pkgs, ... }:
       {
         programs.dconf.enable = true;
+
+        # British layout. Lives here rather than in core.locale because it is a
+        # desktop setting: GNOME reads it for the session's default input
+        # source, and a headless host in roles.base has no use for it.
+        services.xserver.xkb.layout = "gb";
 
         # No xdg.portal.enable or services.libinput.enable here, the GNOME
         # module already turns both on.
@@ -15,7 +22,7 @@ _: {
 
         services = {
           # gcr's agent handles FIDO2 keys badly, so I use the plain OpenSSH
-          # agent instead. See core/security/ssh-agent.nix, which any user
+          # agent instead. See apps/security/ssh.nix, which any user
           # needing an agent has to include. Turning this off without putting
           # something back left me with no agent at all last time.
           gnome.gcr-ssh-agent.enable = false;
@@ -64,13 +71,21 @@ _: {
         config,
         lib,
         pkgs,
+        persist-store,
         ...
       }:
       let
-        # Where the copies live. Not a home.persistence entry, on purpose -
-        # see the comment on the two units below.
+        # Where the copies live. Not a home-persist entry, on purpose - see the
+        # comment on the two units below.
         liveFile = "${config.home.homeDirectory}/.config/monitors.xml";
-        savedFile = "/persist/home/${config.home.username}/.config/monitors.xml";
+
+        # Asked for rather than assumed. An empty pool means the machine has no
+        # persistent store - a host without core.impermanence, or a standalone
+        # home - and then the two units below are not emitted at all. They used
+        # to be unconditional with /persist written into them, so on such a
+        # machine the save unit failed on every trigger instead of no-opping.
+        store = lib.head (persist-store ++ [ null ]);
+        savedFile = "${store.root}/home/${config.home.username}/.config/monitors.xml";
       in
       {
         # programs.gnome-shell does what I was doing by hand: installs each
@@ -119,10 +134,11 @@ _: {
           mime.enable = true;
           mimeApps.enable = true;
         };
-
+      }
+      // lib.optionalAttrs (store != null) {
         # Display settings - resolution, refresh rate, monitor layout - are
         # the one piece of GNOME state impermanence can't hold as a
-        # home.persistence entry, so they get copied in and out instead.
+        # home-persist entry, so they get copied in and out instead.
         #
         # mutter saves ~/.config/monitors.xml with
         # G_FILE_CREATE_REPLACE_DESTINATION: it writes a temp file beside it
@@ -171,26 +187,31 @@ _: {
           };
         };
 
-        home.persistence."/persist".directories = [
-          # The dconf database. Everything set above is rewritten on
-          # activation, so this is for the rest: window positions, per-app
-          # preferences, the dash favourites, anything I changed in Settings
-          # instead of in this file.
-          ".config/dconf"
-          # xdg-desktop-portal's permission store, which is where "Remember
-          # This Selection" in a portal dialog actually goes - screen capture,
-          # camera, location, background. The path is a flatpak one because
-          # xdg-permission-store hardcodes it, not because anything here is a
-          # flatpak. Without it sunshine re-prompts for screen sharing on every
-          # login, since the portal has forgotten the grant even though
-          # sunshine still has its restore token in .config/sunshine.
-          ".local/share/flatpak/db"
-          # gnome-keyring's secret store. The GNOME module runs the daemon, so
-          # without this every boot starts with no keyring, GNOME asks me to
-          # make one, and anything stored through libsecret is gone.
-          ".local/share/keyrings"
-        ];
       };
+
+    # A sibling of the homeManager block above, not a key inside it: quirk data
+    # is an aspect key, and this aspect is host scope, so it takes the
+    # provides.to-users route to land in the user pool that
+    # core.impermanence's consumer actually reads.
+    provides.to-users.home-persist.directories = [
+      # The dconf database. Everything set in dconf.settings above is rewritten
+      # on activation, so this is for the rest: window positions, per-app
+      # preferences, the dash favourites, anything I changed in Settings
+      # instead of in this file.
+      ".config/dconf"
+      # xdg-desktop-portal's permission store, which is where "Remember This
+      # Selection" in a portal dialog actually goes - screen capture, camera,
+      # location, background. The path is a flatpak one because
+      # xdg-permission-store hardcodes it, not because anything here is a
+      # flatpak. Without it sunshine re-prompts for screen sharing on every
+      # login, since the portal has forgotten the grant even though sunshine
+      # still has its restore token in .config/sunshine.
+      ".local/share/flatpak/db"
+      # gnome-keyring's secret store. The GNOME module runs the daemon, so
+      # without this every boot starts with no keyring, GNOME asks me to make
+      # one, and anything stored through libsecret is gone.
+      ".local/share/keyrings"
+    ];
 
     # mDNS. I never enable avahi myself, the GNOME desktop module pulls it in,
     # so the port and the openFirewall override above belong here next to the

@@ -1,9 +1,16 @@
-_: {
-  den.aspects.apps.dev.vscodium = {
+{ den, ... }:
+{
+  megadots.apps.dev.vscodium = {
+    description = "VSCodium with a fully declarative extension list and no mutable extension directory.";
+
     # The Marketplace build of the extension, not the CLI in apps/dev/claude-code
-    # - separate derivation, separate licence. core.unfree matches on
+    # - separate derivation, separate licence. den's predicate matches on
     # lib.getName, which is the pname rather than the attribute path.
-    unfree = [ "vscode-extension-anthropic-claude-code" ];
+    includes = [ (den.batteries.unfree [ "vscode-extension-anthropic-claude-code" ]) ];
+
+    # Extension state: auth tokens, recently opened, workspace storage. None of
+    # it covered by the declarative settings.
+    home-persist.directories = [ ".config/VSCodium" ];
 
     homeManager =
       { lib, pkgs, ... }:
@@ -39,10 +46,6 @@ _: {
             };
           };
         };
-
-        # Extension state: auth tokens, recently opened, workspace storage. None
-        # of it covered by the declarative settings.
-        home.persistence."/persist".directories = [ ".config/VSCodium" ];
       };
   };
 }

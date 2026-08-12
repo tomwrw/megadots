@@ -1,6 +1,16 @@
-_: {
-  den.aspects.apps.dev.claude-code = {
-    unfree = [ "claude-code" ];
+{ den, ... }:
+{
+  megadots.apps.dev.claude-code = {
+    description = "Anthropic's Claude Code CLI.";
+
+    includes = [ (den.batteries.unfree [ "claude-code" ]) ];
+
+    # Holds the OAuth credentials as well as project history, so losing it
+    # means logging in again, not just losing state.
+    home-persist.directories = [
+      ".claude"
+      ".config/claude"
+    ];
 
     homeManager =
       { pkgs, ... }:
@@ -9,13 +19,6 @@ _: {
           pkgs.claude-code
           pkgs.claude-monitor
           pkgs.nodejs
-        ];
-
-        # Holds the OAuth credentials as well as project history, so losing
-        # it means logging in again, not just losing state.
-        home.persistence."/persist".directories = [
-          ".claude"
-          ".config/claude"
         ];
       };
   };

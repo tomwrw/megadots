@@ -1,5 +1,7 @@
 _: {
-  den.aspects.virtualisation.libvirt.nixos = _: {
+  megadots.virtualisation.libvirt.description = "libvirtd with virt-manager and a swtpm, for running VMs.";
+
+  megadots.virtualisation.libvirt.nixos = _: {
     virtualisation.libvirtd = {
       enable = true;
       qemu.swtpm.enable = true;
@@ -56,7 +58,7 @@ _: {
     };
   };
 
-  den.aspects.virtualisation.libvirt.persist.directories = [
+  megadots.virtualisation.libvirt.persist.directories = [
     "/var/cache/libvirt"
     "/var/lib/libvirt"
     # The local CA that issues vTPM endorsement certificates. Per-VM swtpm
@@ -70,7 +72,7 @@ _: {
 
   # The aspect that makes the libvirtd group is the one that grants it. Only
   # hosts including this aspect deliver it, so the user side needs no guard.
-  den.aspects.virtualisation.libvirt.provides.to-users =
+  megadots.virtualisation.libvirt.provides.to-users =
     { host, user, ... }:
     {
       name = "virtualisation.libvirt/libvirtd-group(${user.userName}@${host.name})";

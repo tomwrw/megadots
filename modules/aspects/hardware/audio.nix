@@ -1,5 +1,7 @@
 _: {
-  den.aspects.hardware.audio.nixos = _: {
+  megadots.hardware.audio.description = "PipeWire, replacing PulseAudio, with ALSA and JACK compatibility.";
+
+  megadots.hardware.audio.nixos = _: {
     services.pulseaudio.enable = false;
     services.pipewire = {
       enable = true;

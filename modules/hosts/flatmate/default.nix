@@ -1,11 +1,11 @@
-{ den, ... }:
+{ den, megadots, ... }:
 {
   den.aspects.flatmate = {
     includes = [
       den.aspects.roles.base
       den.aspects.roles.workstation
-      den.aspects.core.boot.systemd-boot
-      den.aspects.hardware.surface-pro
+      megadots.core.boot.systemd-boot
+      megadots.hardware.surface-pro
     ];
 
     # See the note in hosts/endgame/default.nix.

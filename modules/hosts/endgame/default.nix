@@ -1,4 +1,4 @@
-{ den, ... }:
+{ den, megadots, ... }:
 {
   den.aspects.endgame = {
     includes = [
@@ -6,9 +6,8 @@
       den.aspects.roles.workstation
       den.aspects.roles.gaming
       den.aspects.roles.dev
-      den.aspects.core.boot.lanzaboote
-      den.aspects.virtualisation.libvirt
-      den.aspects.core.linux-kernel
+      megadots.core.boot.lanzaboote
+      megadots.core.linux-kernel
     ];
 
     # nixos-generate-config output for this machine. Imported straight in

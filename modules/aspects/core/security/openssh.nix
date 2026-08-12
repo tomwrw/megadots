@@ -1,5 +1,7 @@
 _: {
-  den.aspects.core.security.openssh = {
+  megadots.core.security.openssh = {
+    description = "An sshd accepting keys only, firewalled to the LAN by the firewall quirk rather than openFirewall.";
+
     nixos = _: {
       services.openssh = {
         enable = true;

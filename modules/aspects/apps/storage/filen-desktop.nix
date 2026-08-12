@@ -1,9 +1,13 @@
 _: {
-  den.aspects.apps.storage.filen-desktop.homeManager =
-    { pkgs, ... }:
-    {
-      home.packages = [ pkgs.filen-desktop ];
+  megadots.apps.storage.filen-desktop = {
+    description = "The Filen encrypted storage client.";
 
-      home.persistence."/persist".directories = [ ".config/@filen" ];
-    };
+    home-persist.directories = [ ".config/@filen" ];
+
+    homeManager =
+      { pkgs, ... }:
+      {
+        home.packages = [ pkgs.filen-desktop ];
+      };
+  };
 }

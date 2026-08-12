@@ -1,5 +1,8 @@
 _: {
-  den.aspects.apps.dev.git.homeManager =
+  megadots.apps.dev.git.description =
+    "git, configured for SSH commit signing against a caller-supplied key set.";
+
+  megadots.apps.dev.git.homeManager =
     { config, ... }:
     {
       programs.git = {

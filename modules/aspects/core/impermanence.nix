@@ -2,7 +2,9 @@
 {
   flake-file.inputs.impermanence.url = "github:nix-community/impermanence";
 
-  den.aspects.core.impermanence.nixos =
+  megadots.core.impermanence.description = "The /persist store, and the consumer of both the persist and home-persist quirks.";
+
+  megadots.core.impermanence.nixos =
     { persist, lib, ... }:
     {
       imports = [ inputs.impermanence.nixosModules.impermanence ];
@@ -55,4 +57,37 @@
       # outright is what actually boots on my hardware.
       systemd.services.systemd-machine-id-commit.enable = false;
     };
+
+  # The user-scope half, and the only consumer of the 'home-persist' quirk.
+  #
+  # It hangs off the host's inclusion of this aspect (roles.base) rather than
+  # off the user aspect, on purpose: whether a home is impermanent is a
+  # property of the machine, not of me. provides.to-users runs it once per user
+  # scope, so the quirk arg below is that user's pool and nothing else.
+  #
+  # This is what lets every app aspect say only which of its own directories
+  # matter. None of them import impermanence, name /persist, or know whether
+  # the machine rolls back at all - so the same aspect is still evaluable in a
+  # standalone home, where this consumer does not exist and the pool goes
+  # unread instead of failing on an option that was never declared.
+  megadots.core.impermanence.provides.to-users = {
+    homeManager =
+      { home-persist, lib, ... }:
+      {
+        home.persistence."/persist" = {
+          # Per store, and this is not the store the nixos block above
+          # declares, so it has to be said again here.
+          hideMounts = true;
+          directories = lib.concatMap (e: e.directories or [ ]) home-persist;
+          files = lib.concatMap (e: e.files or [ ]) home-persist;
+        };
+      };
+
+    # See den.quirks.persist-store. Announced here because this aspect is what
+    # makes the store true; an aspect that needs it asks for the quirk rather
+    # than assuming the path.
+    persist-store = {
+      root = "/persist";
+    };
+  };
 }

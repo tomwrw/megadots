@@ -10,7 +10,9 @@ _: {
   #
   # Only the systemd-initrd path, since core/initrd.nix always turns it on and
   # checks.nix asserts it.
-  den.aspects.core.ephemeral-btrfs.nixos =
+  megadots.core.ephemeral-btrfs.description = "Rolls the root subvolume back to a blank snapshot in the initrd, on every boot.";
+
+  megadots.core.ephemeral-btrfs.nixos =
     {
       config,
       lib,

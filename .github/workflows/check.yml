@@ -37,8 +37,11 @@ jobs:
           nix build --print-build-logs --no-link \
             .#checks.x86_64-linux.invariants \
             .#checks.x86_64-linux.roster \
+            .#checks.x86_64-linux.homes \
+            .#checks.x86_64-linux.namespace \
             .#checks.x86_64-linux.treefmt \
-            .#checks.x86_64-linux.check-flake-file
+            .#checks.x86_64-linux.check-flake-file \
+            .#checks.x86_64-linux.secrets
 
       # Derived, not hardcoded: a hardcoded list means a newly added host is
       # silently never checked - the same vacuous-pass failure mode that
@@ -78,6 +81,28 @@ jobs:
             echo "::group::$host"
             nix eval --raw --print-build-logs \
               ".#nixosConfigurations.$host.config.system.build.toplevel.drvPath"
+            echo
+            echo "::endgroup::"
+          done
+
+      # The standalone home, same trick and same reason. modules/den/homes.nix
+      # evaluates my user aspect with no NixOS underneath it, which is what
+      # keeps modules/aspects/ portable: an aspect that quietly grows a
+      # dependency on a host - a secret the system places, an option only the
+      # NixOS impermanence module declares, a host name - stops contributing
+      # here rather than failing, so nothing notices until the day it matters.
+      #
+      # Derived from the flake output for the same reason the host list is: a
+      # second home added to den.homes must not need this file edited to be
+      # covered.
+      - name: Instantiate every standalone home
+        run: |
+          homes=$(nix eval --json '.#homeConfigurations' --apply builtins.attrNames)
+          echo "homes: $homes"
+          for home in $(jq -r '.[]' <<<"$homes"); do
+            echo "::group::$home"
+            nix eval --raw --print-build-logs \
+              ".#homeConfigurations.\"$home\".activationPackage.drvPath"
             echo
             echo "::endgroup::"
           done

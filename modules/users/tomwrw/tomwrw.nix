@@ -1,5 +1,6 @@
 {
   den,
+  megadots,
   lib,
   ...
 }:
@@ -20,75 +21,34 @@ in
     includes = [
       den.batteries.primary-user
       (den.batteries.user-shell "zsh")
-      den.aspects.core.security.sops
-      den.aspects.core.security.ssh-agent
-      den.aspects.core.syncthing
-      den.aspects.desktop.stylix
-      den.aspects.apps.browsers.firefox
-      den.aspects.apps.dev.git
-      den.aspects.apps.shell.zsh
-      den.aspects.apps.shell.cli-apps
-      den.aspects.apps.terminals.ghostty
-      den.aspects.apps.monitoring.btop
+      megadots.core.security.sops
+      megadots.apps.security.ssh
+      megadots.apps.sync.syncthing
+      megadots.desktop.stylix
+      megadots.apps.browsers.firefox
+      megadots.apps.dev.git
+      megadots.apps.shell.zsh
+      megadots.apps.shell.cli-apps
+      megadots.apps.terminals.ghostty
+      megadots.apps.monitoring.btop
 
       # Applications (common to all hosts).
-      den.aspects.apps.messaging.element
-      den.aspects.apps.messaging.signal
-      den.aspects.apps.messaging.vesktop
-      den.aspects.apps.messaging.whatsapp
-      den.aspects.apps.storage.ente-desktop
-      den.aspects.apps.media.spotify
-      den.aspects.apps.productivity.joplin
-      den.aspects.apps.productivity.obsidian
-      den.aspects.apps.security.ente-auth
-      den.aspects.apps.security.bitwarden
-      den.aspects.apps.storage.filen-desktop
-      den.aspects.apps.dev.claude-code
-      den.aspects.apps.dev.vscodium
-      den.aspects.apps.productivity.proton-suite
+      megadots.apps.messaging.element
+      megadots.apps.messaging.signal
+      megadots.apps.messaging.vesktop
+      megadots.apps.messaging.whatsapp
+      megadots.apps.storage.ente-desktop
+      megadots.apps.media.spotify
+      megadots.apps.productivity.joplin
+      megadots.apps.productivity.obsidian
+      megadots.apps.security.ente-auth
+      megadots.apps.security.bitwarden
+      megadots.apps.storage.filen-desktop
+      megadots.apps.productivity.proton-suite
     ];
 
     nixos = _: {
       sops.secrets."users/tomwrw/password".neededForUsers = true;
-
-      # 'd' fixes ownership and mode even though nixos-anywhere seeded these
-      # as root. Both sides are listed on purpose, and dropping either one
-      # breaks a different boot:
-      #
-      # - /persist is where 'just deploy' seeds them. impermanence never
-      #   repairs an existing persist directory, it copies that directory's
-      #   owner and mode onto the live path, so a root-owned /persist entry
-      #   keeps re-infecting my home on every activation.
-      #
-      # - /home is needed because that copy runs during activation, which here
-      #   happens in the initrd, while tmpfiles run at sysinit in stage 2
-      #   afterwards. Fix only /persist and the live tree stays wrong for the
-      #   whole first boot after a deploy. ~/.ssh is a plain directory, not a
-      #   bind mount, so correcting /persist doesn't reach it.
-      #
-      # Getting this wrong broke home-manager and ssh twice. tmpfiles run at
-      # sysinit and home-manager-tomwrw is wantedBy multi-user.target, so the
-      # live fixes land first without any explicit ordering.
-      systemd.tmpfiles.settings."10-tomwrw-seed" =
-        let
-          owned = mode: {
-            d = {
-              user = "tomwrw";
-              group = "users";
-              inherit mode;
-            };
-          };
-          # Directories only. The seeded files are handled by
-          # systemd.services.tomwrw-seeded-keys below.
-          entries = prefix: {
-            "${prefix}/home/tomwrw" = owned "0700";
-            "${prefix}/home/tomwrw/.ssh" = owned "0700";
-            "${prefix}/home/tomwrw/.config" = owned "0755";
-            "${prefix}/home/tomwrw/.config/sops" = owned "0700";
-            "${prefix}/home/tomwrw/.config/sops/age" = owned "0700";
-          };
-        in
-        entries "/persist" // entries "";
 
       # GNOME sets the avatar through accountsservice, which copies the image
       # into /var/lib/AccountsService/icons/<user> and records Icon= in
@@ -126,46 +86,6 @@ in
         };
       };
 
-      # tmpfiles can own the seeded directories but not the seeded files.
-      # systemd-tmpfiles refuses to 'z' a file whose path runs through
-      # user-owned directories, which is its protection against symlink
-      # attacks, so the rules do nothing and the keys stay root:root 0600.
-      # sops-nix then dies with "cannot read keyfile
-      # '~/.config/sops/age/keys.txt': permission denied" and takes syncthing
-      # with it, since copy-keys needs the decrypted cert. It all looks like a
-      # deploy that skipped the keys.
-      #
-      # So the chown happens from root in a oneshot, not as tmpfiles 'z'
-      # entries. I replaced this with 'z' rules once because they were more
-      # declarative. They are, and they don't work. Found out on a flatmate
-      # deploy.
-      #
-      # /persist is the side that gets chowned, since it's the source of the
-      # bind mount and the live path is the same inode. The globs mirror what
-      # 'just deploy' seeds, so keep them in step with that recipe.
-      systemd.services.tomwrw-seeded-keys = {
-        description = "Own tomwrw's deploy-seeded key files";
-        wantedBy = [ "multi-user.target" ];
-        before = [ "home-manager-tomwrw.service" ];
-        unitConfig.ConditionPathExists = "/persist/home/tomwrw";
-        serviceConfig = {
-          Type = "oneshot";
-          RemainAfterExit = true;
-        };
-        # Globbed and guarded instead of a blanket ignore. A missing key is
-        # normal, not every host seeds every key, but a chown that actually
-        # fails should still fail the unit.
-        script = ''
-          shopt -s nullglob
-          files=(
-            /persist/home/tomwrw/.config/sops/age/keys.txt
-            /persist/home/tomwrw/.ssh/id_ed25519*
-          )
-          if [ ''${#files[@]} -gt 0 ]; then
-            chown tomwrw:users "''${files[@]}"
-          fi
-        '';
-      };
     };
 
     # den's 'user' class puts these straight onto users.users.tomwrw. osConfig
@@ -187,6 +107,18 @@ in
         ];
       };
 
+    # / goes back to a blank snapshot every boot and /home is inside it, so my
+    # home keeps only what's listed here or in an app aspect's own home-persist
+    # block. hideMounts is set once by the consumer in core/impermanence.nix
+    # rather than here, since every aspect's entries share that one store.
+    home-persist.directories = [
+      "Documents"
+      "Downloads"
+      "Pictures"
+      "Videos"
+      "Music"
+    ];
+
     homeManager =
       { config, ... }:
       {
@@ -194,23 +126,19 @@ in
         programs.home-manager.enable = true;
         home.sessionPath = [ "$HOME/.local/bin" ];
 
-        # / goes back to a blank snapshot every boot and /home is inside it, so
-        # my home keeps only what's listed here or in an app aspect's own
-        # home.persistence block.
-        #
-        # hideMounts is per store. The same option in core/impermanence.nix
-        # doesn't cover these, so it needs setting again here. Setting it here
-        # covers every aspect's entries, since they all share this store.
-        home.persistence."/persist" = {
-          hideMounts = true;
-          directories = [
-            "Documents"
-            "Downloads"
-            "Pictures"
-            "Videos"
-            "Music"
-          ];
+        # The theme choices themselves. desktop/stylix.nix owns the wiring and
+        # declares these options; which scheme and which picture are mine.
+        megadots.theme = {
+          scheme = "rose-pine-moon";
+          wallpaper = ../../../assets/wallpaper/snake.png;
         };
+
+        # Stylix needs the vault's absolute path so it can drop a CSS snippet
+        # in. Built from homeDirectory rather than written out, so this line
+        # carries my note-taking layout but not my username.
+        stylix.targets.obsidian.vaultNames = [
+          "${config.home.homeDirectory}/Syncthing/02 Area/Notes"
+        ];
 
         programs.git.settings.user.name = "tomwrw";
         programs.git.settings.user.email = email;
@@ -219,7 +147,7 @@ in
         #
         # git only adds -U to 'ssh-keygen -Y sign' for a literal, and -U means
         # "this identity lives in an agent". Nothing here ever puts it in one:
-        # core/security/ssh-agent.nix starts an empty agent, and AddKeysToAgent
+        # apps/security/ssh.nix starts an empty agent, and AddKeysToAgent
         # is an ssh(1) option, so it fires on an SSH connection and never on a
         # signature. Every first commit of a fresh login died with "Couldn't
         # find key in agent" until I'd happened to ssh somewhere first.

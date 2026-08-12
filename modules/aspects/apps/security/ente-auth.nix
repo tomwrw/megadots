@@ -1,9 +1,13 @@
 _: {
-  den.aspects.apps.security.ente-auth.homeManager =
-    { pkgs, ... }:
-    {
-      home.packages = [ pkgs.ente-auth ];
+  megadots.apps.security.ente-auth = {
+    description = "Ente Auth, a TOTP authenticator.";
 
-      home.persistence."/persist".directories = [ ".local/share/io.ente.auth" ];
-    };
+    home-persist.directories = [ ".local/share/io.ente.auth" ];
+
+    homeManager =
+      { pkgs, ... }:
+      {
+        home.packages = [ pkgs.ente-auth ];
+      };
+  };
 }

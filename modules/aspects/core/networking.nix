@@ -1,7 +1,9 @@
 _: {
-  den.aspects.core.networking =
+  megadots.core.networking =
     { host, ... }:
     {
+      description = "Hostname, DNS and the firewall, and the only place the firewall quirk becomes interface-scoped rules.";
+
       nixos =
         {
           firewall,
@@ -13,7 +15,6 @@ _: {
             # mkForce so no other aspect can turn the firewall off, even
             # though true is already the default.
             firewall.enable = lib.mkForce true;
-            networkmanager.enable = true;
             domain = "home.arpa";
             search = [ "home.arpa" ];
 
@@ -38,12 +39,5 @@ _: {
           ];
         };
 
-      # NetworkManager's state, kept by the aspect that turns it on. Its
-      # secret_key derives the per-SSID MAC and the DHCP DUID, so losing it
-      # means a new identity every boot, fresh leases and broken reservations.
-      persist.directories = [
-        "/etc/NetworkManager/system-connections"
-        "/var/lib/NetworkManager"
-      ];
     };
 }

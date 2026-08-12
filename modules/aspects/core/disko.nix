@@ -5,7 +5,7 @@
     inputs.nixpkgs.follows = "nixpkgs";
   };
 
-  den.aspects.core.disko =
+  megadots.core.disko =
     { host, ... }:
     let
       # Name of the opened LUKS mapping. Bound once so the postCreateHook and
@@ -13,6 +13,8 @@
       luksName = "crypted";
     in
     {
+      description = "A declarative LUKS-on-btrfs disk layout with subvolumes and a swapfile, sized from the host roster.";
+
       nixos = _: {
         imports = [ inputs.disko.nixosModules.disko ];
 

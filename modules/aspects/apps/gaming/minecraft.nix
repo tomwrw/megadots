@@ -1,11 +1,15 @@
 _: {
-  den.aspects.apps.gaming.minecraft.homeManager =
-    { pkgs, ... }:
-    {
-      home.packages = [
-        pkgs.prismlauncher
-      ];
+  megadots.apps.gaming.minecraft = {
+    description = "The Prism Minecraft launcher.";
 
-      home.persistence."/persist".directories = [ ".local/share/PrismLauncher" ];
-    };
+    home-persist.directories = [ ".local/share/PrismLauncher" ];
+
+    homeManager =
+      { pkgs, ... }:
+      {
+        home.packages = [
+          pkgs.prismlauncher
+        ];
+      };
+  };
 }

@@ -1,9 +1,13 @@
 _: {
-  den.aspects.apps.messaging.element.homeManager =
-    { pkgs, ... }:
-    {
-      home.packages = [ pkgs.element-desktop ];
+  megadots.apps.messaging.element = {
+    description = "The Element Matrix client.";
 
-      home.persistence."/persist".directories = [ ".config/Element" ];
-    };
+    home-persist.directories = [ ".config/Element" ];
+
+    homeManager =
+      { pkgs, ... }:
+      {
+        home.packages = [ pkgs.element-desktop ];
+      };
+  };
 }
