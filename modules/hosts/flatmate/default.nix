@@ -4,6 +4,7 @@
     includes = [
       den.aspects.roles.base
       den.aspects.roles.workstation
+      den.aspects.roles.dev
       megadots.core.boot.systemd-boot
       megadots.hardware.surface-pro
     ];
