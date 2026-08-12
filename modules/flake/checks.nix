@@ -62,8 +62,8 @@ let
     )
     + lib.length (lib.attrNames config.fleet.externalPeers);
 
-  # The published API. modules/namespace.nix exports everything under
-  # modules/aspects/ as flake.denful.megadots, and once another config can add
+  # The published API. modules/den/namespace.nix exports everything under
+  # modules/megadots/ as flake.denful.megadots, and once another config can add
   # this repo as an input, the shape of that attrset is a promise rather than
   # an implementation detail.
   #
@@ -590,7 +590,7 @@ in
           namespace = mkAssertions pkgs "namespace" [
             {
               assertion = exported != { };
-              message = "checks.${system}: flake.denful.megadots is empty - the namespace name in modules/namespace.nix does not match what anything writes to, and den exports an empty attrset without complaining";
+              message = "checks.${system}: flake.denful.megadots is empty - the namespace name in modules/den/namespace.nix does not match what anything writes to, and den exports an empty attrset without complaining";
             }
             {
               assertion = lib.sort (a: b: a < b) exportedTrees == namespaceTrees;
@@ -600,7 +600,7 @@ in
             }
             {
               assertion = undescribedTrees == [ ];
-              message = "checks.${system}: exported namespace trees ${toString undescribedTrees} have no description of their own - these are the first thing anyone reading this as an API sees, set them in modules/namespace.nix";
+              message = "checks.${system}: exported namespace trees ${toString undescribedTrees} have no description of their own - these are the first thing anyone reading this as an API sees, set them in modules/den/namespace.nix";
             }
           ];
         };

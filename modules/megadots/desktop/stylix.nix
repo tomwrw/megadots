@@ -7,7 +7,7 @@
 
   # The mechanism lives here, the taste lives at the call site. This aspect
   # used to hardcode a scheme, a wallpaper and the path to my Obsidian vault,
-  # which made it the one thing under modules/aspects/ that nobody else could
+  # which made it the one thing under modules/megadots/ that nobody else could
   # take without editing it first.
   #
   # Options rather than a callable aspect. den reads a bare function at an

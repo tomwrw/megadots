@@ -29,9 +29,9 @@
       Deliberately not the same quirk as 'persist'. That one carries absolute
       system paths and is consumed on the host; these are relative to $HOME and
       are consumed inside the user's Home Manager evaluation. One shared name
-      would mean an aspect included at both scopes - core.security.sops is -
-      pushing ".config/sops/age/keys.txt" into environment.persistence as if it
-      were an absolute path.
+      would mean an aspect included at both scopes - core.sops is - pushing
+      ".config/sops/age/keys.txt" into environment.persistence as if it were an
+      absolute path.
 
       There is no policy for this quirk, and that is the point. Producer and
       consumer are both in the user scope, so nothing needs to travel: an

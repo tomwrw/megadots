@@ -10,7 +10,7 @@
   # TrueNAS box joins the mesh without pretending to be a den host.
   #
   # An option, and deliberately not under megadots.*: that prefix is aliased to
-  # the published aspect namespace (modules/namespace.nix), so a setting put
+  # the published aspect namespace (modules/den/namespace.nix), so a setting put
   # there is silently absorbed and exported as if it were an aspect.
   #
   # Not the flake.externalPeers output this started as either.

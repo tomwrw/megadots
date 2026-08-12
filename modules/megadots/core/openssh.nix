@@ -1,5 +1,5 @@
 _: {
-  megadots.core.security.openssh = {
+  megadots.core.openssh = {
     description = "An sshd accepting keys only, firewalled to the LAN by the firewall quirk rather than openFirewall.";
 
     nixos = _: {

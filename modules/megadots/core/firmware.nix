@@ -1,5 +1,5 @@
 _: {
-  megadots.hardware = {
+  megadots.core.firmware = {
     description = "Firmware, device automounting and fwupd - the parts every physical machine wants.";
 
     nixos = _: {

@@ -2,7 +2,7 @@
 {
   # The same user aspect, evaluated with no NixOS underneath it.
   #
-  # This exists to keep modules/aspects/ honest. Every aspect in there is
+  # This exists to keep modules/megadots/ honest. Every aspect in there is
   # supposed to describe an application rather than my fleet, and the way that
   # claim rots is an aspect quietly growing a dependency on something only a
   # NixOS host provides - impermanence's home.persistence option, a sops secret

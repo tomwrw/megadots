@@ -1,6 +1,6 @@
 { inputs, ... }:
 {
-  # Publishes everything under modules/aspects/ as flake.denful.megadots, so
+  # Publishes everything under modules/megadots/ as flake.denful.megadots, so
   # another den config can add this repo as an input and include an aspect
   # straight out of it.
   #
@@ -9,7 +9,7 @@
   #
   #   megadots.*     - the library. Aspects that describe an application or a
   #                    subsystem and name no host, no user and no machine of
-  #                    mine. Everything under modules/aspects/.
+  #                    mine. Everything under modules/megadots/.
   #   den.aspects.*  - the config. My hosts, my user, my roles, my fleet
   #                    plumbing. Composition is personal taste and is nobody
   #                    else's starting point.
@@ -31,14 +31,11 @@
   # makes 'megadots.anything = ...' legal, and it is then exported as though it
   # were an aspect. That is not hypothetical - megadots.externalPeers did
   # exactly this until it moved to fleet.externalPeers.
-  # Four, not five. 'hardware' is a container and a real aspect at once -
-  # hardware/hardware.nix gives every machine firmware and fwupd - so it
-  # describes itself next to its own content, where the description can't drift
-  # from what it describes. The check in checks.nix covers all five either way.
   megadots = {
     apps.description = "Applications, all user scope. Nothing here needs a NixOS host.";
-    core.description = "The baseline every machine gets: boot, disks, network, secrets, persistence.";
+    core.description = "The baseline every machine gets: boot, disks, firmware, network, secrets, persistence.";
     desktop.description = "The graphical session and everything themed by it.";
+    hardware.description = "Opt-in hardware support, and per-model profiles.";
     virtualisation.description = "Running other operating systems.";
   };
 }

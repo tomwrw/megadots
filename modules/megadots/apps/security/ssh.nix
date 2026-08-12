@@ -31,7 +31,7 @@ in
     # the tomwrw aspect's chown globs, bound together by comments that admitted
     # the drift had bitten twice. core.seed now derives the tmpfiles ownership,
     # the chown unit and what 'just deploy' copies, all from this.
-    # Bare, not through provides.to-users like core/security/sops.nix does,
+    # Bare, not through provides.to-users like core/sops.nix does,
     # because this aspect is only ever included from the user aspect. den
     # resolves a quirk thunk against the producing scope's context, and 'user'
     # is in that context here.

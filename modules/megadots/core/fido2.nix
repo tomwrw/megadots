@@ -1,8 +1,7 @@
 _: {
-  megadots.core.security.fido2.description =
-    "Tooling for FIDO2 hardware keys, including the age plugin used for secrets.";
+  megadots.core.fido2.description = "Tooling for FIDO2 hardware keys, including the age plugin used for secrets.";
 
-  megadots.core.security.fido2.nixos =
+  megadots.core.fido2.nixos =
     { pkgs, ... }:
     {
       environment.systemPackages = [

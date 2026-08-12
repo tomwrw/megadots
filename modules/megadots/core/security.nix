@@ -1,4 +1,11 @@
 _: {
+  # Siblings now, so it is worth saying what separates this from
+  # core/hardening.nix: this file sets the baseline - the things that should be
+  # true of any machine before anyone thinks about threat models. hardening.nix
+  # narrows those defaults with sysctls and kernel parameters that trade some
+  # convenience or compatibility for a smaller attack surface. If a setting
+  # would be uncontroversial on a stock NixOS install it belongs here; if it is
+  # a deliberate tightening it belongs there.
   megadots.core.security.description = "Baseline system security: polkit, rtkit, immutable users and wheel-only sudo.";
 
   megadots.core.security.nixos = _: {

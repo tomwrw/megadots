@@ -21,7 +21,7 @@ in
     includes = [
       den.batteries.primary-user
       (den.batteries.user-shell "zsh")
-      megadots.core.security.sops
+      megadots.core.sops
       megadots.apps.security.ssh
       megadots.apps.sync.syncthing
       megadots.desktop.stylix
