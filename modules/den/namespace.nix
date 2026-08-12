@@ -31,8 +31,15 @@
   # makes 'megadots.anything = ...' legal, and it is then exported as though it
   # were an aspect. That is not hypothetical - megadots.externalPeers did
   # exactly this until it moved to fleet.externalPeers.
+  # 'apps' is not "the user-scope tree", however much it looks like one. Most of
+  # it is home-manager only, but steam and sunshine are included at host scope
+  # by roles.gaming, and apps.security.ssh carries a nixos block that reaches
+  # the host from user scope through den's class delivery. The property that is
+  # actually true - and the one the homes check in checks.nix enforces - is that
+  # nothing here *requires* a host: an app may light up more when there is one,
+  # and none may fall over when there isn't.
   megadots = {
-    apps.description = "Applications, all user scope. Nothing here needs a NixOS host.";
+    apps.description = "Applications people use, as opposed to the system underneath them. Mostly home-manager; a few also configure the host.";
     core.description = "The baseline every machine gets: boot, disks, firmware, network, secrets, persistence.";
     desktop.description = "The graphical session and everything themed by it.";
     hardware.description = "Opt-in hardware support, and per-model profiles.";
