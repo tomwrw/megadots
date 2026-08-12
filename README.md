@@ -38,7 +38,7 @@ I'm not a developer. I'm a tinkerer with a consultancy job in a technical field 
 | Host | Machine | Bootloader | Kernel | Roles |
 |---|---|---|---|---|
 | `endgame` | AMD desktop (zen4) | lanzaboote (Secure Boot) | CachyOS `latest-zen4` | base, workstation, gaming, dev |
-| `flatmate` | Microsoft Surface Pro (Intel) | systemd-boot | nixpkgs default | base, workstation |
+| `flatmate` | Microsoft Surface Pro (Intel) | systemd-boot | nixpkgs default | base, workstation, dev |
 
 Both run an ephemeral btrfs root on LUKS, GNOME, and the same user. `/` is its own
 subvolume, deleted and restored from a read-only `root-blank` snapshot by an initrd
@@ -258,11 +258,6 @@ Things that are deliberate rather than missed, so you can judge whether they sui
   [checks.nix](modules/flake/checks.nix) enforces the prefix - so it cannot come from sops,
   which is decrypted far too late to place a partition. A serial is an identifier, not a
   credential; the realistic cost is that it fingerprints the hardware.
-- **The NAS address is a literal LAN IP.** `megadots.externalPeers` in
-  [den/hosts.nix](modules/den/hosts.nix) pins `tcp://10.20.1.3:20978`. A name would read better, but `home.arpa` is only a search
-  domain here - nothing serves DNS records for it, so `nas.home.arpa` does not resolve and
-  the pinned address is what actually makes the pairing reliable. It discloses one RFC1918
-  subnet and a non-default port.
 
 ## Usage.
 

@@ -36,8 +36,8 @@
   # Addresses are pinned rather than left dynamic. Relays and global discovery
   # are off, so the only thing that could locate a peer is a local announce on
   # 21027, and an appliance running Syncthing in a container often can't
-  # broadcast onto the LAN at all. A static lease on the NAS makes this the
-  # more reliable half of the trade. See the README on why it is an IP.
+  # broadcast onto the LAN at all. A record on my internal DNS makes this the
+  # more reliable half of the trade.
   fleet.externalPeers = {
     nas = {
       # TrueNAS Syncthing GUI: Actions > Show ID.
