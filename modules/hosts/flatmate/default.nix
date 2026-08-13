@@ -6,6 +6,7 @@
       den.aspects.roles.workstation
       den.aspects.roles.dev
       megadots.core.boot.systemd-boot
+      megadots.desktop.gnome
       megadots.hardware.surface-pro
     ];
 

@@ -224,7 +224,22 @@ _: {
       # colord and power-profiles-daemon come from the GNOME module rather
       # than hardware/, so their state belongs here. Without them I lose ICC
       # display profiles and the power profile resets to balanced every boot.
-      "/var/lib/colord"
+      # colord's home, so it carries its ownership. It runs as the colord user
+      # and is D-Bus activated rather than a systemd service, so there is no
+      # StateDirectory to chown this on the way past - a bare string here means
+      # impermanence bind mounts root:root 0755 over the top and the daemon
+      # cannot write the ICC database this entry exists to preserve. The mode
+      # matches users.users.colord.homeMode.
+      #
+      # This was wrong from the day the entry was added and nothing surfaced
+      # it; the invariant in checks.nix that caught the same mistake on
+      # cosmic-greeter found this one too.
+      {
+        directory = "/var/lib/colord";
+        user = "colord";
+        group = "colord";
+        mode = "0700";
+      }
       "/var/lib/power-profiles-daemon"
       # Same story, udisks2 is turned on by the GNOME desktop module and not
       # by me. Holds per-device mount preferences for removable media.
