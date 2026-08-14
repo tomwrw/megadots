@@ -87,6 +87,7 @@
               "nix.serverPath" = lib.getExe pkgs.nixd;
               "nix.formatterPath" = lib.getExe pkgs.nixfmt;
               "git.enableSmartCommit" = true;
+              "git.confirmSync" = false;
             };
           };
         };
