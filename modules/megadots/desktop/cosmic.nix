@@ -81,6 +81,24 @@ _: {
       # that machinery is needed.
       ".config/cosmic"
 
+      # Display layout and refresh rate, which are NOT in .config/cosmic - I
+      # assumed they were and was wrong. cosmic-comp writes them to
+      # ~/.local/state/cosmic-comp/outputs.ron, keyed by connector and EDID:
+      #
+      #   (connector: "HDMI-A-2", make: "ASUSTek", model: "VG27A"): [
+      #     (mode: ((2560, 1440), Some(144006)), ...)
+      #
+      # Note the directory is 'cosmic-comp', not 'cosmic' - the compositor does
+      # not use the reverse-DNS app id its own settings do, so persisting
+      # .local/state/cosmic would miss it. Without this, a monitor set to 144Hz
+      # is back at 60 after a reboot, which is exactly how I found it.
+      ".local/state/cosmic-comp"
+
+      # The reverse-DNS half: which wallpaper is on which output, the last
+      # settings page, the default audio sink. Less costly to lose than the
+      # display mode, but it is the same kind of thing and the same rollback.
+      ".local/state/cosmic"
+
       # GTK applications under COSMIC still read dconf, and the COSMIC module
       # enables it (programs.dconf.packages = [ cosmic-session ]). This is also
       # what keeps the host-scope canary in checks.nix meaningful on a machine
