@@ -3,9 +3,18 @@ _: {
     description = "The COSMIC desktop and its greeter, with the whole of ~/.config/cosmic kept across a rollback.";
 
     nixos =
-      { pkgs, ... }:
+      {
+        config,
+        pkgs,
+        lib,
+        ...
+      }:
+      let
+        xkb = config.services.xserver.xkb;
+      in
       {
         services.desktopManager.cosmic.enable = true;
+        services.desktopManager.cosmic.showExcludedPkgsWarning = false;
         services.displayManager.cosmic-greeter.enable = true;
 
         # British layout. Same reasoning as desktop/gnome.nix: it is a desktop
@@ -22,11 +31,28 @@ _: {
         # 'environment.cosmic', not 'services.desktopManager.cosmic' - the
         # exclusion list is a top-level option in nixpkgs, unlike GNOME's
         # environment.gnome.excludePackages which at least sits under a similar
-        # name. Excluding a package the module calls "core" prints a warning
-        # unless showExcludedPkgsWarning is off; none of these are core.
+        # name.
         environment.cosmic.excludePackages = [
           # A screen reader I don't use, and it drags speechd in with it.
           pkgs.orca
+
+          # The onboarding wizard, which reappeared on every single login. It
+          # records nothing: there is no com.system76.CosmicInitialSetup
+          # anywhere under ~/.config or ~/.local after completing it, so there
+          # is no state to persist and nothing impermanence could have kept.
+          #
+          # Removing the package removes its autostart entry with it - the
+          # .desktop file lives in the package, and dropping it is what stops
+          # systemd generating app-com.system76.CosmicInitialSetup@autostart.
+          # Exactly how desktop/gnome.nix drops gnome-initial-setup.
+          #
+          # nixpkgs lists this in corePkgs, whose comment says "ONLY ADD
+          # PACKAGES WITHOUT WHICH COSMIC CRASHES", so the build warns that
+          # excluding it is unsupported. It plainly is not that kind of
+          # package, and GNOME's equivalent is not core - but the warning is
+          # upstream's to make, so it stays. showExcludedPkgsWarning would
+          # silence it and every future one, which is a worse trade.
+          pkgs.cosmic-initial-setup
         ];
 
         # Excluding orca stops COSMIC enabling it, but orca.nix turns on speechd
@@ -39,6 +65,39 @@ _: {
           # files, but dconf is still enabled by the module for GTK apps, so
           # this stays useful for the same reasons it is under GNOME.
           pkgs.dconf-editor
+
+          # A system-wide default keyboard layout for COSMIC, which neither
+          # nixpkgs nor COSMIC derives from services.xserver.xkb.
+          #
+          # COSMIC reads each config key from ~/.config/cosmic first and falls
+          # back to $XDG_DATA_DIRS/cosmic/<component>/v<n>/<key>. cosmic-settings
+          # ships that directory, but the only key in it is input_touchpad -
+          # there is no xkb_config - so anything without a user-level answer
+          # gets COSMIC's built-in "us".
+          #
+          # My session is fine because cosmic-settings wrote gb into my home the
+          # first time I set it. The greeter is not: it runs as the
+          # cosmic-greeter system user, which has no such file and cannot read
+          # mine through a 0700 home, so the login prompt comes up in US and any
+          # password with a layout-dependent character in it fails.
+          #
+          # Derived from services.xserver.xkb rather than written out again, so
+          # the console, the session and the greeter cannot disagree.
+          (pkgs.writeTextFile {
+            name = "cosmic-default-xkb-config";
+            destination = "/share/cosmic/com.system76.CosmicComp/v1/xkb_config";
+            text = ''
+              (
+                  rules: "",
+                  model: "${xkb.model}",
+                  layout: "${xkb.layout}",
+                  variant: "${xkb.variant}",
+                  options: ${if xkb.options == "" then "None" else ''Some("${xkb.options}")''},
+                  repeat_delay: 600,
+                  repeat_rate: 25,
+              )
+            '';
+          })
         ];
       };
 
