@@ -6,7 +6,6 @@ _: {
       {
         config,
         pkgs,
-        lib,
         ...
       }:
       let
