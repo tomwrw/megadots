@@ -29,6 +29,30 @@
       # boot, so the copy in /persist is only ever a stale pointer between
       # generations.
       ".vscode-oss"
+
+      # Application-scoped storage, which is a *third* location and the one
+      # that actually holds workspace trust:
+      #
+      #   .vscode-oss-shared/sharedStorage/state.vscdb
+      #     content.trust.model.key -> {"uriTrustInfo":[{ ..., "trusted":true}]}
+      #     history.recentlyOpenedPathsList
+      #
+      # VSCodium keeps this outside the user-data-dir entirely - it is the data
+      # folder name with "-shared" appended, a sibling of .vscode-oss rather
+      # than anything under .config/VSCodium - so persisting the config
+      # directory does not cover it and no amount of looking in there finds it.
+      #
+      # Losing it every boot is why the first launch after a reboot always
+      # asked whether I trusted my own config repo, and why the extensions were
+      # missing until I restarted: an untrusted folder opens in Restricted
+      # Mode, which disables every extension that runs code. nix-ide and
+      # claude-code both do, so the editor came up with syntax highlighting and
+      # nothing else.
+      #
+      # This persisted for free while /home was its own subvolume. Moving to
+      # per-directory home persistence dropped it, because nothing in this repo
+      # knew the directory existed.
+      ".vscode-oss-shared"
     ];
 
     homeManager =
@@ -63,6 +87,7 @@
               "nix.serverPath" = lib.getExe pkgs.nixd;
               "nix.formatterPath" = lib.getExe pkgs.nixfmt;
               "git.enableSmartCommit" = true;
+              "git.confirmSync" = false;
             };
           };
         };

@@ -99,6 +99,46 @@ let
     name: nixos:
     let
       cfg = nixos.config;
+      # A persisted directory that is some account's home has to be owned by
+      # that account. impermanence bind mounts every entry as root:root 0755
+      # unless told otherwise, which silently overrides whatever
+      # users.users.<name>.createHome made - and a service that cannot write to
+      # its own home usually just exits.
+      #
+      # This is not hypothetical. Persisting /var/lib/cosmic-greeter as a bare
+      # string left the greeter unable to write its home; it exited without
+      # creating a session, greetd hit its restart limit, and the machine
+      # booted to a black screen with no obvious cause. Nothing failed to
+      # build, and nothing in the config looked wrong.
+      systemPersistedDirs = cfg.environment.persistence."/persist".directories or [ ];
+      homeOwners = lib.mapAttrs' (n: u: lib.nameValuePair u.home n) (
+        lib.filterAttrs (_: u: (u.home or "") != "" && u.home != "/var/empty") cfg.users.users
+      );
+      misownedHomes = lib.filter (d: (homeOwners.${d.directory} or null) != (d.user or "root")) (
+        lib.filter (d: homeOwners ? ${d.directory}) (
+          map (d: if builtins.isString d then { directory = d; } else d) systemPersistedDirs
+        )
+      );
+
+      # roles.workstation deliberately carries no desktop environment: endgame
+      # is on COSMIC and flatmate on GNOME, so the choice sits on the host next
+      # to its bootloader. That makes "forgot to pick one" a thing a host can
+      # do, and the result is a machine that installs fonts and NetworkManager
+      # and then boots to no session at all - which builds perfectly.
+      #
+      # NetworkManager is the proxy for "this is a workstation": desktop.
+      # networkmanager is in that role and nowhere else, and a headless host
+      # taking only roles.base has no reason to run it.
+      isWorkstation = cfg.networking.networkmanager.enable;
+      desktops = lib.count lib.id [
+        (cfg.services.desktopManager.gnome.enable or false)
+        (cfg.services.desktopManager.cosmic.enable or false)
+      ];
+      greeters = lib.count lib.id [
+        (cfg.services.displayManager.gdm.enable or false)
+        (cfg.services.displayManager.cosmic-greeter.enable or false)
+      ];
+
       bootloaders = [
         cfg.boot.loader.systemd-boot.enable
         cfg.boot.loader.grub.enable
@@ -326,6 +366,20 @@ let
       {
         assertion = dynamicUserServices == [ ] || privateHandled;
         message = "${name}: ${toString dynamicUserServices} use DynamicUser, which needs /var/lib/private at 0700, but impermanence creates it 0755 (nix-community/impermanence#254) - add tmpfiles rules for /persist/var/lib/private and /var/lib/private plus systemd-tmpfiles-resetup.serviceConfig.RemainAfterExit = false";
+      }
+      {
+        assertion = misownedHomes == [ ];
+        message = "${name}: persisted director${if lib.length misownedHomes == 1 then "y" else "ies"} ${
+          toString (map (d: d.directory) misownedHomes)
+        } ${
+          if lib.length misownedHomes == 1 then "is" else "are"
+        } the home of a user account but persisted as ${
+          toString (map (d: d.user or "root") misownedHomes)
+        } - impermanence bind mounts as root:root 0755 unless told otherwise, which overrides createHome and leaves the service unable to write its own home. Give the entry user/group/mode matching users.users.<name>.";
+      }
+      {
+        assertion = !isWorkstation || (desktops == 1 && greeters == 1);
+        message = "${name}: this host takes roles.workstation but has ${toString desktops} desktop environment(s) and ${toString greeters} greeter(s) enabled, not one of each - roles.workstation deliberately picks neither, so the host has to include megadots.desktop.cosmic or megadots.desktop.gnome itself. Missing it builds fine and boots to no session; taking both gives two sets of portals and the wrong greeter.";
       }
       {
         assertion = lib.count lib.id bootloaders == 1;

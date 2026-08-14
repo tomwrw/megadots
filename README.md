@@ -35,12 +35,15 @@ I'm not a developer. I'm a tinkerer with a consultancy job in a technical field 
 
 ## The hosts.
 
-| Host | Machine | Bootloader | Kernel | Roles |
-|---|---|---|---|---|
-| `endgame` | AMD desktop (zen4) | lanzaboote (Secure Boot) | CachyOS `latest-zen4` | base, workstation, gaming, dev |
-| `flatmate` | Microsoft Surface Pro (Intel) | systemd-boot | nixpkgs default | base, workstation, dev |
+| Host | Machine | Desktop | Bootloader | Kernel | Roles |
+|---|---|---|---|---|---|
+| `endgame` | AMD desktop (zen4) | COSMIC | lanzaboote (Secure Boot) | CachyOS `latest-zen4` | base, workstation, gaming, dev |
+| `flatmate` | Microsoft Surface Pro (Intel) | GNOME | systemd-boot | nixpkgs default | base, workstation, dev |
 
-Both run an ephemeral btrfs root on LUKS, GNOME, and the same user. `/` is its own
+Both run an ephemeral btrfs root on LUKS and the same user, but different desktops -
+endgame is on COSMIC, flatmate on GNOME. roles.workstation deliberately picks neither,
+so each host includes its own, the same way it picks its bootloader; an invariant fails a
+workstation that has none or both. `/` is its own
 subvolume, deleted and restored from a read-only `root-blank` snapshot by an initrd
 service on every boot; `/nix`, `/persist` and swap are separate subvolumes that survive.
 `/home` deliberately sits *inside* the rolled-back root, so user state is opt-in through
@@ -89,7 +92,7 @@ Everything lives under `modules/`, discovered automatically by [import-tree](htt
 modules/
 ├── megadots/             # the exported library — everything here is denful.megadots:
 │   ├── core/             #   always-on baseline (nix, networking, boot, firmware,
-│   │                     #     impermanence, sops, openssh, hardening, fido2, …)
+│   ├── desktop/          #   cosmic, gnome, stylix, fonts, networkmanager
 │   ├── hardware/         #   opt-in hardware support: graphics, audio, bluetooth,
 │   │                     #     and per-model profiles
 │   ├── desktop/          #   gnome, stylix, fonts, networkmanager
@@ -233,6 +236,20 @@ the shell has vanished - a check on it would have passed throughout the bug abov
 
 Things that are deliberate rather than missed, so you can judge whether they suit you:
 
+- **COSMIC is configured by hand, not declaratively.** home-manager has no COSMIC
+  modules at all - nothing under its `modules/` matches the name - so there is no
+  `programs.cosmic-*` and no dconf equivalent to write settings into. Every panel, theme
+  and shortcut choice is made in the UI and written to `~/.config/cosmic` as RON. That
+  makes the `home-persist` entry on [desktop/cosmic.nix](modules/megadots/desktop/cosmic.nix)
+  the *entire* mechanism by which my desktop survives a boot, rather than a backstop for
+  what declarative config misses - which is the opposite of how
+  [desktop/gnome.nix](modules/megadots/desktop/gnome.nix) works, where `dconf.settings`
+  carries the decisions that matter. Losing that one line loses the desktop, silently.
+- **Stylix does not theme COSMIC.** There is no cosmic target in the Stylix version this
+  flake pins. GTK applications still follow the palette through the `gtk` and `fontconfig`
+  targets, but COSMIC's own shell - panel, settings, terminal - uses its own theme system
+  under `~/.config/cosmic/com.system76.CosmicTheme.*` and is set by hand. `megadots.theme`
+  therefore describes rather less of endgame than it does of flatmate.
 - **Stylix is applied through Home Manager only.** The NixOS module is not imported, so
   GDM's login screen, the TTY palette, plymouth and the system fontconfig are unthemed,
   and `stylix.fonts`/`stylix.cursor` are unset - the desktop renders in Stylix's DejaVu

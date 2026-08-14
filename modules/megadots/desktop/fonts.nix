@@ -6,7 +6,6 @@ let
     pkgs.hack-font
     pkgs.ibm-plex
     pkgs.inconsolata
-    pkgs.jetbrains-mono
     pkgs.liberation_ttf
     pkgs.nerd-fonts.dejavu-sans-mono
     pkgs.nerd-fonts.caskaydia-mono

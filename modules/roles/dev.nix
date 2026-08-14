@@ -18,7 +18,6 @@
     # someone who signs commits, and the signing identity lives there anyway.
     provides.to-users.includes = [
       megadots.apps.dev.code-cursor
-      megadots.apps.dev.gemini
       megadots.apps.dev.vscodium
       megadots.apps.dev.claude-code
     ];
