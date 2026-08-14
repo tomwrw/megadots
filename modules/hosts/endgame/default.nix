@@ -7,7 +7,7 @@
       den.aspects.roles.gaming
       den.aspects.roles.dev
       megadots.core.boot.lanzaboote
-      megadots.desktop.cosmic
+      megadots.desktop.gnome
       megadots.core.linux-kernel
     ];
 
