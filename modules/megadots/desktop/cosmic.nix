@@ -46,11 +46,17 @@ _: {
           # Exactly how desktop/gnome.nix drops gnome-initial-setup.
           #
           # nixpkgs lists this in corePkgs, whose comment says "ONLY ADD
-          # PACKAGES WITHOUT WHICH COSMIC CRASHES", so the build warns that
-          # excluding it is unsupported. It plainly is not that kind of
-          # package, and GNOME's equivalent is not core - but the warning is
-          # upstream's to make, so it stays. showExcludedPkgsWarning would
-          # silence it and every future one, which is a worse trade.
+          # PACKAGES WITHOUT WHICH COSMIC CRASHES", so excluding it makes the
+          # module warn that this is unsupported and COSMIC may fail to start.
+          # It plainly is not that kind of package - GNOME's equivalent is not
+          # core, and desktop/gnome.nix has dropped it for as long as that file
+          # has existed - so showExcludedPkgsWarning is off above rather than
+          # living with a warning that is wrong about this case.
+          #
+          # The cost of that: a genuine future core exclusion would also go
+          # unmentioned. Worth re-reading this list if COSMIC ever fails to
+          # come up after an update, because the warning that would have said
+          # so is switched off.
           pkgs.cosmic-initial-setup
         ];
 
