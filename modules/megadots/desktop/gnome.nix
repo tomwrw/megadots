@@ -37,7 +37,6 @@ _: {
 
         environment = {
           gnome.excludePackages = [
-            pkgs.gnome-photos
             pkgs.gnome-tour
             pkgs.gedit
             pkgs.cheese
