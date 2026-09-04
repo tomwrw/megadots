@@ -1,4 +1,4 @@
-cachyos-cache := "--option allow-import-from-derivation true --option extra-substituters 'https://attic.xuyh0120.win/lantian https://nyx-cache.chaotic.cx/' --option extra-trusted-public-keys 'lantian:EeAUQ+W+6r7EtwnmYjeVwx5kOGEBpjlBfPlzGlTNvHc= nyx-cache.chaotic.cx:dJxTrgMC3V3cFfyIiBQDQorG6k1LsqurH/srpMSq7qk='"
+cachyos-cache := "--option allow-import-from-derivation true --option extra-substituters 'https://nyx-cache.chaotic.cx/' --option extra-trusted-public-keys 'nyx-cache.chaotic.cx:dJxTrgMC3V3cFfyIiBQDQorG6k1LsqurH/srpMSq7qk='"
 usb := "/run/media/tomwrw/SURVIVOR/keys"
 user := "tomwrw"
 
@@ -96,9 +96,8 @@ unenroll-fido2 HOST:
 fmt:
     nix fmt
 
-# Builds both hosts and the standalone home, then runs invariants, roster,
-# homes, namespace, secrets, treefmt and flake-file. No list to keep in step -
-# it takes whatever modules/flake/checks.nix produces.
+# Builds both hosts, then runs the secrets scan, treefmt and flake-file. No
+# list to keep in step - it takes whatever the flake exposes as checks.
 
 # Run every check.
 check:

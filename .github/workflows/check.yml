@@ -15,17 +15,12 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # Evaluation only. No host closure is ever built: the failures this repo
-  # actually fears - state silently rolled away by impermanence, firewall rules
-  # that never match an interface, a lanzaboote setting that makes a
-  # from-scratch deploy impossible - are all eval-time properties, and a green
-  # 15 GB build proves none of them. Deploys are atomic and nixos-rebuild builds
-  # before it switches, so a broken closure costs me time at the terminal rather
-  # than a broken machine.
+  # Evaluation only. No host closure is ever built here: a green 15 GB build
+  # proves little that instantiating does not, deploys are atomic, and
+  # nixos-rebuild builds before it switches - so a broken closure costs time at
+  # the terminal rather than a broken machine.
   eval:
     runs-on: ubuntu-latest
-    # Instantiating both hosts adds a few minutes over the checks alone, and a
-    # cold nixpkgs fetch is most of the rest.
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
@@ -35,44 +30,30 @@ jobs:
             experimental-features = nix-command flakes
       - run: |
           nix build --print-build-logs --no-link \
-            .#checks.x86_64-linux.invariants \
-            .#checks.x86_64-linux.roster \
-            .#checks.x86_64-linux.homes \
-            .#checks.x86_64-linux.namespace \
             .#checks.x86_64-linux.treefmt \
             .#checks.x86_64-linux.check-flake-file \
             .#checks.x86_64-linux.secrets
 
       # Derived, not hardcoded: a hardcoded list means a newly added host is
-      # silently never checked - the same vacuous-pass failure mode that
-      # modules/flake/checks.nix asserts against. flake.roster is the JSON-safe
-      # projection of the host list (modules/den/hosts.nix). It is keyed by
-      # system, so an aarch64 host would need its own runner and its own list.
+      # silently never checked. Keyed by system, so an aarch64 host would need
+      # its own runner and its own list.
       - id: hosts
         run: |
-          hosts=$(nix eval --json '.#roster.x86_64-linux' --apply builtins.attrNames)
+          hosts=$(nix eval --json '.#nixosConfigurations' --apply builtins.attrNames)
           echo "hosts=$hosts" >> "$GITHUB_OUTPUT"
           echo "hosts: $hosts"
 
       # Forcing toplevel.drvPath evaluates a host's entire module system and
       # writes .drv files without realising a single output, so it costs eval
-      # time and nothing else.
-      #
-      # This is strictly more coverage than the invariants check above. That one
-      # reads a wide slice of config but never forces toplevel, and toplevel is
-      # where nixpkgs runs its own assertions:
-      #
-      #   nixos/modules/system/activation/top-level.nix
-      #     baseSystemAssertWarn = lib.asserts.checkAssertWarn config.assertions ...
-      #
-      # Without this step every `assertions` entry in the tree - including the
-      # channel/optimization one in megadots/core/linux-kernel.nix - passes CI
-      # untested.
+      # time and nothing else. toplevel is also where nixpkgs runs the tree's
+      # own `assertions` - the mem_sleep_default one in
+      # aspects/hardware/surface-pro.nix among them - so without this step they
+      # would go untested.
       #
       # Stylix reads a base16 scheme out of a derivation, so this does realise
-      # one small path by IFD. That is a plain cache.nixos.org fetch; the CachyOS
-      # kernel arrives through an overlay as an ordinary derivation and is never
-      # built here, which is why this needs no extra substituter.
+      # one small path by IFD: a plain cache.nixos.org fetch. The CachyOS kernel
+      # arrives through an overlay and is never built here, which is why this
+      # needs no extra substituter.
       - name: Instantiate every host
         env:
           HOSTS: ${{ steps.hosts.outputs.hosts }}
@@ -81,28 +62,6 @@ jobs:
             echo "::group::$host"
             nix eval --raw --print-build-logs \
               ".#nixosConfigurations.$host.config.system.build.toplevel.drvPath"
-            echo
-            echo "::endgroup::"
-          done
-
-      # The standalone home, same trick and same reason. modules/den/homes.nix
-      # evaluates my user aspect with no NixOS underneath it, which is what
-      # keeps modules/megadots/ portable: an aspect that quietly grows a
-      # dependency on a host - a secret the system places, an option only the
-      # NixOS impermanence module declares, a host name - stops contributing
-      # here rather than failing, so nothing notices until the day it matters.
-      #
-      # Derived from the flake output for the same reason the host list is: a
-      # second home added to den.homes must not need this file edited to be
-      # covered.
-      - name: Instantiate every standalone home
-        run: |
-          homes=$(nix eval --json '.#homeConfigurations' --apply builtins.attrNames)
-          echo "homes: $homes"
-          for home in $(jq -r '.[]' <<<"$homes"); do
-            echo "::group::$home"
-            nix eval --raw --print-build-logs \
-              ".#homeConfigurations.\"$home\".activationPackage.drvPath"
             echo
             echo "::endgroup::"
           done

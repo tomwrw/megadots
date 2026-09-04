@@ -1,20 +1,23 @@
-{ den, megadots, ... }:
+{ den, ... }:
 {
   den.aspects.endgame = {
     includes = [
-      den.aspects.roles.base
-      den.aspects.roles.workstation
-      den.aspects.roles.gaming
-      den.aspects.roles.dev
-      megadots.core.boot.lanzaboote
-      megadots.desktop.gnome
-      megadots.core.linux-kernel
+      # Roles
+      den.aspects.base
+      den.aspects.workstation
+      den.aspects.gaming
+      den.aspects.dev
+
+      # The choices only this machine makes
+      den.aspects.boot.lanzaboote
+      den.aspects.gnome
+      den.aspects.linux-kernel
     ];
 
-    # nixos-generate-config output for this machine. Imported straight in
-    # rather than wrapped in an aspect under megadots/hardware/, because it
-    # isn't reusable, it belongs to this host and it sits next to this file.
-    # The '_' prefix keeps import-tree from picking it up as its own module.
+    # nixos-generate-config output for this machine. Imported straight in rather
+    # than wrapped in an aspect: it is not reusable, it belongs to this host, and
+    # it sits next to this file. The '_' prefix keeps import-tree from picking it
+    # up as a module of its own.
     nixos.imports = [ ./_hardware.nix ];
   };
 }
