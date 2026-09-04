@@ -33,29 +33,29 @@
       };
     };
 
-    options.linux-kernel = {
-      channel = lib.mkOption {
-        type = lib.types.enum [
-          "lts"
-          "latest"
-        ];
-        default = "latest";
-        description = "CachyOS kernel release channel.";
-      };
-      optimization = lib.mkOption {
-        type = lib.types.enum [
-          "server"
-          "generic"
-          "zen4"
-          "x86_64-v4"
-        ];
-        default = "generic";
-        description = ''
-          CachyOS kernel optimization target. "generic" builds an unoptimized
-          (no -march) kernel that runs on any x86_64 CPU; the safe base default.
-          "x86_64-v4" needs AVX-512 and "zen4" is AMD Zen 4 only.
-        '';
-      };
+    options.linux-kernel.variant = lib.mkOption {
+      type = lib.types.enum [
+        "lto"
+        "lto-znver4"
+        "lts"
+        "server"
+        "hardened"
+        "gcc"
+        "rc"
+        "bore"
+        "bmq"
+        "eevdf"
+        "rt-bore"
+      ];
+      default = "lto";
+      description = ''
+        Which CachyOS kernel to take, named exactly as chaotic-cx/nyx names it:
+        the value is appended to linuxPackages_cachyos-. "lto" is the generic
+        build with no -march and is what plain linuxPackages_cachyos resolves
+        to; "lto-znver4" is AMD Zen 4 only.
+
+        Only a host that includes the linux-kernel aspect reads this.
+      '';
     };
   };
 

@@ -1,6 +1,5 @@
 {
   den,
-  megadots,
   lib,
   ...
 }:
@@ -18,74 +17,59 @@ in
 {
   den.aspects.tomwrw = {
 
+    # Everything here follows me onto every host. Anything host-specific comes
+    # from the roles that host takes, through provides.to-users, so this file
+    # never names a machine.
     includes = [
+      # The account itself
       den.batteries.primary-user
       (den.batteries.user-shell "zsh")
-      megadots.core.sops
-      megadots.apps.security.ssh
-      megadots.apps.sync.syncthing
-      megadots.desktop.stylix
-      megadots.apps.browsers.firefox
-      megadots.apps.dev.git
-      megadots.apps.shell.zsh
-      megadots.apps.shell.cli-apps
-      megadots.apps.terminals.ghostty
-      megadots.apps.monitoring.btop
 
-      # Applications (common to all hosts).
-      megadots.apps.messaging.element
-      megadots.apps.messaging.signal
-      megadots.apps.messaging.vesktop
-      megadots.apps.messaging.whatsapp
-      megadots.apps.storage.ente-desktop
-      megadots.apps.media.spotify
-      megadots.apps.productivity.joplin
-      megadots.apps.productivity.obsidian
-      megadots.apps.security.ente-auth
-      megadots.apps.security.bitwarden
-      megadots.apps.storage.filen-desktop
-      megadots.apps.productivity.proton-suite
+      # Shell and terminal
+      den.aspects.btop
+      den.aspects.cli-apps
+      den.aspects.ghostty
+      den.aspects.zsh
+
+      # Secrets, keys and sync
+      den.aspects.sops
+      den.aspects.ssh
+      den.aspects.syncthing
+
+      # Desktop and browser
+      den.aspects.firefox
+      den.aspects.stylix
+
+      # Development
+      den.aspects.git
+
+      # Messaging
+      den.aspects.element
+      den.aspects.signal
+      den.aspects.vesktop
+      den.aspects.whatsapp
+
+      # Productivity and media
+      den.aspects.joplin
+      den.aspects.obsidian
+      den.aspects.spotify
+
+      # Passwords and storage
+      den.aspects.bitwarden
+      den.aspects.ente-auth
+      den.aspects.ente-desktop
+      den.aspects.filen-desktop
+      den.aspects.proton-suite
     ];
 
+    # neededForUsers so the hash is on disk before users are created, which is
+    # what makes a declarative account with no mutable password work at all.
+    #
+    # No avatar here. accountsservice writes both the image and its Icon= key
+    # under /var/lib/AccountsService, which desktop/gnome.nix persists, so a
+    # picture set in Settings survives the rollback on its own.
     nixos = _: {
       sops.secrets."users/tomwrw/password".neededForUsers = true;
-
-      # GNOME sets the avatar through accountsservice, which copies the image
-      # into /var/lib/AccountsService/icons/<user> and records Icon= in
-      # users/<user>. Both sit under a path desktop/gnome.nix already persists,
-      # but with no Icon= key accountsservice falls back to ~/.face - a bare
-      # file in the home root, and only subdirectories of it are persisted. So a
-      # picture set in Settings was gone by the next boot.
-      #
-      # Declaring both ends rather than persisting them. The image can't live in
-      # my home either way: gdm draws the login screen as its own user and
-      # /home/tomwrw is 0700, so an avatar in there shows up in Settings and
-      # nowhere else.
-      #
-      # 'f+' truncates, so this owns users/tomwrw outright and the other keys
-      # accountsservice keeps there - Language, XSession - are rewritten away on
-      # every boot instead of merged. Same trade as users.mutableUsers and the
-      # VSCodium extension list: what's in this repo is the only source of
-      # truth.
-      #
-      # Real newlines below, not "\n". The tmpfiles module runs the argument
-      # through lib.strings.escapeC, so it emits the escapes itself - writing
-      # them here gets the backslash escaped a second time and lands a literal
-      # \n in the keyfile. nixpkgs warns about exactly that, which is the only
-      # reason I know.
-      systemd.tmpfiles.settings."10-tomwrw-avatar" = {
-        "/var/lib/AccountsService/icons/tomwrw"."L+".argument = "${./avatar.png}";
-        "/var/lib/AccountsService/users/tomwrw"."f+" = {
-          mode = "0600";
-          user = "root";
-          group = "root";
-          argument = ''
-            [User]
-            Icon=/var/lib/AccountsService/icons/tomwrw
-          '';
-        };
-      };
-
     };
 
     # den's 'user' class puts these straight onto users.users.tomwrw. osConfig
@@ -94,13 +78,9 @@ in
     user =
       { osConfig, ... }:
       {
-        # Pinned, not left to NixOS to allocate. 'just deploy' chowns the
-        # seeded key tree to 1000:100 while the target is still running the
-        # installer, which has no account for me - so it has to pass a numeric
-        # uid, and the number has to be one this config guarantees rather than
-        # one that happened to be handed out first. Auto-allocation starts at
-        # 1000 and would be right today; it would stop being right the moment a
-        # second user were declared ahead of this one.
+        # Pinned rather than auto-allocated: .just deploy. chowns the seeded key
+        # tree to 1000:100 against an installer that has no account for me, so
+        # the number has to be one this config guarantees.
         uid = 1000;
 
         hashedPasswordFile = osConfig.sops.secrets."users/tomwrw/password".path;
@@ -116,11 +96,19 @@ in
         ];
       };
 
+    # The taste. aspects/desktop/stylix.nix owns the wiring; this is the only
+    # place that says which scheme and which picture. A quirk rather than an
+    # option because Stylix themes the host as well as the session, and a NixOS
+    # module cannot read a Home Manager option.
+    theme = {
+      scheme = "rose-pine-moon";
+      wallpaper = ../../../assets/wallpaper/snake.png;
+    };
+
     # / goes back to a blank snapshot every boot and /home is inside it, so my
-    # home keeps only what's listed here or in an app aspect's own home-persist
-    # block. hideMounts is set once by the consumer in core/impermanence.nix
-    # rather than here, since every aspect's entries share that one store.
-    home-persist.directories = [
+    # home keeps only what is listed here or in an app aspect.s own persist.home
+    # block.
+    persist.home.directories = [
       "Documents"
       "Downloads"
       "Pictures"
@@ -135,16 +123,8 @@ in
         programs.home-manager.enable = true;
         home.sessionPath = [ "$HOME/.local/bin" ];
 
-        # The theme choices themselves. desktop/stylix.nix owns the wiring and
-        # declares these options; which scheme and which picture are mine.
-        megadots.theme = {
-          scheme = "rose-pine-moon";
-          wallpaper = ../../../assets/wallpaper/snake.png;
-        };
-
-        # Stylix needs the vault's absolute path so it can drop a CSS snippet
-        # in. Built from homeDirectory rather than written out, so this line
-        # carries my note-taking layout but not my username.
+        # Stylix needs the vault.s absolute path to drop a CSS snippet in. Built
+        # from homeDirectory so this carries the layout but not the username.
         stylix.targets.obsidian.vaultNames = [
           "${config.home.homeDirectory}/Syncthing/02 Area/Notes"
         ];
@@ -152,21 +132,12 @@ in
         programs.git.settings.user.name = "tomwrw";
         programs.git.settings.user.email = email;
 
-        # A path to the private key, not the key:: literal this used to be.
-        #
-        # git only adds -U to 'ssh-keygen -Y sign' for a literal, and -U means
-        # "this identity lives in an agent". Nothing here ever puts it in one:
-        # apps/security/ssh.nix starts an empty agent, and AddKeysToAgent
-        # is an ssh(1) option, so it fires on an SSH connection and never on a
-        # signature. Every first commit of a fresh login died with "Couldn't
-        # find key in agent" until I'd happened to ssh somewhere first.
-        #
-        # The earlier note here said a path prompts on every signed commit. It
-        # only prompts when the agent doesn't already hold the key: ssh-keygen
-        # checks the agent for the matching public key before it falls back to
-        # reading the file. So this form always completes - silently once the
-        # key is loaded, after one passphrase prompt when it isn't - where the
-        # literal had no fallback at all and simply failed.
+        # A path, not a "key::" literal. git only passes -U to ssh-keygen for a
+        # literal, which means "this identity lives in an agent" - and nothing
+        # here ever puts it in one, so every first commit of a login failed with
+        # "Couldn.t find key in agent". A path falls back to reading the file, so
+        # it always completes: silently once the key is loaded, after one
+        # passphrase prompt when it is not.
         programs.git.settings.user.signingkey = "${config.home.homeDirectory}/.ssh/id_ed25519";
 
         xdg.configFile."git/allowed_signers".text = lib.concatMapStrings (k: "${email} ${k}\n") (
@@ -174,9 +145,7 @@ in
         );
       };
 
-    # No host-specific extras here. They come from the roles a host takes,
-    # roles/gaming.nix and roles/dev.nix, through provides.to-users. That way
-    # this file never names a host, and renaming one can't quietly change what
-    # I get.
+    # No host-specific extras here - they come from the roles a host takes,
+    # through provides.to-users, so this file never names a machine.
   };
 }

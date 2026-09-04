@@ -1,19 +1,41 @@
-{ den, ... }:
 {
-  # No 'unfree' quirk here. den.batteries.unfree does the same job and more:
-  # it emits into the class being resolved *and* into the host's OS class when
-  # that class is homeManager, so an unfree package declared by a user aspect
-  # is allowed on the host too. The hand-rolled version only ever wrote a nixos
-  # block, which worked solely because home-manager.useGlobalPkgs makes Home
-  # Manager borrow the host's pkgs - and so would never have worked for a
-  # standalone home. den's predicate builder is in den.default already, so
-  # keeping a second definition of nixpkgs.config.allowUnfreePredicate here
-  # would have been a straight eval conflict the moment either one had data.
+  den,
+  config,
+  lib,
+  ...
+}:
+{
+  # Every quirk this config has, and everything that routes one. A quirk is a
+  # named channel an aspect writes to without knowing who reads it; a policy
+  # decides where the data travels. One file, so there is never a second place
+  # to look.
+  #
+  # No 'unfree' quirk: den.batteries.unfree does the same job and more, emitting
+  # into the class being resolved *and* into the host's OS class, so an unfree
+  # package declared by a user aspect is allowed on the host too.
 
+  # State that has to survive the rollback, in two keys because the two halves
+  # land in different option trees in different classes:
+  #
+  #   persist.system.directories = [ "/var/lib/fwupd" ];   -> environment.persistence
+  #   persist.home.directories   = [ ".ssh" ];             -> home.persistence
+  #
+  # They cannot share one key. core.sops is included at host scope and at user
+  # scope, so a single flat list would push ".config/sops/age" into
+  # environment.persistence as though it were an absolute path. Naming the two
+  # means each consumer reads its own and ignores the other.
+  #
+  # An aspect names only its own paths. Nothing here mentions impermanence or
+  # /persist - core.impermanence is the only consumer, and it is what decides
+  # the store exists at all.
   den.quirks.persist = {
-    description = "Extra paths to persist at /persist: { directories, files }";
+    description = "Paths that survive the rollback: { system = { directories, files }; home = { directories, files }; }";
   };
 
+  # Exposed so a user-scope aspect's system paths reach the host consumer.
+  # Without this they are collected in the user scope and silently discarded.
+  # Expose copies rather than moves, so the home entries an aspect emits in the
+  # same breath are still readable where they are consumed.
   den.policies.persist =
     _:
     let
@@ -21,67 +43,14 @@
     in
     [ (pipe.from "persist" [ pipe.expose ]) ];
 
-  den.quirks.home-persist = {
-    description = ''
-      Home-relative paths a user aspect needs to survive the rollback:
-        { directories = [ ".config/Signal" ]; files = [ ".ssh/known_hosts" ]; }
-
-      Deliberately not the same quirk as 'persist'. That one carries absolute
-      system paths and is consumed on the host; these are relative to $HOME and
-      are consumed inside the user's Home Manager evaluation. One shared name
-      would mean an aspect included at both scopes - core.sops is - pushing
-      ".config/sops/age/keys.txt" into environment.persistence as if it were an
-      absolute path.
-
-      There is no policy for this quirk, and that is the point. Producer and
-      consumer are both in the user scope, so nothing needs to travel: an
-      expose policy would push the pool up to the host, where the paths are
-      meaningless. It also means an app aspect never names impermanence or
-      /persist, so the same aspect evaluates in a standalone den.homes where
-      no consumer exists and the pool is simply never read.
-    '';
-  };
-
-  den.quirks.persist-store = {
-    description = ''
-      Announces that a persistent store exists, and where: { root = "/persist"; }
-
-      A capability, not data. It lets an aspect that has to do its own copying
-      - desktop.gnome and monitors.xml - find the store without hardcoding the
-      path or importing impermanence. An empty pool means no store, which is
-      the signal to emit nothing at all rather than units that fail every boot.
-    '';
-  };
-
-  den.quirks.syncthing-peer = {
-    description = ''
-      One device in the Syncthing mesh: { name = "endgame"; id = "O5ZE76L-..."; }
-      and optionally addresses = [ "tcp://..." ] for a peer that can't be found
-      by local discovery.
-
-      Produced once per host and consumed once per user, so it crosses both the
-      fleet (host to host) and the scope boundary (host to user). den.mesh has
-      the producer, the schema entry that makes every host emit one, and the
-      collectAll policy that gathers them; apps/sync/syncthing.nix just reads
-      the pool it is handed.
-
-      That indirection is the point. The aspect used to fold den.hosts by hand
-      and merge in my NAS, which made it the one app aspect that couldn't be
-      lifted into another config. It now knows how to configure Syncthing and
-      nothing about which machines I own.
-    '';
-  };
-
+  # LAN-scoped firewall ports: { tcp = [ ... ]; udp = [ ... ]; }, aggregated by
+  # core.networking onto host.network.lanInterface.
+  #
+  # No per-entry interface and no global escape hatch, because LAN-only is the
+  # whole point. An aspect should never set networking.firewall.* itself, or a
+  # module's own openFirewall option, which opens the port everywhere.
   den.quirks.firewall = {
-    description = ''
-      LAN-scoped firewall ports an aspect needs: { tcp = [ ... ]; udp = [ ... ]; }.
-      Aggregated by core.networking onto host.network.lanInterface.
-
-      There is no per-entry interface and no "global" escape hatch, because
-      LAN-only is the whole point of this quirk. Aspects should never set
-      networking.firewall.* themselves, or a module's own openFirewall option,
-      which opens the port on every interface.
-    '';
+    description = "LAN-scoped firewall ports an aspect needs: { tcp = [ ... ]; udp = [ ... ]; }";
   };
 
   den.policies.firewall =
@@ -91,12 +60,80 @@
     in
     [ (pipe.from "firewall" [ pipe.expose ]) ];
 
-  # Any quirk I consume at host scope needs an expose policy here, or the same
-  # quirk coming from a user-scope aspect just vanishes. No error, no warning,
-  # just missing config. All the 'persist' producers are host-scope today so
-  # that one changes nothing yet, it's there so persisting from an app aspect
-  # works first time. 'firewall' really does need it, since apps.sync.syncthing
-  # comes in from the user aspect and opens 22000 and 21027.
+  # The look, stated once by a user and read at both scopes: desktop.stylix
+  # themes the Home Manager session and the host underneath it, and a NixOS
+  # module cannot read a Home Manager option.
+  den.quirks.theme = {
+    description = ''The look: { scheme = "rose-pine-moon"; wallpaper = ./snake.png; }, optionally polarity'';
+  };
+
+  # One device in the mesh: { name = "endgame"; id = "O5ZE76L-..."; } and
+  # optionally addresses for a peer local discovery can't find. Produced once
+  # per host, consumed once per user, so it crosses both the fleet and the
+  # scope boundary. The syncthing aspect just reads the pool it is handed and
+  # knows nothing about which machines I own.
+  den.quirks.syncthing-peer = {
+    description = ''One device in the Syncthing mesh: { name = "endgame"; id = "O5ZE76L-..."; }'';
+  };
+
+  # Every host announces itself into the pool. Filtered here rather than
+  # downstream, so a host that opted out emits nothing at all and there is no
+  # disabled record travelling the pipe for a consumer to remember to drop.
+  den.aspects.fleet.syncthing-peer =
+    { host, ... }:
+    lib.optionalAttrs (host.syncthing.enable && host.syncthing.id != "") {
+      syncthing-peer = [
+        {
+          inherit (host) name;
+          inherit (host.syncthing) id;
+        }
+      ];
+    };
+
+  # The consuming half, included by the syncthing aspect so the pipe binds at
+  # the user scope where that aspect lands. Not on den.schema.user.includes,
+  # which would bind it for users that never run Syncthing.
+  #
+  # collectAll rather than collect: collect only reaches siblings under a shared
+  # parent, and the hosts are siblings of each other, not of a user.
+  #
+  # The predicate names 'host' and nothing else, and that is load-bearing even
+  # though the body ignores it - den reads the formal argument names to filter
+  # by entity kind. Simplifying it to (_: true), which every linter will offer,
+  # names no kinds and matches nothing, and the mesh silently empties. The
+  # deadnix exemption in flake/formatter.nix exists for this line.
+  den.policies.syncthing-mesh =
+    _:
+    let
+      inherit (den.lib.policy) pipe;
+    in
+    [
+      (pipe.from "syncthing-peer" (
+        [ (pipe.collectAll ({ host, ... }: true)) ]
+        ++ lib.mapAttrsToList (
+          name: peer:
+          pipe.append (
+            {
+              inherit name;
+            }
+            // {
+              inherit (peer) id;
+            }
+            # Only when set, so a peer without explicit addresses gets
+            # Syncthing's "dynamic" default rather than an empty list.
+            // lib.optionalAttrs (peer.addresses != [ ]) { inherit (peer) addresses; }
+          )
+        ) config.fleet.externalPeers
+      ))
+    ];
+
+  # A host that forgot to announce itself would drop out of every other
+  # machine's device list and quietly stop syncing, so the schema does it rather
+  # than each host naming it.
+  den.schema.host.includes = [ den.aspects.fleet.syncthing-peer ];
+
+  # Quirks a user-scope aspect emits but a host-scope aspect consumes. Without
+  # these the data is collected in the user scope and dropped with no error.
   den.schema.user.includes = [
     den.policies.persist
     den.policies.firewall
