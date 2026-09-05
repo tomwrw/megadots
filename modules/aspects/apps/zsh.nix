@@ -1,12 +1,21 @@
 _: {
-  # zsh with starship, fzf, completion, history and a portable alias set.
+  # zsh with starship, fzf, completion and history.
+  #
+  # A sub-aspect of shell rather than an aspect of its own, the same shape
+  # core/boot.nix uses for its bootloaders: the parent carries what every shell
+  # shares - the aliases - and this provides the one implementation. A provides
+  # child does not inherit its parent, so users/tomwrw includes both, exactly as
+  # roles/base.nix takes den.aspects.boot while each host takes its loader.
   #
   # Names no host, deliberately. This aspect used to open with "{ host, ... }:"
   # so two aliases could run nixos-rebuild, and den reads a bare function at an
   # aspect path as parametric over scope arguments - so anywhere without a host
-  # it was dropped whole, with no error. Those two aliases come from core/nix.nix
-  # now, which is host scope and can name the machine honestly.
-  den.aspects.zsh = {
+  # it was dropped whole, with no error.
+  #
+  # No aliases here at all now. They are filed with the tool they drive:
+  # core/nix.nix for the nix set, which is host scope and can name the machine
+  # it rebuilds, apps/git.nix for git, and apps/shell.nix for the rest.
+  den.aspects.shell.provides.zsh = {
     # Shell history is the one thing here zsh writes at runtime; everything else
     # is rewritten on activation.
     #
@@ -30,47 +39,6 @@ _: {
           dotDir = "${config.xdg.configHome}/zsh";
           autosuggestion.enable = true;
           enableCompletion = true;
-          shellAliases = {
-            # nix-r and nix-b are not here. They name a host, so core.nix
-            # hands them down through provides.to-users on the machine they
-            # rebuild.
-            nix-clean = "nix-collect-garbage -d --delete-old && sudo nix-collect-garbage -d --delete-old";
-            hstat = "curl -o /dev/null --silent --head --write-out '%{http_code}\n' $1";
-            # ls, l and la come from programs.eza in apps/shell/cli-apps.nix.
-            # eza was installed but never used while these aliased coreutils.
-            psf = "ps -aux | grep";
-            lsf = "ls | grep";
-            nsp = "nix search nixpkgs";
-            gst = "git status";
-            gss = "git status -s";
-            gd = "git diff";
-            gds = "git diff --staged";
-            glog = "git log --oneline --graph --decorate -20";
-            gloga = "git log --oneline --graph --decorate --all";
-            # stage
-            ga = "git add";
-            gaa = "git add --all";
-            # commit (usage: gc \"message\")
-            gc = "git commit -m";
-            gca = "git commit -a -m";
-            gcane = "git commit --amend --no-edit";
-            # push / pull / fetch
-            gp = "git push";
-            gpu = "git push -u origin HEAD"; # first push of a branch (sets upstream)
-            gpf = "git push --force-with-lease"; # safe force, e.g. after an amend
-            gl = "git pull";
-            glr = "git pull --rebase";
-            gf = "git fetch --all --prune";
-            # branch / switch
-            gsw = "git switch";
-            gswc = "git switch -c"; # create + switch to a new branch
-            gco = "git checkout";
-            gb = "git branch";
-            gbd = "git branch -d";
-            # stash
-            gsta = "git stash";
-            gstp = "git stash pop";
-          };
           history = {
             # Same path as before, written through xdg.dataHome to match
             # dotDir above. The filename keeps its leading dot on purpose,
