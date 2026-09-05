@@ -24,7 +24,7 @@ I'm not a developer. I'm a tinkerer with a consultancy job in a technical field 
 - :house: **Home Manager** as a NixOS module.
 - :ghost: **sops-nix** for secrets management, with dedicated age key support for hosts and users.
 - :key: **FIDO2 hardware keys** (Token2 PIN+) for SSH, with an optional extra LUKS unlock keyslot alongside the passphrase.
-- :camera_flash: **Impermanence** on an ephemeral btrfs root — `/` is restored from a blank
+- :camera_flash: **Impermanence** on an ephemeral btrfs root - `/` is restored from a blank
   snapshot on every boot, and state is opt-in per aspect.
 - :cop: **Secure Boot** via lanzaboote with automatic key generation and enrollment.
 - :snowflake: **Flake** with the den framework for modular, composable host and user aspects.

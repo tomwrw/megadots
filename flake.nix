@@ -1,6 +1,8 @@
-# DO-NOT-EDIT. This file was auto-generated using github:vic/flake-file.
-# Use `nix run .#write-flake` to regenerate it.
+# For those who come after...
+# Re-generate this flake by running 'nix run .#write-flake'.
 {
+  description = "megadots - a denful NixOS and Home Manager configuration by tomwrw.";
+
   outputs = inputs: inputs.flake-parts.lib.mkFlake { inherit inputs; } (inputs.import-tree ./modules);
 
   inputs = {
