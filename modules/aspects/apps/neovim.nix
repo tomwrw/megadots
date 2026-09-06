@@ -1,3 +1,4 @@
+# This is a neovim (nvf) config based on the defaults that Omarchy ships with.
 { inputs, ... }:
 let
   # The text types Omarchy points at nvim.desktop in
@@ -25,6 +26,20 @@ let
     "application/x-shellscript"
     "application/xml"
     "text/xml"
+  ];
+
+  # Same shape desktop/stylix.nix uses for the theme pool: one entry is the only
+  # sane state. Empty means no terminal aspect is included and the desktop entry
+  # would have nothing to open a window with; more than one means two terminals
+  # both claim to be *the* terminal, and the winner would be whichever den
+  # collected first.
+  pick = lib: terminal: if terminal == [ ] then null else lib.head terminal;
+
+  guard = lib: terminal: [
+    {
+      assertion = lib.length terminal == 1;
+      message = "apps.neovim: the terminal quirk pool holds ${toString (lib.length terminal)} entries, not one. It is set by the terminal aspect, e.g. apps/ghostty.nix.";
+    }
   ];
 in
 {
@@ -58,10 +73,16 @@ in
         config,
         lib,
         pkgs,
+        terminal,
         ...
       }:
+      let
+        chosen = pick lib terminal;
+      in
       {
         imports = [ inputs.nvf.homeManagerModules.nvf ];
+
+        assertions = guard lib terminal;
 
         programs.nvf = {
           enable = true;
@@ -164,18 +185,23 @@ in
         # one of them the broken one. If a double-click ever silently does
         # nothing, this shadowing is the first thing to check.
         #
-        # Store paths rather than bare "ghostty" and "nvim", for the reason
-        # apps/vscodium.nix gives about nix.serverPath: a desktop entry runs
-        # with whatever PATH the session handed the launcher, not the shell's.
-        # Naming pkgs.ghostty directly also keeps this from becoming an
-        # invisible dependency on apps/ghostty.nix being included, which is the
-        # trap apps/firefox.nix records for xdg.mimeApps.enable.
-        xdg.desktopEntries.nvim = {
+        # Store paths rather than bare names, for the reason apps/vscodium.nix
+        # gives about nix.serverPath: a desktop entry runs with whatever PATH
+        # the session handed the launcher, not the shell's.
+        #
+        # No terminal is named here. Which one to open, and how that one is told
+        # to run a command, both come from the terminal quirk - so moving to
+        # alacritty is a change to the terminal aspect and nothing else.
+        # mkIf and not a bare attrset: with no terminal aspect included the pool
+        # is empty, chosen is null, and "chosen.exec" would throw before the
+        # assertion above ever got the chance to say which quirk is missing.
+        # Same reason desktop/stylix.nix guards its half this way.
+        xdg.desktopEntries.nvim = lib.mkIf (chosen != null) {
           name = "Neovim";
           genericName = "Text Editor";
           comment = "Edit text files";
           icon = "nvim";
-          exec = "${lib.getExe pkgs.ghostty} -e ${config.programs.nvf.finalPackage}/bin/nvim %F";
+          exec = "${chosen.exec pkgs} ${config.programs.nvf.finalPackage}/bin/nvim %F";
           terminal = false;
           type = "Application";
           categories = [
