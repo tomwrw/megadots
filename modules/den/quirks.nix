@@ -67,6 +67,24 @@
     description = ''The look: { scheme = "rose-pine-moon"; wallpaper = ./snake.png; }, optionally polarity'';
   };
 
+  # The terminal to run a terminal program in, stated once by whichever terminal
+  # aspect is installed and read by anything that needs to open a window around
+  # a command - apps/neovim.nix, for its desktop entry.
+  #
+  # It carries a function of pkgs rather than a package, because "run this
+  # command" is not spelled the same way twice: ghostty and alacritty take
+  # "-e cmd", wezterm takes "start -- cmd", kitty takes the command bare. The
+  # flag belongs with the terminal that understands it, not with every consumer.
+  # Applied by the consumer inside a class block, where pkgs exists - the same
+  # trick desktop/stylix.nix uses for its font set.
+  #
+  # Nothing here says which terminal. Swapping ghostty for alacritty is writing
+  # this quirk from the new aspect and removing the old one from users/tomwrw;
+  # no consumer changes.
+  den.quirks.terminal = {
+    description = ''How to run a command in a terminal window: { exec = pkgs: "\''${terminal} -e"; }'';
+  };
+
   # One device in the mesh: { name = "endgame"; id = "O5ZE76L-..."; } and
   # optionally addresses for a peer local discovery can't find. Produced once
   # per host, consumed once per user, so it crosses both the fleet and the
