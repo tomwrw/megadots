@@ -28,7 +28,9 @@ in
       # Shell and terminal
       den.aspects.btop
       den.aspects.cli-apps
+      den.aspects.direnv
       den.aspects.ghostty
+      den.aspects.neovim
       # The parent carries the shell-agnostic aliases, the sub-aspect is the
       # shell that renders them. A provides child does not pull its parent in,
       # so both are listed - as roles/base.nix does for den.aspects.boot.
