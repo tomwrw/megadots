@@ -11,16 +11,19 @@ _: {
       devShells.default = pkgs.mkShell {
         packages =
           # Every task, from the one place they are defined.
-          builtins.attrValues config.packages
-          ++ (with pkgs; [
+          builtins.attrValues config.packages ++ [
             # Not tasks, but the tools I use directly on this tree. The tasks
             # declare their own runtimeInputs and do not rely on these.
-            age
-            nixfmt
-            nvd
-            sops
-            ssh-to-age
-          ]);
+            #
+            # Spelled pkgs.* rather than opened with 'with', for the reason
+            # apps/spotify.nix gives: at a glance you can see where each name
+            # comes from.
+            pkgs.age
+            pkgs.nixfmt
+            pkgs.nvd
+            pkgs.sops
+            pkgs.ssh-to-age
+          ];
       };
     };
 }
