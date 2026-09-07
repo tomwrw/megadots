@@ -69,9 +69,14 @@ let
   ];
 in
 {
+  # Only the inputs this flake already has. Not 'systems', which is not a
+  # top-level input here, and not the rest: base16-*, tinted-*,
+  # firefox-gnome-theme and nur are the sources Stylix themes from, so
+  # following those would point it at repositories that are not those themes.
   flake-file.inputs.stylix = {
     url = "github:nix-community/stylix";
     inputs.nixpkgs.follows = "nixpkgs";
+    inputs.flake-parts.follows = "flake-parts";
   };
 
   # Theming at both scopes: the Home Manager session, and the host underneath it

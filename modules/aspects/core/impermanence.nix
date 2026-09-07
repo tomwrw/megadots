@@ -3,7 +3,15 @@
   # The /persist store, and the only consumer of the persist quirk. Aspects name
   # their own paths and nothing else: none of them import impermanence or know
   # whether the machine rolls back at all.
-  flake-file.inputs.impermanence.url = "github:nix-community/impermanence";
+  # follows on both, or the lock grows a second nixpkgs and a second
+  # home-manager that nothing here ever evaluates - impermanence declares them
+  # for its own checks, not for the module imported below. chaotic is the one
+  # input deliberately left unfollowed; see core/linux-kernel.nix for why.
+  flake-file.inputs.impermanence = {
+    url = "github:nix-community/impermanence";
+    inputs.nixpkgs.follows = "nixpkgs";
+    inputs.home-manager.follows = "home-manager";
+  };
 
   den.aspects.impermanence.nixos =
     { persist, lib, ... }:
