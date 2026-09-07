@@ -34,6 +34,19 @@ jobs:
             .#checks.x86_64-linux.check-flake-file \
             .#checks.x86_64-linux.secrets
 
+      # writeShellApplication runs shellcheck at build time, so building the
+      # tasks in modules/flake/tasks.nix is the only thing that gates their
+      # bash. Worth having: deploy formats disks, and back when it was a
+      # justfile recipe its 25 lines were never checked by anything.
+      #
+      # Derived rather than listed, for the same reason as the host list below:
+      # a hardcoded set means a newly added task is silently never checked.
+      - name: Build every package
+        run: |
+          mapfile -t pkgs < <(nix eval --json '.#packages.x86_64-linux' --apply builtins.attrNames | jq -r '.[]')
+          echo "packages: ${pkgs[*]}"
+          nix build --print-build-logs --no-link "${pkgs[@]/#/.#packages.x86_64-linux.}"
+
       # Derived, not hardcoded: a hardcoded list means a newly added host is
       # silently never checked. Keyed by system, so an aarch64 host would need
       # its own runner and its own list.
