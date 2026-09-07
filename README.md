@@ -123,7 +123,7 @@ happen to be mostly `includes`, so there is one concept to learn rather than two
 
 ### Quirks: how anything crosses a scope.
 
-An aspect says what it needs; something else decides how to apply it. All four channels,
+An aspect says what it needs; something else decides how to apply it. All five channels,
 and every policy that routes one, live in [den/quirks.nix](modules/den/quirks.nix).
 
 ```nix
@@ -140,6 +140,7 @@ firewall.tcp = [ 47984 47989 47990 48010 ];
 | `firewall` | LAN-scoped ports, aggregated onto the host's interface |
 | `theme` | the base16 scheme and wallpaper, read by Stylix at *both* scopes |
 | `syncthing-peer` | one device in the mesh, produced per host and consumed per user |
+| `terminal` | how to run a command in a terminal window, so no aspect names one |
 
 Note the trap: a quirk emitted from a **user-scope** aspect only reaches the host if an
 expose policy is registered for it in `den.schema.user.includes` - without one it is
