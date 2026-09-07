@@ -104,7 +104,7 @@ modules/
 │   ├── virtualisation/   #   libvirt
 │   └── apps/             #   every user-facing app, one file each
 ├── den/                  # defaults, the host roster, the schema, the quirks
-├── flake/                # flake plumbing: inputs, treefmt, checks, devShell, deploy
+├── flake/                # flake plumbing: inputs, treefmt, checks, devShell, tasks
 ├── hosts/                # one directory per host: its aspects, and its _hardware.nix
 │   ├── endgame/
 │   └── flatmate/
@@ -232,32 +232,54 @@ This configuration has multiple system entry points. At the moment, I am a singl
 ### Prerequisites.
 
 - Nix with flakes enabled (`experimental-features = nix-command flakes`).
-- `just`, `sops` and `age`. `nix develop` provides these plus `nixfmt`, `nvd`,
-  `ssh-to-age` and `nixos-anywhere` - see [devshell.nix](modules/flake/devshell.nix).
+- Nothing else. `nix develop` provides `sops`, `age`, `nixfmt`, `nvd` and
+  `ssh-to-age`, and every task below - see
+  [devshell.nix](modules/flake/devshell.nix).
 - An age keypair per host and per user, and a FIDO2 token if you want the extra LUKS
-  keyslot. The deploy recipe expects these on a removable drive at the path in the
-  `usb` variable at the top of the [justfile](justfile).
+  keyslot. `deploy` expects these on a removable drive at `usbDefault` in
+  [tasks.nix](modules/flake/tasks.nix), overridable with `MEGADOTS_USB`.
 
 ### Getting Started.
 
-Everything goes through `just`. Run it bare to list the recipes.
+The repo's tasks are flake apps, defined in
+[tasks.nix](modules/flake/tasks.nix). `nix flake show` lists them with a
+description each.
 
 ```bash
-just                      # list recipes
-just build endgame        # build a host's closure locally (no activation)
-just diff endgame         # build, then nvd diff against the running system
-just rebuild endgame      # switch a remote host (pushes a locally-built closure)
-just deploy endgame       # bare-metal install via nixos-anywhere (formats disks)
-just check                # build both hosts, format check, secrets scan
-just fmt                  # nixfmt + deadnix + statix via treefmt
-just update               # nix flake update
-just gc                   # collect garbage older than 30 days
-just enroll-fido2 endgame # add the inserted token to the LUKS header
-just secrets-edit secrets/users/tomwrw.yaml
-just secrets-updatekeys   # re-sync sops recipients after editing .sops.yaml
+nix flake show                    # list the tasks
+nix run .#build endgame           # build a host's closure locally (no activation)
+nix run .#diff-host endgame       # build, then nvd diff against the running system
+nix run .#rebuild endgame         # switch a remote host (pushes a locally-built closure)
+nix run .#deploy endgame          # bare-metal install via nixos-anywhere (formats disks)
+nix run .#enroll-fido2 endgame    # add the inserted token to the LUKS header
+nix run .#luks-device endgame     # print the host's LUKS device path
+nix run .#secrets-updatekeys      # re-sync sops recipients after editing .sops.yaml
 ```
 
-`just check` builds both hosts, checks formatting and greps for plaintext key material.
+Inside `nix develop` the same tasks are on `$PATH` as bare commands, so the
+above is `build endgame`, `diff-host endgame`, and so on. It is `diff-host` and
+not `diff` because that name belongs to diffutils, and shadowing it inside the
+shell would be a nasty surprise.
+
+A positional host passes straight through, but a *flag* for the task needs `--`
+first, or nix consumes it: `nix run .#rebuild -- endgame --flag`.
+
+An unknown or missing host is refused up front, with the valid list:
+
+```bash
+$ nix run .#deploy typo
+no such host: typo
+valid hosts: endgame flatmate
+```
+
+These run from the checkout and can drive either host. For operating on the
+machine you are sitting at, from any directory, use the `n*` aliases in
+[core/nix.nix](modules/aspects/core/nix.nix) - `nr`, `nb`, `nd`, `nu`, `ncheck`,
+`nfmt`, `nclean`.
+
+There is no wrapper for the things nix already does. `nix flake check` builds
+both hosts, checks formatting and greps for plaintext key material; `nix fmt`
+runs nixfmt, deadnix and statix; `nix flake update` updates the inputs.
 Building a host is the check that matters: it catches anything that has stopped
 evaluating or building.
 
@@ -269,7 +291,7 @@ entry in the tree with it, without realising a single output. The host list is d
 
 ### Bootstrapping a host from scratch.
 
-Four things have to be in place before `just deploy <name>` will produce a working
+Four things have to be in place before `nix run .#deploy <name>` will produce a working
 machine.
 
 1. **USB key material.** The USB mirrors the destination: whatever is under
@@ -289,12 +311,13 @@ machine.
    Ownership is handled by nixos-anywhere's `--chown`, which runs during the install -
    `--extra-files` copies as root.
 
-   The `usb` path itself is a variable at the top of the [justfile](justfile).
+   The USB path itself is `usbDefault` at the top of
+   [tasks.nix](modules/flake/tasks.nix), overridable with `MEGADOTS_USB`.
 
 2. **A `creation_rules` block for the new host** in [.sops.yaml](.sops.yaml) - one per
    secrets file, listing its recipients. Adding a key to the recipient list is not enough;
    without its own rule the host's secrets are encrypted to nobody. Then run
-   `just secrets-updatekeys`.
+   `nix run .#secrets-updatekeys`.
 3. **`secrets/hosts/<name>.yaml`** with at least `users/<user>/password`. Evaluation
    interpolates this filename from the hostname, so a missing file fails the build.
 4. **`syncthing/<name>/{key,cert,guiPassword}` in `secrets/users/<user>.yaml`** - the
@@ -308,7 +331,7 @@ machine.
    `_hardware.nix` from `nixos-generate-config`.
 
 Then boot the target from a NixOS installer ISO, set a password for the `nixos` user so
-SSH works, and run `just deploy <name>`. nixos-anywhere partitions with disko, copies the
+SSH works, and run `nix run .#deploy <name>`. nixos-anywhere partitions with disko, copies the
 USB tree into /persist, chowns it to the user, and installs. The machine comes up with its
 secrets decryptable and its keys in place - no second pass, nothing to do by hand.
 

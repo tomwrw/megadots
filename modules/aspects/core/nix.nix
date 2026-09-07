@@ -21,9 +21,9 @@
   # occasional and the destructive ones are spelled out, so nboot cannot be a
   # fat-fingered nb.
   #
-  # Aliases and not just recipes because they cover the other axis: the
-  # justfile drives *either* host *from the checkout*, these drive *this* host
-  # *from anywhere*. nu/ncheck/nfmt deliberately overlap just update/check/fmt.
+  # Aliases and not tasks because they cover the other axis: the flake apps in
+  # flake/tasks.nix drive *either* host *from the checkout*, these drive *this*
+  # host *from anywhere*.
   den.aspects.nix.provides.to-users.homeManager =
     { host, ... }:
     {
@@ -54,9 +54,8 @@
         nback = "nh os rollback --ask";
         # --keep-since 30d and not "-d --delete-old", which took every old
         # generation including yesterday's working one. This matches the window
-        # nix.gc already applies weekly below, and the justfile's gc recipe -
-        # two collectors with different retention on one store is how I lose
-        # the generation I wanted.
+        # nix.gc already applies weekly below - two collectors with different
+        # retention on one store is how I lose the generation I wanted.
         nclean = "nh clean all --keep 5 --keep-since 30d --ask";
 
         # Search and inspect. ns queries search.nixos.org against
