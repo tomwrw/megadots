@@ -84,7 +84,7 @@ in
     user =
       { osConfig, ... }:
       {
-        # Pinned rather than auto-allocated: .just deploy. chowns the seeded key
+        # Pinned rather than auto-allocated: the deploy task chowns the seeded key
         # tree to 1000:100 against an installer that has no account for me, so
         # the number has to be one this config guarantees.
         uid = 1000;

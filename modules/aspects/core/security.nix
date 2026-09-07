@@ -12,7 +12,7 @@ _: {
     security.polkit.enable = true;
 
     # Only wheel can execute the setuid sudo binary. Everything of mine that
-    # needs root ('just rebuild', activation) runs as wheel anyway.
+    # needs root (the rebuild task, activation) runs as wheel anyway.
     security.sudo.execWheelOnly = true;
 
     # Users come from the config or not at all. This used to live in the tomwrw

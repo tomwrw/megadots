@@ -8,7 +8,7 @@
       den.aspects.dev
 
       # The choices only this machine makes
-      den.aspects.boot.systemd-boot
+      den.aspects.boot.lanzaboote
       den.aspects.gnome
       den.aspects.surface-pro
     ];
