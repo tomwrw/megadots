@@ -25,6 +25,17 @@
       };
     };
 
+    # No default, like disk.id and network.lanInterface: this is a fact about
+    # when a machine was installed, not a fleet-wide preference, and the one
+    # value NixOS asks you never to change afterwards. Left on den.default it
+    # was a single number every host inherited, so a machine installed two
+    # releases from now would silently claim it was installed at 26.05.
+    options.stateVersion = lib.mkOption {
+      type = lib.types.str;
+      description = "The NixOS release this host was first installed with. Set once, at install, and never changed.";
+      example = "26.05";
+    };
+
     options.network = {
       lanInterface = lib.mkOption {
         type = lib.types.str;

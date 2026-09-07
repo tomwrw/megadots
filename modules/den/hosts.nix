@@ -46,6 +46,7 @@
 
     den.hosts.x86_64-linux = {
       endgame = {
+        stateVersion = "26.05";
         syncthing.id = "O5ZE76L-VFVTOEB-LBIKRRS-LNJKJTN-SOPSNTS-NMTNUHO-OOO453I-PXDOBAI";
         linux-kernel.variant = "lto-znver4";
         disk = {
@@ -58,6 +59,7 @@
       };
 
       flatmate = {
+        stateVersion = "26.05";
         syncthing.id = "PSSB5YD-TVF4BXM-RH4E5DY-NZYON6Y-LKBBBGL-HHNIB2T-K6QRHIM-FTHKUAF";
         disk = {
           id = "/dev/disk/by-id/nvme-KBG40ZPZ512G_TOSHIBA_MEMORY_89R201INNLAP";
