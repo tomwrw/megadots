@@ -55,7 +55,21 @@
               pkgs.vscode-extensions.jnoortheen.nix-ide
               pkgs.vscode-extensions.anthropic.claude-code
               pkgs.vscode-extensions.nefrob.vscode-just-syntax
+              pkgs.vscode-extensions.budparr.language-hugo-vscode
+              pkgs.vscode-extensions.tamasfe.even-better-toml
+              pkgs.vscode-extensions.yzhang.markdown-all-in-one
+              pkgs.vscode-extensions.davidanson.vscode-markdownlint
+              pkgs.vscode-extensions.redhat.vscode-yaml
+              pkgs.vscode-extensions.ecmel.vscode-html-css
+              pkgs.vscode-extensions.naumovs.color-highlight
+              pkgs.vscode-extensions.formulahendry.auto-rename-tag
+              pkgs.vscode-extensions.esbenp.prettier-vscode
             ];
+
+            # No CSS or SCSS extension: VSCodium has both built in, and Prettier
+            # above formats them. syler.sass-indented is not in nixpkgs anyway,
+            # and with mutableExtensionsDir off an unpackaged extension is not
+            # an option.
 
             # Nix IDE ships with the language server off, so without this the
             # extension is syntax highlighting and nothing else. The paths are
@@ -68,6 +82,11 @@
               "nix.formatterPath" = lib.getExe pkgs.nixfmt;
               "git.enableSmartCommit" = true;
               "git.confirmSync" = false;
+              "[css]"."editor.defaultFormatter" = "esbenp.prettier-vscode";
+              "[scss]"."editor.defaultFormatter" = "esbenp.prettier-vscode";
+              "[markdown]"."editor.defaultFormatter" = "esbenp.prettier-vscode";
+              "[yaml]"."editor.defaultFormatter" = "esbenp.prettier-vscode";
+              "[json]"."editor.defaultFormatter" = "esbenp.prettier-vscode";
             };
           };
         };
