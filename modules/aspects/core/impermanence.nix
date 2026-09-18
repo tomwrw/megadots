@@ -49,15 +49,13 @@
           # Bind mounted, not symlinked. impermanence seeds an "uninitialized"
           # file first, which stops systemd-boot's installer choking on an empty
           # machine-id during a fresh deploy; the symlink form hangs the boot
-          # right after "Started D-Bus System Message Bus".
+          # right after "Started D-Bus System Message Bus". impermanence then
+          # leaves systemd-machine-id-commit to replace the placeholder on first
+          # boot, so that unit must stay enabled or the ID is random every boot.
           "/etc/machine-id"
         ]
         ++ lib.concatMap (e: e.system.files or [ ]) persist;
       };
-
-      # impermanence already suppresses this in the initrd, but turning it off
-      # outright is what actually boots on this hardware.
-      systemd.services.systemd-machine-id-commit.enable = false;
     };
 
   # The user-scope half. It hangs off the host's inclusion of this aspect rather
