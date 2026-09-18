@@ -33,6 +33,11 @@ _: {
         autoStart = true;
       };
 
+      # autoStart installs a global user unit wanted by graphical-session.target,
+      # so it also starts in GDM's greeter session, where there is no portal to
+      # capture from and it aborts with a core dump every boot. Keep it out of
+      # the greeter; the real session is unaffected.
+      systemd.user.services.sunshine.unitConfig.ConditionUser = "!gdm-greeter";
     };
 
     # A systemd user service, so its state is in the home and not /var/lib.
