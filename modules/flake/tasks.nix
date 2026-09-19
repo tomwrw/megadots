@@ -245,7 +245,7 @@ in
         description = "Re-sync sops recipients on every secrets file against .sops.yaml.";
         runtimeInputs = [ pkgs.sops ];
         text = ''
-          for f in secrets/hosts/*.yaml secrets/users/*.yaml; do
+          for f in modules/hosts/*/secrets.yaml modules/users/*/secrets.yaml; do
             sops updatekeys "$f"
           done
         '';

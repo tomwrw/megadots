@@ -49,12 +49,12 @@ in
               fi
 
               # sops leaves a 'sops:' metadata block on everything it encrypts,
-              # so the absence of one means a file under secrets/ was committed
-              # in the clear.
+              # so the absence of one means a secrets.yaml was committed in the
+              # clear. Each host and user keeps its own next to its module.
               shopt -s nullglob
-              files=(secrets/hosts/*.yaml secrets/users/*.yaml)
+              files=(modules/hosts/*/secrets.yaml modules/users/*/secrets.yaml)
               if [ ''${#files[@]} -eq 0 ]; then
-                echo "check-secrets: found no files under secrets/ - has the layout moved?" >&2
+                echo "check-secrets: found no secrets.yaml under modules/hosts or modules/users - has the layout moved?" >&2
                 exit 1
               fi
               for f in "''${files[@]}"; do

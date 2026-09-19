@@ -8,21 +8,21 @@ keys:
   - &fido2-backup age1nleypjj6d0c5mkdnq6ua4ca6kpgu5r0htknl3l0elly6uvu704sqgdfzru
 
 creation_rules:
-  - path_regex: ^secrets/hosts/endgame\.yaml$
+  - path_regex: ^modules/hosts/endgame/secrets\.yaml$
     key_groups:
       - age:
           - *tomwrw
           - *endgame
           - *fido2-primary
           - *fido2-backup
-  - path_regex: ^secrets/hosts/flatmate\.yaml$
+  - path_regex: ^modules/hosts/flatmate/secrets\.yaml$
     key_groups:
       - age:
           - *tomwrw
           - *flatmate
           - *fido2-primary
           - *fido2-backup
-  - path_regex: ^secrets/users/tomwrw\.yaml$
+  - path_regex: ^modules/users/tomwrw/secrets\.yaml$
     key_groups:
       - age:
           - *tomwrw

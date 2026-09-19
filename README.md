@@ -105,10 +105,10 @@ modules/
 │   └── apps/             #   every user-facing app, one file each
 ├── den/                  # defaults, the host roster, the schema, the quirks
 ├── flake/                # flake plumbing: inputs, treefmt, checks, devShell, tasks
-├── hosts/                # one directory per host: its aspects, and its _hardware.nix
+├── hosts/                # one directory per host: its aspects, _hardware.nix and secrets.yaml
 │   ├── endgame/
 │   └── flatmate/
-└── users/tomwrw/         # the user, itself just another aspect
+└── users/tomwrw/         # the user, itself just another aspect, and its secrets.yaml
 ```
 
 Aspect names are short and flat: `modules/aspects/core/sops.nix` declares
@@ -319,9 +319,9 @@ machine.
    secrets file, listing its recipients. Adding a key to the recipient list is not enough;
    without its own rule the host's secrets are encrypted to nobody. Then run
    `nix run .#secrets-updatekeys`.
-3. **`secrets/hosts/<name>.yaml`** with at least `users/<user>/password`. Evaluation
-   interpolates this filename from the hostname, so a missing file fails the build.
-4. **`syncthing/<name>/{key,cert,guiPassword}` in `secrets/users/<user>.yaml`** - the
+3. **`modules/hosts/<name>/secrets.yaml`** with at least `users/<user>/password`.
+   Evaluation interpolates this path from the hostname, so a missing file fails the build.
+4. **`syncthing/<name>/{key,cert,guiPassword}` in `modules/users/<user>/secrets.yaml`** - the
    syncthing secrets are keyed by *host* but live in the *user* file
    ([apps/syncthing.nix](modules/aspects/apps/syncthing.nix)). Miss these and the host
    builds fine, then Home Manager activation fails on the new machine.
