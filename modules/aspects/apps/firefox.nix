@@ -13,7 +13,17 @@
   # directory that Firefox prefers, so it opens an unmanaged profile with no
   # theme and no add-ons. Did exactly that to myself once.
   # Firefox, themed through Stylix and with its profile directory persisted.
-  den.aspects.firefox.persist.home.directories = [ ".config/mozilla/firefox" ];
+  den.aspects.firefox.persist.home.directories = [
+    # The profile: cookies, history, container assignments and whatever the
+    # extensions store. Home Manager rewrites its own half on activation, so
+    # this is really for what Firefox writes at runtime, but they share a
+    # directory.
+    ".config/mozilla/firefox"
+    # The HTTP and startup caches. The profile above keeps history and logins
+    # across the rollback, but every page was still a cold fetch and every
+    # start a cold start after a reboot.
+    ".cache/mozilla"
+  ];
 
   den.aspects.firefox.homeManager =
     { pkgs, ... }:
@@ -86,13 +96,16 @@
             "browser.tabs.loadInBackground" = true; # Load tabs automatically
             "media.ffmpeg.vaapi.enabled" = true; # Enable hardware acceleration
             "browser.in-content.dark-mode" = true; # Use dark mode
+            # Only reaches pages without privacy.resistFingerprinting, which
+            # forced prefers-color-scheme to light regardless - and capped
+            # requestAnimationFrame at 60 Hz on a 144 Hz panel. The tracking
+            # protection fingerprinting blocklist above is the part kept.
             "ui.systemUsesDarkTheme" = true;
             "extensions.autoDisableScopes" = 0; # Automatically enable extensions
             "extensions.update.enabled" = false;
             "widget.use-xdg-desktop-portal.file-picker" = 1; # Use new gtk file picker instead of legacy one
             "signon.management.page.breach-alerts.enabled" = false;
             "extensions.formautofill.creditCards.enabled" = false;
-            "privacy.resistFingerprinting" = true;
           };
 
           # Configure extension behavior (toolbar pinning, etc.).
@@ -154,11 +167,5 @@
         "text/html" = [ "firefox.desktop" ];
         "application/pdf" = [ "firefox.desktop" ];
       };
-
-      # The profile: cookies, history, container assignments and whatever the
-      # extensions store. Home Manager rewrites its own half on activation, so
-      # this is really for what Firefox writes at runtime, but they share a
-      # directory.
-      #
     };
 }

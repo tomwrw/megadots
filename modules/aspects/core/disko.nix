@@ -85,6 +85,14 @@
                           umount /mnt
                         '';
 
+                        # zstd:1, what Fedora ships, rather than the level 3
+                        # a bare "zstd" means. Level 3 buys a few percent of
+                        # space for a noticeably slower write path; level 1
+                        # decompresses at the same speed. This is only fstab -
+                        # existing extents keep their level, there is no
+                        # reformat, and no 'btrfs filesystem defrag -c' either,
+                        # which would break the reflinks the root-blank
+                        # rollback depends on.
                         subvolumes = {
                           # Rolled back to root-blank every boot. /home sits
                           # inside it on purpose: user state is opt-in through
@@ -94,7 +102,7 @@
                             mountpoint = "/";
                             mountOptions = [
                               "subvol=root"
-                              "compress=zstd"
+                              "compress=zstd:1"
                               "noatime"
                             ];
                           };
@@ -102,7 +110,7 @@
                             mountpoint = "/nix";
                             mountOptions = [
                               "subvol=nix"
-                              "compress=zstd"
+                              "compress=zstd:1"
                               "noatime"
                             ];
                           };
@@ -110,7 +118,7 @@
                             mountpoint = "/persist";
                             mountOptions = [
                               "subvol=persist"
-                              "compress=zstd"
+                              "compress=zstd:1"
                               "noatime"
                             ];
                           };

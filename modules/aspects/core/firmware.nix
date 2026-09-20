@@ -1,10 +1,13 @@
 _: {
-  # Firmware, device automounting and fwupd - the parts every physical machine wants.
+  # Firmware and fwupd - the parts every physical machine wants.
+  #
+  # No services.devmon. That is udevil's automounter for a machine without a
+  # desktop doing it; both hosts run GNOME, where gvfs and udisks2 already
+  # do, so it was a user daemon sitting in every session mounting nothing.
   den.aspects.firmware = {
     nixos = _: {
       hardware.enableRedistributableFirmware = true;
 
-      services.devmon.enable = true;
       services.fwupd.enable = true;
     };
 

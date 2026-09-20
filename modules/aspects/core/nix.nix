@@ -89,10 +89,14 @@
             "root"
             "@wheel"
           ];
-          # Hard-link identical store paths as they're written instead of
-          # running nix.optimise later. Slightly slower builds, but I never
-          # have to remember to run it.
-          auto-optimise-store = true;
+          # Not auto-optimise-store. That hashes and hard-links every store
+          # path as it is written, on the critical path of every 'nr' -
+          # nix.optimise below does the same dedupe weekly, off it.
+          auto-optimise-store = false;
+
+          # 500 MiB. The 1 MiB default is what "download buffer is full"
+          # means: substitution stalls waiting for the unpacker on a fast link.
+          download-buffer-size = 524288000;
 
           # Leave IFD on. Stylix reads its base16 scheme yaml out of a
           # derivation at eval time, so turning this off breaks the theming.
@@ -122,6 +126,31 @@
           # Delete generations older than 30 days.
           options = "--delete-older-than 30d";
         };
+        # The dedupe auto-optimise-store used to do inline, see above.
+        optimise = {
+          automatic = true;
+          dates = [ "weekly" ];
+        };
+
+        # Builds run at idle priority for CPU and I/O so 'nr' never competes
+        # with the session: with max-jobs auto and cores 0 a build is every
+        # thread writing tens of thousands of files, which is exactly the load
+        # that turns a desktop into a slideshow.
+        #
+        # idle rather than batch for CPU. batch only drops wakeup preemption
+        # and still runs at full weight, so build threads would still take
+        # their even share from a game; idle is a token share until the
+        # machine is otherwise quiet. The cost is that a rebuild during a game
+        # crawls, which is what I want: the build can wait, the frame cannot.
+        # Under sched_ext the policy is read as a weight rather than a hard
+        # "only when idle", so it is softer there, not harder.
+        #
+        # The I/O class is honoured by mq-deadline and bfq but ignored by
+        # kyber, which is what core/performance.nix puts NVMe on - so on the
+        # system disk this is inert and kyber's own read-first policy does the
+        # job. Kept for any other disk, and because it is the documented knob.
+        daemonCPUSchedPolicy = "idle";
+        daemonIOSchedClass = "idle";
       };
 
       programs.nix-ld.enable = true;

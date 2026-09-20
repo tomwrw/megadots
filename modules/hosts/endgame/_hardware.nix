@@ -40,6 +40,10 @@
   # with explicit per-interface declarations with networking.interfaces.<name>.useDHCP.
   networking.useDHCP = lib.mkDefault true;
 
+  # No WWAN in this box. NetworkManager pulls ModemManager in by default and
+  # it sat there probing serial and USB devices for a modem that isn't there.
+  networking.modemmanager.enable = false;
+
   nixpkgs.hostPlatform.system = "x86_64-linux";
   hardware.cpu.amd.updateMicrocode = lib.mkDefault config.hardware.enableRedistributableFirmware;
 }

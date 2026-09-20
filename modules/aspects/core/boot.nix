@@ -12,6 +12,12 @@
     nixos.boot.loader = {
       efi.canTouchEfiVariables = true;
 
+      # One second, not the five nixpkgs defaults to. Every boot waited the
+      # full five. The menu is still there: hold a key while the firmware
+      # hands over. Not 0 - that hides the menu entirely and a rollback
+      # becomes a fumble for the right key at the right instant.
+      timeout = 1;
+
       # The ESP is 1G and every generation is a whole UKI, so without a limit it
       # fills up and a rebuild dies half way through installing signed images. 8
       # rather than 10 because lanzaboote asserts a limit of 8 once measuredBoot

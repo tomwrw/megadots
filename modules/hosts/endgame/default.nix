@@ -12,6 +12,7 @@
       den.aspects.boot.lanzaboote
       den.aspects.gnome
       den.aspects.linux-kernel
+      den.aspects.scheduler
     ];
 
     # nixos-generate-config output for this machine. Imported straight in rather

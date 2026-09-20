@@ -23,6 +23,7 @@
     den.aspects.firmware
     den.aspects.locale
     den.aspects.nix
+    den.aspects.performance
     den.aspects.system-packages
   ];
 }
