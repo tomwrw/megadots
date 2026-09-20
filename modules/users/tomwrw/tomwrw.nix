@@ -108,7 +108,7 @@ in
     # module cannot read a Home Manager option.
     theme = {
       scheme = "rose-pine-moon";
-      wallpaper = ../../../assets/wallpaper/snake.png;
+      wallpaper = ../../../assets/wallpaper/samuri.jpg;
     };
 
     # / goes back to a blank snapshot every boot and /home is inside it, so my
