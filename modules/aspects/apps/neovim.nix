@@ -168,7 +168,7 @@ in
         home.sessionVariables.VISUAL = "nvim";
 
         # As Omarchy has it. Free: no binary on PATH is called n, and it cannot
-        # be confused with the nr/nb/nt set in core/nix.nix.
+        # be confused with the nr/nb/nt set in system/nix.nix.
         home.shellAliases.n = "nvim";
 
         # The entry that makes double-click work, and the reason it names its

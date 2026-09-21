@@ -6,7 +6,7 @@ _: {
       "kernel.kptr_restrict" = 2;
       "kernel.unprivileged_bpf_disabled" = 1;
       # 1, not 2. Level 2 applies constant blinding to *every* BPF program,
-      # privileged ones included - and core/scheduler.nix puts a sched_ext
+      # privileged ones included - and system/scheduler.nix puts a sched_ext
       # scheduler's hot path in BPF. Blinding exists to stop an unprivileged
       # program spraying the JIT, and unprivileged BPF is off above, so 1 is
       # the same protection at zero cost.

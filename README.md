@@ -83,7 +83,7 @@ The shortest path through the repo, in reading order:
    manifest of the aspects it takes.
 4. [aspects/roles/base.nix](modules/aspects/roles/base.nix) - a role is just an aspect
    that is all `includes`.
-5. [aspects/core/networking.nix](modules/aspects/core/networking.nix) - a real aspect, and
+5. [aspects/system/networking.nix](modules/aspects/system/networking.nix) - a real aspect, and
    the single consumer of the firewall quirk.
 6. [den/quirks.nix](modules/den/quirks.nix) - every channel that crosses a scope.
 
@@ -100,10 +100,9 @@ declares the flake inputs it needs right next to the code that uses them via
 modules/
 ├── aspects/              # every aspect, filed by what it is
 │   ├── roles/            #   base, workstation, gaming, dev
-│   ├── core/             #   the baseline: boot, disks, nix, networking, secrets
+│   ├── system/           #   the OS itself: boot, disks, kernel, nix, networking, security
 │   ├── desktop/          #   cosmic, gnome, stylix, fonts, networkmanager
 │   ├── hardware/         #   opt-in support, and per-model profiles
-│   ├── virtualisation/   #   libvirt
 │   └── apps/             #   every user-facing app, one file each
 ├── den/                  # defaults, the host roster, the schema, the quirks
 ├── flake/                # flake plumbing: inputs, treefmt, checks, devShell, tasks
@@ -113,11 +112,24 @@ modules/
 └── users/tomwrw/         # the user, itself just another aspect, and its secrets.yaml
 ```
 
-Aspect names are short and flat: `modules/aspects/core/sops.nix` declares
+Aspect names are short and flat: `modules/aspects/system/sops.nix` declares
 `den.aspects.sops`, and `modules/aspects/apps/signal.nix` declares `den.aspects.signal`.
 The directories are filing, not namespace - an `includes` list reads as a list of names
-rather than a list of paths. Host-specific hardware is *not* an aspect: each host imports
-its own `_hardware.nix` directly, and the `_` prefix is what stops
+rather than a list of paths. den never reads a path: an aspect is identified by its
+attribute path, so a file can be moved between these directories without changing a line
+of configuration.
+
+**A directory says what a thing is; roles and hosts say who takes it.** That is the whole
+filing rule, and the reason `system/` is not called `core/` as it was previously: membership is already stated,
+precisely and in exactly two enforced places, by [roles/](modules/aspects/roles/) and by
+each host's `default.nix`. A directory that also implies membership is an unenforced third
+copy, and it drifts - `system/scheduler.nix` is on endgame alone, which is a fact about
+endgame's include list, not about where the file sits.
+
+**This on it's own took me some time to wrap my head around when moving to den (and more broadly, dendritic patterns).**
+
+Host-specific hardware is *not* an aspect: each host imports its own `_hardware.nix`
+directly, and the `_` prefix is what stops
 [import-tree](https://github.com/vic/import-tree) picking it up as a module of its own.
 
 Roles are aspects too. `base`, `workstation`, `gaming` and `dev` are ordinary aspects that
@@ -132,7 +144,7 @@ and every policy that routes one, live in [den/quirks.nix](modules/den/quirks.ni
 # aspects/apps/sunshine.nix says only this...
 firewall.tcp = [ 47984 47989 47990 48010 ];
 
-# ...and aspects/core/networking.nix is the single place that turns every such
+# ...and aspects/system/networking.nix is the single place that turns every such
 # declaration into interface-scoped rules on host.network.lanInterface.
 ```
 
@@ -172,7 +184,7 @@ fragments so that the file does not match itself.
 
 ### Deliberate Nix settings
 
-[core/nix.nix](modules/aspects/core/nix.nix) sets two options worth calling out, both
+[system/nix.nix](modules/aspects/system/nix.nix) sets two options worth calling out, both
 security trade-offs:
 
 - `nix.settings.trusted-users = [ "root" "@wheel" ]` - lets any `wheel` member
@@ -215,7 +227,7 @@ Things that are deliberate rather than missed, so you can judge whether they sui
   user can get arbitrary content into the store, and `endgame` is the machine that then
   signs whatever it boots with its Secure Boot key.
 - **A third-party binary cache supplies that host's kernel.**
-  [core/nyx-cache.nix](modules/aspects/core/nyx-cache.nix) trusts
+  [system/nyx-cache.nix](modules/aspects/system/nyx-cache.nix) trusts
   [chaotic-cx/nyx](https://www.nyx.chaotic.cx/) for prebuilt CachyOS kernels, and for
   proton-cachyos in [apps/steam.nix](modules/aspects/apps/steam.nix). It composes with the
   point above: a compromised cache could hand `endgame` a kernel its own Secure Boot chain
@@ -277,7 +289,7 @@ valid hosts: endgame flatmate
 
 These run from the checkout and can drive either host. For operating on the
 machine you are sitting at, from any directory, use the `n*` aliases in
-[core/nix.nix](modules/aspects/core/nix.nix) - `nr`, `nb`, `nd`, `nu`, `ncheck`,
+[system/nix.nix](modules/aspects/system/nix.nix) - `nr`, `nb`, `nd`, `nu`, `ncheck`,
 `nfmt`, `nclean`.
 
 There is no wrapper for the things nix already does. `nix flake check` builds

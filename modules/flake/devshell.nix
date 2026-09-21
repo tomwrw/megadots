@@ -3,7 +3,7 @@ _: {
   # in, and inside it every task in flake/tasks.nix is a bare command:
   # 'rebuild endgame' rather than 'nix run .#rebuild endgame'.
   #
-  # core/system-packages.nix only carries what my hosts need at runtime, not
+  # system/system-packages.nix only carries what my hosts need at runtime, not
   # what working on this repo needs.
   perSystem =
     { config, pkgs, ... }:

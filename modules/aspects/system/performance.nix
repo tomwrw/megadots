@@ -1,9 +1,9 @@
 _: {
   # The desktop-latency tuning CachyOS ships as cachyos-settings, minus what
   # the CachyOS kernel already defaults to (vm.swappiness=100, vm.page-cluster=0)
-  # and minus anything that is a security trade - those stay in core/hardening.nix
+  # and minus anything that is a security trade - those stay in system/hardening.nix
   # where the trade is written down. Nothing here needs the CachyOS kernel;
-  # the scheduler that does is core/scheduler.nix.
+  # the scheduler that does is system/scheduler.nix.
   den.aspects.performance.nixos = _: {
     boot.kernel.sysctl = {
       # Dirty-page limits in bytes, not ratios. The defaults are 20%/10% of
@@ -84,7 +84,7 @@ _: {
       settings.OOM.DefaultMemoryPressureDurationSec = "20s";
     };
 
-    # /var/log is persisted (core/impermanence.nix) and journald was unbounded,
+    # /var/log is persisted (system/impermanence.nix) and journald was unbounded,
     # so each machine-id ever booted left its journal behind: 1.2 GiB across
     # ~60 directories before the machine-id fix. journald only vacuums its own
     # machine-id directory, so the cap keeps *this* one honest; the stale

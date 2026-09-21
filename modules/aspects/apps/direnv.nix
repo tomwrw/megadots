@@ -20,7 +20,7 @@ _: {
 
         # Caches the flake's dev shell and keeps a GC root for it, so a cd into
         # a project is instant instead of a fresh evaluation, and the closure
-        # survives the weekly nix.gc in core/nix.nix. The cache lives in a
+        # survives the weekly nix.gc in system/nix.nix. The cache lives in a
         # .direnv directory inside the project itself, which for everything I
         # work on is under ~/Syncthing - already persisted by apps/syncthing.nix.
         nix-direnv.enable = true;

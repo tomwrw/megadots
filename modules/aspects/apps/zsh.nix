@@ -2,7 +2,7 @@ _: {
   # zsh with starship, fzf, completion and history.
   #
   # A sub-aspect of shell rather than an aspect of its own, the same shape
-  # core/boot.nix uses for its bootloaders: the parent carries what every shell
+  # system/boot.nix uses for its bootloaders: the parent carries what every shell
   # shares - the aliases - and this provides the one implementation. A provides
   # child does not inherit its parent, so users/tomwrw includes both, exactly as
   # roles/base.nix takes den.aspects.boot while each host takes its loader.
@@ -13,7 +13,7 @@ _: {
   # it was dropped whole, with no error.
   #
   # No aliases here at all now. They are filed with the tool they drive:
-  # core/nix.nix for the nix set, which is host scope and can name the machine
+  # system/nix.nix for the nix set, which is host scope and can name the machine
   # it rebuilds, apps/git.nix for git, and apps/shell.nix for the rest.
   den.aspects.shell.provides.zsh = {
     # Shell history is the one thing here zsh writes at runtime; everything else

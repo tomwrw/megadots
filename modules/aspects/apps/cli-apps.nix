@@ -7,13 +7,13 @@ _: {
       # programs.eza sets up the ls aliases, see apps/shell.nix, and
       # programs.nh carries the flake and config plumbing.
       #
-      # nh.clean stays off. core/nix.nix already runs nix.gc weekly, and two
+      # nh.clean stays off. system/nix.nix already runs nix.gc weekly, and two
       # garbage collectors with different retention on one store is how I lose
       # the generation I wanted.
       programs.eza.enable = true;
       programs.nh.enable = true;
 
-      # Exports NH_OS_FLAKE, which is what lets the nix aliases in core/nix.nix
+      # Exports NH_OS_FLAKE, which is what lets the nix aliases in system/nix.nix
       # and the scripts below reach this repo from any directory. Written once,
       # here; everything else reads it back out of the environment.
       #

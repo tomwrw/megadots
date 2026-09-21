@@ -3,8 +3,8 @@ _: {
   den.aspects.initrd.nixos =
     { config, ... }:
     {
-      # systemd in the initrd. core/impermanence.nix's initrd bind mounts and
-      # core/ephemeral-btrfs.nix's rollback service both need it: the rollback
+      # systemd in the initrd. system/impermanence.nix's initrd bind mounts and
+      # system/ephemeral-btrfs.nix's rollback service both need it: the rollback
       # is an initrd systemd unit, and without systemd there is nothing to run
       # it or to order it before sysroot.mount.
       boot.initrd.systemd.enable = true;
@@ -21,7 +21,7 @@ _: {
       assertions = [
         {
           assertion = config.boot.initrd.systemd.enable;
-          message = "core.initrd: boot.initrd.systemd.enable is false - the btrfs rollback in core/ephemeral-btrfs.nix is an initrd systemd unit and will not run, so the root subvolume stops being ephemeral. Something is defining it at a higher priority (mkForce?).";
+          message = "core.initrd: boot.initrd.systemd.enable is false - the btrfs rollback in system/ephemeral-btrfs.nix is an initrd systemd unit and will not run, so the root subvolume stops being ephemeral. Something is defining it at a higher priority (mkForce?).";
         }
       ];
 

@@ -13,7 +13,7 @@ let
   hostList = lib.concatStringsSep " " hosts;
 
   # Every task operates on '.', exactly as the recipes did. That keeps the
-  # division core/nix.nix documents: these are the in-the-checkout, either-host
+  # division system/nix.nix documents: these are the in-the-checkout, either-host
   # path, and the n* aliases are the this-machine, from-anywhere path. Baking
   # inputs.self instead would make every task act on the last committed tree,
   # which is wrong for a build-and-test loop.
@@ -53,7 +53,7 @@ in
   # Six of its fourteen recipes are gone rather than ported: fmt, check, update,
   # gc, default and secrets-edit only wrapped 'nix fmt', 'nix flake check',
   # 'nix flake update', nix-collect-garbage, 'just --list' and sops. The n*
-  # aliases in core/nix.nix already do the first four from any directory, which
+  # aliases in system/nix.nix already do the first four from any directory, which
   # a justfile could never do, and 'nix flake show' lists these.
   #
   # writeShellApplication and not a plain script, so shellcheck runs over every

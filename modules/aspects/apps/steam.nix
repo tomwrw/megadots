@@ -16,7 +16,7 @@
         "steam"
         "steam-unwrapped"
       ])
-      # Same trade as the kernel in core/linux-kernel.nix: trust nyx's cache
+      # Same trade as the kernel in system/linux-kernel.nix: trust nyx's cache
       # rather than build a 1.6 GiB Proton closure here.
       den.aspects.nyx-cache
     ];

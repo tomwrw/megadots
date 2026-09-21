@@ -1,7 +1,7 @@
 _: {
   # A sched_ext scheduler and an auto-nice daemon: the two halves CachyOS
   # installs by default on top of its kernel, and the part of "CachyOS feel"
-  # that core/linux-kernel.nix alone does not deliver. The lto variants are
+  # that system/linux-kernel.nix alone does not deliver. The lto variants are
   # EEVDF, not BORE - nyx and upstream both only apply the BORE patch to the
   # bore/hardened/rt-bore flavours, and once a sched_ext scheduler is loaded
   # the in-kernel class is bypassed anyway, so this is where the scheduler

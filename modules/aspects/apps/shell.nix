@@ -14,7 +14,7 @@ _: {
   # taking den.aspects.boot while each host takes its own boot.<loader>.
   #
   # Only the aliases with nowhere better to be live here. Everything else sits
-  # with the tool it drives - git in apps/git.nix, nix in core/nix.nix, where
+  # with the tool it drives - git in apps/git.nix, nix in system/nix.nix, where
   # the latter can name the host it rebuilds.
   den.aspects.shell.homeManager = {
     home.shellAliases = {

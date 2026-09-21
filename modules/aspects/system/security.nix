@@ -1,6 +1,6 @@
 _: {
   # Siblings now, so it is worth saying what separates this from
-  # core/hardening.nix: this file sets the baseline - the things that should be
+  # system/hardening.nix: this file sets the baseline - the things that should be
   # true of any machine before anyone thinks about threat models. hardening.nix
   # narrows those defaults with sysctls and kernel parameters that trade some
   # convenience or compatibility for a smaller attack surface. If a setting
@@ -17,7 +17,7 @@ _: {
 
     # Users come from the config or not at all. This used to live in the tomwrw
     # aspect, so a host without that user quietly got mutable users. It's also
-    # why persisting /var/lib/nixos matters, see core/impermanence.nix.
+    # why persisting /var/lib/nixos matters, see system/impermanence.nix.
     users.mutableUsers = false;
 
     security.pam.loginLimits = [

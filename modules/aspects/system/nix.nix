@@ -146,7 +146,7 @@
         # "only when idle", so it is softer there, not harder.
         #
         # The I/O class is honoured by mq-deadline and bfq but ignored by
-        # kyber, which is what core/performance.nix puts NVMe on - so on the
+        # kyber, which is what system/performance.nix puts NVMe on - so on the
         # system disk this is inert and kyber's own read-first policy does the
         # job. Kept for any other disk, and because it is the documented knob.
         daemonCPUSchedPolicy = "idle";

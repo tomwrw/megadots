@@ -6,7 +6,7 @@
   # follows on both, or the lock grows a second nixpkgs and a second
   # home-manager that nothing here ever evaluates - impermanence declares them
   # for its own checks, not for the module imported below. chaotic is the one
-  # input deliberately left unfollowed; see core/linux-kernel.nix for why.
+  # input deliberately left unfollowed; see system/linux-kernel.nix for why.
   flake-file.inputs.impermanence = {
     url = "github:nix-community/impermanence";
     inputs.nixpkgs.follows = "nixpkgs";
