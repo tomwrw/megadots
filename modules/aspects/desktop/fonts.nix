@@ -27,7 +27,6 @@ _: {
           pkgs.roboto
           pkgs.roboto-mono
           pkgs.source-code-pro
-          pkgs.ttf_bitstream_vera
         ];
       };
 
