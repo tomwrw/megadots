@@ -101,35 +101,69 @@
             # requestAnimationFrame at 60 Hz on a 144 Hz panel. The tracking
             # protection fingerprinting blocklist above is the part kept.
             "ui.systemUsesDarkTheme" = true;
-            "extensions.autoDisableScopes" = 0; # Automatically enable extensions
+            # No extensions.autoDisableScopes. It existed to auto-enable
+            # add-ons dropped into the profile's extensions/ directory, which is
+            # what profiles.<name>.extensions.packages does. globalExtensions
+            # installs by policy instead, and a policy-installed add-on is
+            # enabled by Firefox on sight - nothing sideloads into the profile
+            # any more, so the pref had nothing left to act on.
             "extensions.update.enabled" = false;
             "widget.use-xdg-desktop-portal.file-picker" = 1; # Use new gtk file picker instead of legacy one
             "signon.management.page.breach-alerts.enabled" = false;
             "extensions.formautofill.creditCards.enabled" = false;
           };
 
-          # Configure extension behavior (toolbar pinning, etc.).
-          ExtensionSettings = {
-            # ProtonPass - pin to toolbar.
-            "78272b6fa58f4a1abaac99321d503a20@proton.me" = {
-              installation_mode = "normal_installed";
-              default_area = "navbar";
-              private_browsing = true;
-            };
-            # uBlock Origin - pin to toolbar.
-            "uBlock0@raymondhill.net" = {
-              installation_mode = "normal_installed";
-              default_area = "navbar";
-              private_browsing = true;
-            };
-            # Multi-Account Containers - pin to toolbar
-            "@testpilot-containers" = {
-              installation_mode = "normal_installed";
-              default_area = "navbar";
-              private_browsing = true;
-            };
-          };
+          # No ExtensionSettings here. globalExtensions below generates it, one
+          # entry per add-on, keyed by the addonId Home Manager reads out of the
+          # package's passthru. Writing it by hand meant two lists to keep in
+          # step - a package list and a block of add-on IDs copied off web pages -
+          # and an ID that was wrong or stale failed silently, because a policy
+          # entry for an add-on that isn't installed is simply inert.
         };
+
+        # Installed by enterprise policy rather than into the profile, which is
+        # what Home Manager's globalExtensions does: each entry becomes an
+        # ExtensionSettings record with installation_mode = "force_installed" and
+        # an install_url pointing at the XPI in the Nix store. Still pinned by
+        # the firefox-addons input and still builds offline - nothing is fetched
+        # from addons.mozilla.org - but the add-on IDs and the second list are
+        # gone, and a policy-installed add-on needs no manual approval.
+        #
+        # force_installed also means these cannot be removed from about:addons.
+        # That is the point of declaring them here; add
+        # installation_mode = "normal_installed" to an entry's settings to get
+        # the escape hatch back for that one.
+        #
+        # "global" is per-Firefox, not per-profile. Only 'default' exists below,
+        # so there is nothing else for it to reach.
+        globalExtensions =
+          with inputs.firefox-addons.packages.${pkgs.stdenv.hostPlatform.system};
+          let
+            # Pinned to the toolbar and allowed in private windows. Every add-on
+            # here wants both, so it is stated once.
+            pinned = {
+              default_area = "navbar";
+              private_browsing = true;
+            };
+          in
+          [
+            {
+              package = bitwarden;
+              settings = pinned;
+            }
+            {
+              package = proton-pass;
+              settings = pinned;
+            }
+            {
+              package = multi-account-containers;
+              settings = pinned;
+            }
+            {
+              package = ublock-origin;
+              settings = pinned;
+            }
+          ];
 
         profiles.default = {
           isDefault = true;
@@ -146,13 +180,8 @@
             };
           };
 
-          # Extensions from firefox-addons, which is safer than the xpi
-          # method I used before.
-          extensions.packages = with inputs.firefox-addons.packages.${pkgs.stdenv.hostPlatform.system}; [
-            proton-pass
-            multi-account-containers
-            ublock-origin
-          ];
+          # No extensions.packages. See globalExtensions above - the add-ons are
+          # installed by policy now, not symlinked into this profile.
         };
       };
 
