@@ -52,6 +52,7 @@ in
       # Messaging
       den.aspects.element
       den.aspects.signal
+      den.aspects.tutanota-desktop
       den.aspects.vesktop
       den.aspects.whatsapp
 
