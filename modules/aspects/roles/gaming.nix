@@ -3,6 +3,7 @@
   den.aspects.gaming = {
     # The host half: system services and programs.
     includes = [
+      den.aspects.punktfunk
       den.aspects.steam
       den.aspects.sunshine
     ];
