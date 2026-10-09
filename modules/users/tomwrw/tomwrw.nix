@@ -57,7 +57,6 @@ in
       den.aspects.whatsapp
 
       # Productivity and media
-      den.aspects.joplin
       den.aspects.obsidian
       den.aspects.spotify
 
