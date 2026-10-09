@@ -46,6 +46,7 @@
       url = "github:notashelf/nvf";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    punktfunk.url = "git+https://git.unom.io/unom/punktfunk?ref=nix-stable";
     sops-nix = {
       url = "github:Mic92/sops-nix";
       inputs.nixpkgs.follows = "nixpkgs";
