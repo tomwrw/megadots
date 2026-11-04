@@ -13,6 +13,7 @@
       den.aspects.gnome
       den.aspects.linux-kernel
       den.aspects.scheduler
+      den.aspects.xbox-wireless
     ];
 
     # nixos-generate-config output for this machine. Imported straight in rather
